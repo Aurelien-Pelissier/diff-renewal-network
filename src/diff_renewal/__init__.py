@@ -6,6 +6,11 @@ conditional neural waiting-time clocks, persistent individual traits, and
 scenario-robust Fisher observation design.
 """
 
+from .baselines import (
+    init_population_baseline,
+    make_baseline_engine,
+    predict_population_baseline,
+)
 from .capping import (
     cap_mixed_erlang,
     capped_clock_bank_gradient_bound,
@@ -57,11 +62,16 @@ from .race import (
 )
 from .reduction import (
     ANCHORS_DEFAULT,
+    K_POS_RED,
+    READ_POS33,
     SHIFTS_DEFAULT,
     build_interpolatory_basis,
+    calibrate_positive_33_surrogate,
     cycle_symmetry_matrices,
     make_cycle_engine,
     make_interpolatory_engine,
+    make_positive_33_engine,
+    pos33_cycle_matrices,
     resolvent_sensitivity_diagnostic,
 )
 from .renewal import solve_erlang_chain
@@ -75,12 +85,15 @@ from .traits import (
 __all__ = [
     "ANCHORS_DEFAULT",
     "ClockNetwork",
+    "K_POS_RED",
     "MemoryCutoff",
+    "READ_POS33",
     "SHIFTS_DEFAULT",
     "a_optimal_value_gradient",
     "adjoint_residual_estimate",
     "adjoint_sensitivity_residual",
     "build_interpolatory_basis",
+    "calibrate_positive_33_surrogate",
     "cap_mixed_erlang",
     "capped_clock_bank_gradient_bound",
     "capped_network_tv_bound",
@@ -94,9 +107,12 @@ __all__ = [
     "fit_positive_soe",
     "fixed_partition_cutoff",
     "init_clock_network",
+    "init_population_baseline",
     "largest_remainder",
+    "make_baseline_engine",
     "make_cycle_engine",
     "make_interpolatory_engine",
+    "make_positive_33_engine",
     "mixed_erlang_components",
     "mixed_erlang_moments",
     "mixed_erlang_race",
@@ -108,6 +124,8 @@ __all__ = [
     "neural_clock",
     "optimize_fisher_allocation",
     "phase_type_dynamics",
+    "pos33_cycle_matrices",
+    "predict_population_baseline",
     "resolvent_sensitivity_diagnostic",
     "smooth_erlang_logits",
     "solve_compact_renewal_network",

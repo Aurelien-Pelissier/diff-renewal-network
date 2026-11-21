@@ -4,7 +4,7 @@
     "joint_tensor_states": 289,
     "compact_race_states": 64,
     "trajectory_max_abs_error": 7.04192711087348e-10,
-    "gradient_relative_l2_error": 4.914769275206317e-08
+    "gradient_relative_l2_error": 4.914769202900149e-08
   },
   "theorems_1_2_hankel_orders": {
     "two_erlang2_alternating": 3,
@@ -41,10 +41,19 @@
   },
   "interpolatory_projection_baur2011": {
     "basis_dimension": 33,
-    "span_residual": 4.615197775414678e-16,
-    "anchor_transfer_max_abs": 7.105427357601002e-15,
-    "anchor_sensitivity_max_abs": 1.8485213360008856e-14
+    "span_residual": 4.583026015015012e-16,
+    "anchor_transfer_max_abs": 8.659739592076221e-15,
+    "anchor_sensitivity_max_abs": 1.4998419173295474e-14
   },
-  "theorem_4_two_preparation_rank": 2,
+  "theorem_4_positive_sensitivity_reduction": {
+    "metzler_min_off_diagonal": 0.0,
+    "generator_col_sum_max_abs": 3.0057912810219772e-15,
+    "pos33_min_early_probability": 2.585098329015292e-22,
+    "sp33_min_early_probability": -0.00043283972493148883,
+    "fisher_projector_orthonormality_error": 4.9960036108132044e-15,
+    "linearized_fisher_bias": 0.017691310447873265,
+    "fisher_whitened_residual_bound": 0.028540974319557225
+  },
+  "theorem_5_two_preparation_rank": 2,
   "proposition_2_lag2_covariance": 0.5132160000000001
 }

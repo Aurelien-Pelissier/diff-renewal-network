@@ -4,6 +4,62 @@
       "sha256": "d8624ff29c190f2bf665fac6a9dd3cf657bd89d8c78b777a37f5052a8457dfe1",
       "bytes": 402330
     },
+    "results/archived/fisher_full_cohort_analysis.json": {
+      "sha256": "ad0b933012450c562a628f99221bf5481c452b25d1cebb772717038c61e758f9",
+      "bytes": 2473341
+    },
+    "results/archived/graph_scaling_summary.json": {
+      "sha256": "f4dac7f5afd5c930fb5674673123e64911f4016af3732c2221f9a70f8731c963",
+      "bytes": 7472
+    },
+    "results/archived/modern_neural_baselines.json": {
+      "sha256": "44c633a0eace6eaa0bffaca87fbf827d6f7e0a1e6d4af05acc435144b7e91fae",
+      "bytes": 27570
+    },
+    "results/archived/n2_fisher_recordings_compact.json": {
+      "sha256": "50218f31da642cb91aded9d4b454adf9966683a47c4d750692223435d8226ffe",
+      "bytes": 719879
+    },
+    "results/archived/n2_scorer_pooling.json": {
+      "sha256": "9d9fd9e9ab9726db47c0a86e8f663423d1cca30505f750741cc5b520cafd0d6e",
+      "bytes": 594390
+    },
+    "results/archived/neural_memory_pulse.json": {
+      "sha256": "be007f2a27ad1ee83ac3f74fd6d5dc2cbc9a4fb13749c34227ef0393076f2b0d",
+      "bytes": 132057
+    },
+    "results/archived/neural_memory_summary.json": {
+      "sha256": "f5a8e73521903535f80f3dea6bce5797552239ebe3ee9db42c4f0f9b2eca0bc2",
+      "bytes": 50049
+    },
+    "results/archived/positive_sensitivity_summary.json": {
+      "sha256": "cba078cf3f51cf3355c7e1d5c0640ef4ab60a014debbe3d13edbe65ba2150966",
+      "bytes": 23717
+    },
+    "results/archived/real_continuous_benchmarks.json": {
+      "sha256": "25375c936ab52041a54835cf57a04ccb8591c007f8d467bf9d9cac905e484ed6",
+      "bytes": 2850
+    },
+    "results/archived/real_visit_carry.json": {
+      "sha256": "23cc60595dd664f1b4b393a652087250e083bf9cf8ad0c204c915ac7bdff9e1c",
+      "bytes": 34288
+    },
+    "results/archived/real_visit_memory.json": {
+      "sha256": "7cb04a4c63740d713170ee1593b1f4cd42705014e65b048d0e798a697ab6ace2",
+      "bytes": 2291390
+    },
+    "results/archived/renewal_transfer_restarts.json": {
+      "sha256": "47ac38bac52fc5b3434d0af7a18869d0ac0e66826a26bd49f99cc77e28b15724",
+      "bytes": 84386
+    },
+    "results/archived/renewal_transfer_six_parameter.json": {
+      "sha256": "85fc1f026e7243a13ae1f8960919e1509774d1c8cef2382937e1858827a30361",
+      "bytes": 73759
+    },
+    "results/archived/renewal_transfer_summary.json": {
+      "sha256": "93508cec2d3415ebeaf47893a55148bfbc5f346ee718b01d0cc8f3d2b9cc1220",
+      "bytes": 157020
+    },
     "results/archived/sensitivity_evidence.json": {
       "sha256": "4338a957cac42cad1c68279d13735681ea15de9e0c5d85e67319bf665b8a506f",
       "bytes": 188768
@@ -16,53 +72,13 @@
       "sha256": "cfadbb0375bbca9ad649ff103fad75a608216fdbdb7abbcfaeb93ace8e00c022",
       "bytes": 25730
     },
-    "results/archived/fisher_full_cohort_analysis.json": {
-      "sha256": "ad0b933012450c562a628f99221bf5481c452b25d1cebb772717038c61e758f9",
-      "bytes": 2473341
-    },
-    "results/archived/trait_fisher_summary.json": {
-      "sha256": "b03afa7727ae0f9dacb7b6bb71ce987753c2e75d3ec0b950ea76799f2f8cc78b",
-      "bytes": 17098
-    },
     "results/archived/trait_fisher_information.json": {
       "sha256": "86ce253f676a6eaed90d1a492b2a9ddb1b2814138c10b057f4ec94d05c9bb1e1",
       "bytes": 1324165
     },
-    "results/archived/neural_memory_summary.json": {
-      "sha256": "f5a8e73521903535f80f3dea6bce5797552239ebe3ee9db42c4f0f9b2eca0bc2",
-      "bytes": 50049
-    },
-    "results/archived/neural_memory_pulse.json": {
-      "sha256": "be007f2a27ad1ee83ac3f74fd6d5dc2cbc9a4fb13749c34227ef0393076f2b0d",
-      "bytes": 132057
-    },
-    "results/archived/renewal_transfer_summary.json": {
-      "sha256": "93508cec2d3415ebeaf47893a55148bfbc5f346ee718b01d0cc8f3d2b9cc1220",
-      "bytes": 157020
-    },
-    "results/archived/renewal_transfer_restarts.json": {
-      "sha256": "47ac38bac52fc5b3434d0af7a18869d0ac0e66826a26bd49f99cc77e28b15724",
-      "bytes": 84386
-    },
-    "results/archived/renewal_transfer_six_parameter.json": {
-      "sha256": "85fc1f026e7243a13ae1f8960919e1509774d1c8cef2382937e1858827a30361",
-      "bytes": 73759
-    },
-    "results/archived/real_visit_memory.json": {
-      "sha256": "7cb04a4c63740d713170ee1593b1f4cd42705014e65b048d0e798a697ab6ace2",
-      "bytes": 2291390
-    },
-    "results/archived/real_visit_carry.json": {
-      "sha256": "23cc60595dd664f1b4b393a652087250e083bf9cf8ad0c204c915ac7bdff9e1c",
-      "bytes": 34288
-    },
-    "results/archived/n2_scorer_pooling.json": {
-      "sha256": "9d9fd9e9ab9726db47c0a86e8f663423d1cca30505f750741cc5b520cafd0d6e",
-      "bytes": 594390
-    },
-    "results/archived/n2_fisher_recordings_compact.json": {
-      "sha256": "50218f31da642cb91aded9d4b454adf9966683a47c4d750692223435d8226ffe",
-      "bytes": 719879
+    "results/archived/trait_fisher_summary.json": {
+      "sha256": "b03afa7727ae0f9dacb7b6bb71ce987753c2e75d3ec0b950ea76799f2f8cc78b",
+      "bytes": 17098
     },
     "results/archived/two_preparation_inverse.json": {
       "sha256": "c37fd3b65bfecd6ee039c85f0c4d3528309405ee8256d4a40bc864c847884312",

@@ -20,7 +20,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from matplotlib.patches import FancyBboxPatch
 from matplotlib.transforms import ScaledTranslation
 import numpy as np
 from scipy.linalg import expm_frechet
@@ -168,9 +168,9 @@ def export_figure(
                     text=True,
                     check=False,
                 )
-                if proc.returncode == 1:
+                if proc.returncode != 0:
                     raise RuntimeError(
-                        f"{script_name} failed on {stem}.pdf:\n{proc.stdout}\n{proc.stderr}"
+                        f"{script_name} issue on {stem}.pdf (code {proc.returncode}):\n{proc.stdout}\n{proc.stderr}"
                     )
 
 
@@ -196,7 +196,6 @@ def write_tex_table(
 # Figure 1: Architecture Schematic + 33-vs-48 Sensitivity Separation
 # ---------------------------------------------------------------------------
 def build_fig1() -> None:
-    # Deterministic pure Erlang-16 ring calculation
     a = -8.0 * np.eye(48)
     for col in range(48):
         a[(col + 1) % 48, col] += 8.0
@@ -236,7 +235,6 @@ def build_fig1() -> None:
         wspace=0.48,
     )
 
-    # Top schematic spanning all 3 columns (coordinate system in physical half-inches: 0..10.0)
     ax_sch = fig.add_subplot(gs[0, :])
     ax_sch.set_xlim(0.0, 10.0)
     ax_sch.set_ylim(0.0, 2.50)
@@ -246,13 +244,13 @@ def build_fig1() -> None:
     boxes = [
         (0.02, 0.25, 2.96, 2.00, PALETTE["light_blue"], PALETTE["navy"],
          "Marked-race compiler",
-         "Competing clocks\n$K^d \\to 1 + d(K-1)$\n$289 \\to 64$ states"),
+         "Competing clocks\n$K^d \\to 1 + d(K-1)$\nUp to $1{,}074\\times$ smaller"),
         (3.48, 0.25, 3.04, 2.00, PALETTE["light_teal"], PALETTE["teal"],
          "Forward & Fisher AD",
          "Parametric / neural PH\n$P_\\theta(t),\\, \\partial P_\\theta / \\partial\\theta$\nSnapshot NLL & $I(\\theta)$"),
         (7.02, 0.25, 2.96, 2.00, PALETTE["light_amber"], PALETTE["amber"],
-         "Sensitivity rank",
-         "$15$ modes cancel in $P$\n$P$: $33$  |  $\\partial P / \\partial\\theta$: $48$\n2-sided interpolation"),
+         "Sensitivity reduction",
+         "$15$ modes cancel in $P$\n$P$: $33$  |  $\\partial P / \\partial\\theta$: $48$\nPos-Sens & 2-sided MOR"),
     ]
     for x0, y0, bw, bh, fc, ec, title, body in boxes:
         patch = FancyBboxPatch(
@@ -363,20 +361,21 @@ def build_fig1() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Figure 2: Gradient Defect & Sensitivity-Interpolating Compression
+# Figure 2: Gradient Defect & Positivity-Preserving Sensitivity Reduction
 # ---------------------------------------------------------------------------
 def build_fig2() -> None:
     ev = load_archived("evidence.json")
     sens = load_archived("sensitivity_evidence.json")
+    pos = load_archived("positive_sensitivity_summary.json")
 
-    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.28))
-    fig.subplots_adjust(left=0.095, right=0.975, top=0.80, bottom=0.20, wspace=0.46)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.42))
+    fig.subplots_adjust(left=0.095, right=0.975, top=0.75, bottom=0.19, wspace=0.46)
 
     bounds = ev["gradient_bounds"]["families"]["trainable_PH"]
     xs_b = np.array([r["epsilon"] for r in bounds])
     for key, label, col, mk in [
-        ("mean_contrast", "Mean", PALETTE["navy"], "o"),
-        ("shape_contrast", "Shape", PALETTE["amber"], "s"),
+        ("mean_contrast", "Sym. mean", PALETTE["navy"], "o"),
+        ("shape_contrast", "Sym. shape", PALETTE["amber"], "s"),
     ]:
         vals = [r[key]["fitted_times"] for r in bounds]
         axes[0].fill_between(
@@ -392,10 +391,23 @@ def build_fig2() -> None:
             [r["gradient_error"] for r in vals],
             marker=mk,
             color=col,
-            ms=3.2,
-            lw=1.5,
+            ms=3.1,
+            lw=1.45,
             label=label,
         )
+    # Overlay Pos-Sens 33 max Jacobian error across the same displacements!
+    pos_rnames = ["symmetric", "mixed_025", "mixed_075", "mixed_150", "mixed_250"]
+    pos_jerr = [pos["regime_diagnostics"][rn]["pos33_jac_max_abs"] for rn in pos_rnames]
+    axes[0].plot(
+        [0.0, 0.025, 0.075, 0.15, 0.25],
+        pos_jerr,
+        marker="P",
+        ls="-.",
+        color=PALETTE["violet"],
+        ms=3.6,
+        lw=1.45,
+        label="Pos-Sens 33",
+    )
     axes[0].set_xlabel(r"Heterogeneity $\epsilon$")
     axes[0].set_ylabel("Max. Jacobian defect")
     axes[0].set_xlim(-0.008, 0.26)
@@ -404,11 +416,11 @@ def build_fig2() -> None:
     axes[0].legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
+        ncol=1,
         handlelength=1.1,
-        columnspacing=0.7,
+        labelspacing=0.16,
         handletextpad=0.3,
-        borderpad=0.1,
+        borderpad=0.05,
     )
     add_panel_tag(axes[0], "a", x_pt=-22.0, y_pt=3.0)
 
@@ -416,6 +428,7 @@ def build_fig2() -> None:
     xs = [0.0, 0.025, 0.075, 0.15, 0.25]
     series_cfg = [
         ("full48", "Full 48", PALETTE["navy"], "o", "-"),
+        ("pos33", "Pos-Sens 33", PALETTE["violet"], "P", "-."),
         ("sp33", "Interp. 33", PALETTE["teal"], "s", "--"),
         ("sym33", "Sym. 33", PALETTE["amber"], "^", "-"),
         ("sp18", "Interp. 18", PALETTE["crimson"], "d", ":"),
@@ -426,11 +439,14 @@ def build_fig2() -> None:
     ]:
         ax.axhline(10.0, color=PALETTE["slate"], ls="--", lw=0.75)
         for mkey, label, col, mk, ls in series_cfg:
-            ys = [
-                sens["cases"][f"primary/{k}_{law}"][mkey]["median_shape_percent"]
-                for k in names
-            ]
-            ax.plot(xs, ys, marker=mk, ls=ls, color=col, ms=3.2, lw=1.45, label=label)
+            if mkey == "pos33":
+                ys = [pos["cases"][f"primary/{k}_{law}"]["median_shape_percent"] for k in names]
+            else:
+                ys = [
+                    sens["cases"][f"primary/{k}_{law}"][mkey]["median_shape_percent"]
+                    for k in names
+                ]
+            ax.plot(xs, ys, marker=mk, ls=ls, color=col, ms=3.2, lw=1.4, label=label)
         ax.set_xlabel(r"Heterogeneity $\epsilon$")
         ax.set_ylabel(ylab)
         ax.set_xlim(-0.008, 0.26)
@@ -439,26 +455,16 @@ def build_fig2() -> None:
         add_panel_tag(ax, tag, x_pt=-22.0, y_pt=3.0)
 
     handles, labels = axes[1].get_legend_handles_labels()
-    axes[1].legend(
-        handles[:2],
-        labels[:2],
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
-        handlelength=1.1,
-        columnspacing=0.6,
-        handletextpad=0.25,
-        borderpad=0.1,
-    )
-    axes[2].legend(
-        handles[2:],
-        labels[2:],
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
-        handlelength=1.1,
-        columnspacing=0.6,
-        handletextpad=0.25,
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.69, 0.99),
+        ncol=3,
+        handlelength=1.15,
+        columnspacing=0.65,
+        handletextpad=0.28,
+        labelspacing=0.22,
         borderpad=0.1,
     )
 
@@ -466,12 +472,13 @@ def build_fig2() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Figure 3: Stem-Cell Differentiation & 60-Dataset Fisher Benchmark
+# Figure 3: Graph Scaling, Stem-Cell Cascade, 60-Dataset Fisher, & 48-Param Recovery
 # ---------------------------------------------------------------------------
 def build_fig3() -> None:
     pilot = load_archived("stem_cells_pilot.json")
     ph_sc = load_archived("trainable_ph_stem_cells.json")
     ev = load_archived("evidence.json")
+    gsc = load_archived("graph_scaling_summary.json")
     records = ev["benchmark"]
 
     ts_obs = np.asarray(pilot["observation_times"])
@@ -483,9 +490,60 @@ def build_fig3() -> None:
     ts_dense = jnp.linspace(0.0, 168.0, 240)
     pred_dense = np.asarray(solve_erlang_chain(means, logits, ts_dense).ys)
 
-    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.30))
-    fig.subplots_adjust(left=0.095, right=0.975, top=0.80, bottom=0.20, wspace=0.46)
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 4.18))
+    fig.subplots_adjust(
+        left=0.11, right=0.975, top=0.91, bottom=0.105, hspace=0.56, wspace=0.40
+    )
 
+    # Panel a: Marked-race warm gradient scaling across V in {4..48} and d in {2,3,4}
+    ax_a = axes[0, 0]
+    g_rows = gsc["gradient_and_state_scaling"]
+    for deg, col, mk, lbl in [
+        (2, PALETTE["navy"], "o", "Race $d{=}2$"),
+        (3, PALETTE["teal"], "s", "Race $d{=}3$"),
+        (4, PALETTE["violet"], "^", "Race $d{=}4$"),
+    ]:
+        sub = [r for r in g_rows if r["out_degree"] == deg]
+        ax_a.plot(
+            [r["nodes"] for r in sub],
+            [r["compact_grad_warm_ms"] for r in sub],
+            marker=mk,
+            color=col,
+            ms=3.4,
+            lw=1.45,
+            label=lbl,
+        )
+    sub_j3 = [r for r in g_rows if r["out_degree"] == 3 and r["joint_grad_warm_ms"] is not None]
+    ax_a.plot(
+        [r["nodes"] for r in sub_j3],
+        [r["joint_grad_warm_ms"] for r in sub_j3],
+        marker="x",
+        ls="--",
+        color=PALETTE["crimson"],
+        ms=4.2,
+        lw=1.4,
+        label="Tensor $d{=}3$",
+    )
+    ax_a.set_yscale("log")
+    ax_a.set_xlim(2, 50)
+    ax_a.set_ylim(8.0, 700.0)
+    ax_a.set_xticks([4, 16, 32, 48])
+    ax_a.set_xlabel("Graph nodes $V$")
+    ax_a.set_ylabel("Warm grad. (ms)")
+    ax_a.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        handlelength=1.1,
+        columnspacing=0.55,
+        handletextpad=0.25,
+        labelspacing=0.18,
+        borderpad=0.05,
+    )
+    add_panel_tag(ax_a, "a", x_pt=-24.0, y_pt=18.0)
+
+    # Panel b: Stem-cell differentiation trajectories
+    ax_b = axes[0, 1]
     for idx_s, (sname, col, mk) in enumerate(
         [
             ("ESC", PALETTE["navy"], "o"),
@@ -493,34 +551,36 @@ def build_fig3() -> None:
             ("NPC", PALETTE["teal"], "^"),
         ]
     ):
-        axes[0].plot(np.asarray(ts_dense), pred_dense[:, idx_s], color=col, lw=1.55, label=sname)
-        axes[0].scatter(ts_obs, obs[:, idx_s], color=col, marker=mk, s=16, zorder=4)
-    axes[0].set_xlabel("Time (h)")
-    axes[0].set_ylabel("Cell state fraction")
-    axes[0].set_xlim(-4.0, 174.0)
-    axes[0].set_ylim(-0.04, 1.06)
-    axes[0].set_xticks([0, 48, 96, 144])
-    axes[0].legend(
+        ax_b.plot(np.asarray(ts_dense), pred_dense[:, idx_s], color=col, lw=1.55, label=sname)
+        ax_b.scatter(ts_obs, obs[:, idx_s], color=col, marker=mk, s=16, zorder=4)
+    ax_b.set_xlabel("Time (h)")
+    ax_b.set_ylabel("Cell state fraction")
+    ax_b.set_xlim(-4.0, 174.0)
+    ax_b.set_ylim(-0.04, 1.06)
+    ax_b.set_xticks([0, 48, 96, 144])
+    ax_b.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=3,
         handlelength=1.0,
         columnspacing=0.55,
         handletextpad=0.25,
-        borderpad=0.1,
+        borderpad=0.05,
     )
-    add_panel_tag(axes[0], "a", x_pt=-22.0, y_pt=14.0)
+    add_panel_tag(ax_b, "b", x_pt=-24.0, y_pt=18.0)
 
+    # Panel c: 60-dataset Fisher shape recovery scatter
+    ax_c = axes[1, 0]
     lim = 22.5
-    axes[1].plot([0, lim], [0, lim], color=PALETTE["slate"], lw=0.8, ls=":")
-    axes[1].axhline(10.0, color=PALETTE["slate"], lw=0.65, ls="--")
-    axes[1].axvline(10.0, color=PALETTE["slate"], lw=0.65, ls="--")
+    ax_c.plot([0, lim], [0, lim], color=PALETTE["slate"], lw=0.8, ls=":")
+    ax_c.axhline(10.0, color=PALETTE["slate"], lw=0.65, ls="--")
+    ax_c.axvline(10.0, color=PALETTE["slate"], lw=0.65, ls="--")
     for topo, label, mk, col in [
         ("cyclic", "Cycle", "o", PALETTE["navy"]),
         ("branching", "Diamond", "^", PALETTE["teal"]),
     ]:
         rows = [r for r in records if r["case"].startswith(topo)]
-        axes[1].scatter(
+        ax_c.scatter(
             [100.0 * r["nomass"]["shape_error"] for r in rows],
             [100.0 * r["phase"]["shape_error"] for r in rows],
             s=17,
@@ -529,83 +589,89 @@ def build_fig3() -> None:
             alpha=0.84,
             label=label,
         )
-    axes[1].set_xlim(0.0, lim)
-    axes[1].set_ylim(0.0, lim)
-    axes[1].set_xticks([0, 10, 20])
-    axes[1].set_yticks([0, 10, 20])
-    axes[1].set_xlabel("NoMaSS shape error (%)")
-    axes[1].set_ylabel("PH shape error (%)")
-    axes[1].legend(
+    ax_c.set_xlim(0.0, lim)
+    ax_c.set_ylim(0.0, lim)
+    ax_c.set_xticks([0, 10, 20])
+    ax_c.set_yticks([0, 10, 20])
+    ax_c.set_xlabel("NoMaSS shape error (%)")
+    ax_c.set_ylabel("PH shape error (%)")
+    ax_c.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
         columnspacing=0.6,
         handletextpad=0.2,
-        borderpad=0.1,
+        borderpad=0.05,
     )
-    add_panel_tag(axes[1], "b", x_pt=-22.0, y_pt=14.0)
+    add_panel_tag(ax_c, "c", x_pt=-24.0, y_pt=14.0)
 
-    end_t = max(r[m]["joint_seconds"] or 0.0 for r in records for m in ("phase", "nomass")) * 1.25
-    for mkey, label, col, ls in [
-        ("phase", "PH", PALETTE["navy"], "-"),
-        ("nomass", "NoMaSS", PALETTE["amber"], "--"),
-    ]:
-        times = sorted(r[mkey]["joint_seconds"] for r in records if r[mkey]["joint_seconds"] is not None)
-        axes[2].step(
-            [4.0] + times + [end_t],
-            [0.0] + list(np.arange(1, len(times) + 1) / 60.0) + [len(times) / 60.0],
-            where="post",
-            color=col,
-            ls=ls,
-            lw=1.65,
-            label=label,
-        )
-    axes[2].set_xscale("log")
-    axes[2].set_xlim(5.0, end_t)
-    axes[2].set_ylim(0.0, 1.05)
-    axes[2].set_xlabel("Cold wall time (s)")
-    axes[2].set_ylabel("Joint attainment")
-    axes[2].legend(
+    # Panel d: High-dimensional continuous-Gamma recovery (16, 32, 48 parameters)
+    ax_d = axes[1, 1]
+    hd = gsc["highdim_gamma_recovery"]
+    x_hd = np.arange(len(hd))
+    ax_d.axhline(10.0, color=PALETTE["slate"], lw=0.7, ls="--")
+    ax_d.bar(
+        x_hd - 0.17,
+        [r["ph_shape_rms_median_pct"] for r in hd],
+        width=0.31,
+        color=PALETTE["navy"],
+        edgecolor=PALETTE["ink"],
+        linewidth=0.55,
+        label="Compiled PH",
+    )
+    ax_d.bar(
+        x_hd + 0.17,
+        [r["mc_shape_rms_median_pct"] for r in hd],
+        width=0.31,
+        color=PALETTE["amber"],
+        edgecolor=PALETTE["ink"],
+        linewidth=0.55,
+        label="MC search",
+    )
+    ax_d.set_xticks(x_hd, [f"V={r['nodes']}\n({r['parameters']}p)" for r in hd])
+    ax_d.set_ylim(0.0, 41.0)
+    ax_d.set_ylabel("Shape RMS (%)")
+    ax_d.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=1.2,
-        columnspacing=0.6,
+        handlelength=1.0,
+        columnspacing=0.55,
         handletextpad=0.25,
-        borderpad=0.1,
+        borderpad=0.05,
     )
-    add_panel_tag(axes[2], "c", x_pt=-22.0, y_pt=14.0)
+    add_panel_tag(ax_d, "d", x_pt=-24.0, y_pt=14.0)
 
     export_figure(fig, "fig3_stemcells_and_fisher_benchmark")
 
 
 # ---------------------------------------------------------------------------
-# Figure 4: Conditional Neural Clocks & Multi-System Few-Shot Transfer
+# Figure 4: Conditional Neural Clocks vs Modern Baselines & Multi-System Transfer
 # ---------------------------------------------------------------------------
 def build_fig4() -> None:
-    nm = load_archived("neural_memory_summary.json")
+    mnb = load_archived("modern_neural_baselines.json")
     rt = load_archived("renewal_transfer_summary.json")
 
-    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.34))
-    fig.subplots_adjust(left=0.105, right=0.98, top=0.79, bottom=0.20, wspace=0.38)
+    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.48))
+    fig.subplots_adjust(left=0.105, right=0.98, top=0.74, bottom=0.19, wspace=0.38)
 
-    # Panel a: Grouped log-KL bars with IQR whiskers across 3 evaluation settings
     studies = [
         ("primary", "PH truth"),
-        ("richer", "PH + aged"),
         ("lognormal", "Lognormal"),
     ]
     models = [
-        ("neural_phase", "Neural clock", PALETTE["navy"], -0.24),
-        ("mean_shape", "Moment PH", PALETTE["teal"], 0.0),
-        ("latent_ode", "Latent ODE", PALETTE["crimson"], 0.24),
+        ("neural_phase", "Neural clock", PALETTE["navy"], -0.28),
+        ("mean_shape", "Moment PH", PALETTE["teal"], -0.14),
+        ("ltc_ode_3start", "LTC (3-st.)", PALETTE["violet"], 0.0),
+        ("s4d_ode_3start", "S4D (3-st.)", PALETTE["amber"], 0.14),
+        ("latent_ode_3start", "Latent ODE", PALETTE["crimson"], 0.28),
     ]
     x_pos = np.arange(len(studies))
     axes[0].axhline(0.005, color=PALETTE["slate"], ls="--", lw=0.75)
     for mkey, mlabel, col, dx in models:
         meds, lows, highs = [], [], []
         for skey, _ in studies:
-            stat = nm[skey]["models"][mkey]["metrics"]["balanced_kl"]
+            stat = mnb[skey][mkey]["metrics"]["balanced_kl"]
             med = float(stat["median"])
             meds.append(med)
             lows.append(med - float(stat["q25"]))
@@ -615,10 +681,10 @@ def build_fig4() -> None:
             x_pos + dx,
             np.asarray(meds) - y_base,
             bottom=y_base,
-            width=0.22,
+            width=0.125,
             color=col,
             edgecolor=PALETTE["ink"],
-            linewidth=0.55,
+            linewidth=0.5,
             label=mlabel,
         )
         axes[0].errorbar(
@@ -627,25 +693,26 @@ def build_fig4() -> None:
             yerr=[lows, highs],
             fmt="none",
             ecolor=PALETTE["ink"],
-            elinewidth=0.8,
-            capsize=2.0,
+            elinewidth=0.75,
+            capsize=1.6,
         )
     axes[0].set_yscale("log")
     axes[0].set_xticks(x_pos, [lbl for _, lbl in studies])
-    axes[0].set_ylim(8e-4, 0.25)
+    axes[0].set_xlim(-0.48, 1.48)
+    axes[0].set_ylim(8e-4, 0.22)
     axes[0].set_ylabel("Held-out excess KL (nats)")
     axes[0].legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=1.0,
-        columnspacing=0.6,
-        handletextpad=0.3,
-        borderpad=0.1,
+        handlelength=0.95,
+        columnspacing=0.5,
+        handletextpad=0.25,
+        labelspacing=0.18,
+        borderpad=0.05,
     )
-    add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=16.0)
+    add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=24.0)
 
-    # Panel b: Multi-system transfer across target cell budgets (400, 2000, 8000)
     budgets = [400, 2000, 8000]
     arms_cfg = [
         ("neural_phase.pretrained_code", "Clock 4-coeff", PALETTE["navy"], "o", "-"),
@@ -669,99 +736,173 @@ def build_fig4() -> None:
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=1.2,
-        columnspacing=0.6,
-        handletextpad=0.3,
-        borderpad=0.1,
+        handlelength=1.15,
+        columnspacing=0.55,
+        handletextpad=0.25,
+        labelspacing=0.18,
+        borderpad=0.05,
     )
-    add_panel_tag(axes[1], "b", x_pt=-24.0, y_pt=16.0)
+    add_panel_tag(axes[1], "b", x_pt=-24.0, y_pt=24.0)
 
     export_figure(fig, "fig4_neural_clocks_and_transfer")
 
 
 # ---------------------------------------------------------------------------
-# Figure 5: Biological Return-Visit Memory & Multi-Scorer Sleep Calibration
+# Figure 5: Continuous Biological Renewal Networks & Cross-Visit Persistence
 # ---------------------------------------------------------------------------
 def build_fig5() -> None:
+    rcb = load_archived("real_continuous_benchmarks.json")
     rvm = load_archived("real_visit_memory.json")["datasets"]
-    n2_f = load_archived("n2_fisher_recordings_compact.json")
-    n2_r = load_archived("n2_scorer_pooling.json")
 
-    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.36))
-    fig.subplots_adjust(left=0.185, right=0.98, top=0.79, bottom=0.20, wspace=0.45)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.54))
+    fig.subplots_adjust(left=0.10, right=0.985, top=0.74, bottom=0.19, wspace=0.52)
 
-    # Panel a: Previous-visit log-score gain across human sleep & E. coli cohorts
+    # Panel a: Held-out aged-survivor KL on continuous E. coli & 5-node Sleep-EDF
+    ec_m = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]
+    sl_m = rcb["sleep_5node_branching_network"]["models_5fold_mean"]
+    x_c = np.arange(2)
+    y_floor = 0.025
+    for mlabel, vals, sds, col, dx in [
+        (
+            "DRN",
+            [ec_m["drn_joint"]["aged_kl"], sl_m["drn_joint"]["aged_kl_mean"]],
+            [ec_m["drn_joint"]["aged_kl_sd"], sl_m["drn_joint"]["aged_kl_sd"]],
+            PALETTE["navy"],
+            -0.27,
+        ),
+        (
+            "DRN 0-sh.",
+            [ec_m["drn_fresh_only"]["aged_kl"], sl_m["drn_fresh_only"]["aged_kl_mean"]],
+            [ec_m["drn_fresh_only"]["aged_kl_sd"], sl_m["drn_fresh_only"]["aged_kl_sd"]],
+            PALETTE["royal"],
+            -0.09,
+        ),
+        (
+            "CTMC",
+            [ec_m["ctmc"]["aged_kl"], sl_m["ctmc"]["aged_kl_mean"]],
+            [ec_m["ctmc"]["aged_kl_sd"], sl_m["ctmc"]["aged_kl_sd"]],
+            PALETTE["teal"],
+            0.09,
+        ),
+        (
+            "LODE 0-sh.",
+            [ec_m["latent_ode_fresh_only"]["aged_kl"], sl_m["latent_ode_fresh_only"]["aged_kl_mean"]],
+            [ec_m["latent_ode_fresh_only"]["aged_kl_sd"], sl_m["latent_ode_fresh_only"]["aged_kl_sd"]],
+            PALETTE["crimson"],
+            0.27,
+        ),
+    ]:
+        axes[0].bar(
+            x_c + dx,
+            np.asarray(vals) - y_floor,
+            bottom=y_floor,
+            width=0.16,
+            color=col,
+            edgecolor=PALETTE["ink"],
+            linewidth=0.5,
+            label=mlabel,
+        )
+        axes[0].errorbar(
+            x_c + dx,
+            vals,
+            yerr=sds,
+            fmt="none",
+            ecolor=PALETTE["ink"],
+            elinewidth=0.75,
+            capsize=1.6,
+        )
+    axes[0].set_yscale("log")
+    axes[0].set_xticks(x_c, ["E. coli\n(3-phase)", "Sleep-EDF\n(5-node)"])
+    axes[0].set_xlim(-0.52, 1.52)
+    axes[0].set_ylim(y_floor, 0.62)
+    axes[0].set_ylabel("Aged-survivor KL (nats)")
+    axes[0].legend(
+        loc="lower center",
+        bbox_to_anchor=(0.55, 1.02),
+        ncol=2,
+        handlelength=0.85,
+        columnspacing=0.42,
+        handletextpad=0.22,
+        labelspacing=0.18,
+        borderpad=0.05,
+    )
+    add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=26.0)
+
+    # Panel b: Single-cell E. coli division-cycle duration recovery from snapshots alone
+    rec_stats = rcb["ecoli_continuous_cycle"]["zero_shot_cycle_law_recovery"]
+    temps_x = np.arange(len(rec_stats))
+    axes[1].bar(
+        temps_x - 0.17,
+        [r["true_longitudinal_mean_min"] for r in rec_stats],
+        width=0.31,
+        color=PALETTE["slate"],
+        edgecolor=PALETTE["ink"],
+        linewidth=0.5,
+        label="True cell",
+    )
+    axes[1].bar(
+        temps_x + 0.17,
+        [r["snapshot_recovered_mean_min"] for r in rec_stats],
+        width=0.31,
+        color=PALETTE["navy"],
+        edgecolor=PALETTE["ink"],
+        linewidth=0.5,
+        label="DRN snap.",
+    )
+    axes[1].set_xticks(temps_x, [f"{r['temp_C']}\u00b0C" for r in rec_stats])
+    axes[1].set_ylim(0.0, 78.0)
+    axes[1].set_ylabel("Cycle mean (min)")
+    axes[1].legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        handlelength=0.95,
+        columnspacing=0.5,
+        handletextpad=0.25,
+        borderpad=0.05,
+    )
+    add_panel_tag(axes[1], "b", x_pt=-22.0, y_pt=26.0)
+
+    # Panel c: Longitudinal cross-visit persistence gain (before vs after covariates)
     cohorts = [
-        ("sleep", "2", "Sleep N2\n(75 adults)"),
-        ("nomass", "all", "E. coli\n(Si et al.)"),
-        ("tanouchi", "all", "E. coli\n(Tanouchi)"),
+        ("sleep", "2", "Sleep N2"),
+        ("nomass", "all", "Si E. coli"),
+        ("tanouchi", "all", "Tanouchi"),
     ]
-    axes[0].axvline(0.0, color=PALETTE["slate"], lw=0.8, ls="--")
+    axes[2].axvline(0.0, color=PALETTE["slate"], lw=0.8, ls="--")
     for idx_y, (dkey, subk, _) in enumerate(cohorts):
         y_coord = 2 - idx_y
         for mkey, mlabel, col, mk, dy in [
-            ("marginal", "Unadjusted", PALETTE["amber"], "s", 0.14),
-            ("adjusted", "Covariate-adj.", PALETTE["navy"], "o", -0.14),
+            ("marginal", "Raw", PALETTE["amber"], "s", 0.14),
+            ("adjusted", "Adj.", PALETTE["navy"], "o", -0.14),
         ]:
             est = rvm[dkey]["models"][mkey]["previous"][subk]
             val = 100.0 * float(est["gain"])
             lo, hi = [100.0 * float(v) for v in est["interval"]]
-            axes[0].errorbar(
+            axes[2].errorbar(
                 val,
                 y_coord + dy,
                 xerr=[[val - lo], [hi - val]],
                 fmt=mk,
                 color=col,
-                ms=4.0,
-                lw=1.35,
-                capsize=2.2,
+                ms=3.8,
+                lw=1.3,
+                capsize=2.0,
                 label=mlabel if idx_y == 0 else None,
             )
-    axes[0].set_yticks([2, 1, 0], [lbl for _, _, lbl in cohorts])
-    axes[0].set_ylim(-0.52, 2.55)
-    axes[0].set_xlim(-0.45, 2.15)
-    axes[0].set_xlabel("Gain per 100 visits (nats)")
-    axes[0].legend(
+    axes[2].set_yticks([2, 1, 0], [lbl for _, _, lbl in cohorts])
+    axes[2].set_ylim(-0.52, 2.55)
+    axes[2].set_xlim(-0.45, 2.15)
+    axes[2].set_xlabel("Gain / 100 visits (nats)")
+    axes[2].legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        columnspacing=0.6,
+        columnspacing=0.55,
         handletextpad=0.2,
-        borderpad=0.1,
+        borderpad=0.05,
     )
-    add_panel_tag(axes[0], "a", x_pt=-54.0, y_pt=16.0)
-
-    # Panel b: Unseen-physician sleep boundary calibration curve
-    x_b = np.array([46.4 if k == "all" else float(k) for k in n2_f["budgets"]])
-    target_loss = float(n2_f["calibration"]["adaptive"]["common_loss_target"])
-    axes[1].axhline(target_loss, color=PALETTE["slate"], ls=":", lw=0.85)
-    for mkey, label, col, ls in [
-        ("random", "Random (4)", PALETTE["navy"], "-"),
-        ("longest", "Longest (3)", PALETTE["teal"], "-."),
-        ("fixed", "Fixed (9)", PALETTE["amber"], "--"),
-        ("adaptive", "Adaptive (11)", PALETTE["crimson"], ":"),
-    ]:
-        curve = (
-            n2_r["curves"]["history_nll"]["mean"]
-            if mkey == "random"
-            else n2_f["curves"][mkey]["history_nll"]["mean"]
-        )
-        axes[1].plot(x_b, np.asarray(curve), color=col, ls=ls, lw=1.5, label=label)
-    axes[1].set_xlim(-0.8, 47.5)
-    axes[1].set_ylim(1.314, 1.382)
-    axes[1].set_xticks([0, 4, 11, 24, 46.4], ["0", "4", "11", "24", "All"])
-    axes[1].set_xlabel("Calibration nights (new scorer)")
-    axes[1].set_ylabel("Held-out NLL (nats/bout)")
-    axes[1].legend(
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
-        handlelength=1.2,
-        columnspacing=0.6,
-        handletextpad=0.3,
-        borderpad=0.1,
-    )
-    add_panel_tag(axes[1], "b", x_pt=-24.0, y_pt=16.0)
+    add_panel_tag(axes[2], "c", x_pt=-38.0, y_pt=26.0)
 
     export_figure(fig, "fig5_persistence_and_sleep_calibration")
 
@@ -772,6 +913,10 @@ def build_fig5() -> None:
 def build_tables() -> None:
     ev = load_archived("evidence.json")
     sens = load_archived("sensitivity_evidence.json")
+    pos = load_archived("positive_sensitivity_summary.json")
+    gsc = load_archived("graph_scaling_summary.json")
+    mnb = load_archived("modern_neural_baselines.json")
+    rcb = load_archived("real_continuous_benchmarks.json")
     tf = load_archived("trait_fisher_summary.json")
     nm = load_archived("neural_memory_summary.json")
     nmp = load_archived("neural_memory_pulse.json")
@@ -781,52 +926,74 @@ def build_tables() -> None:
     ph_sc = load_archived("trainable_ph_stem_cells.json")
     n2_f = load_archived("n2_fisher_recordings_compact.json")
 
-    # Table 1: Cyclic compression & sensitivity interpolation summary
+    # Table 1: Cyclic compression, Pos-Sens 33, and sensitivity interpolation summary
     p_cases = sens["cases"]
     p_ov = sens["overall"]["primary"]
-    l_ov = sens["overall"]["late"]
-    t1_rows = []
-    for mkey, mname, dim, w_ms in [
-        ("full48", "\\textbf{Full PH}", "48", "89.4"),
-        ("sym33", "Symmetry closure", "33", "\\textbf{39.4}"),
-        ("sp33", "\\textbf{Interp. 33 (2-sided)}", "33", "46.9"),
-        ("sp18", "Interp. 18 (1-anchor)", "18", "38.9"),
-    ]:
-        sym_ph = p_cases["primary/symmetric_PH"][mkey]["median_shape_percent"]
-        het_ph = p_cases["primary/mixed_150_PH"][mkey]["median_shape_percent"]
-        het_gm = p_cases["primary/mixed_150_Gamma"][mkey]["median_shape_percent"]
-        j_pri = f"{p_ov[mkey]['joint']}/280"
-        j_lat = f"{l_ov[mkey]['joint']}/120"
-        if mkey == "sym33":
-            sym_str = f"\\textbf{{{sym_ph:.2f}\\%}}"
-        else:
-            sym_str = f"{sym_ph:.2f}\\%"
-        if mkey == "sp33":
-            het_str = f"\\textbf{{{het_ph:.2f}\\%}} / \\textbf{{{het_gm:.2f}\\%}}"
-            j_pri = f"\\textbf{{{j_pri}}}"
-        elif mkey == "full48":
-            j_lat = f"\\textbf{{{j_lat}}}"
-            het_str = f"{het_ph:.2f}\\% / {het_gm:.2f}\\%"
-        else:
-            het_str = f"{het_ph:.2f}\\% / {het_gm:.2f}\\%"
-        t1_rows.append([mname, dim, sym_str, het_str, j_pri, j_lat, w_ms])
+    t1_rows = [
+        [
+            "\\textbf{Full PH}",
+            "48",
+            f"{p_cases['primary/symmetric_PH']['full48']['median_shape_percent']:.2f}\\%",
+            f"{p_cases['primary/mixed_150_PH']['full48']['median_shape_percent']:.2f}\\% / {p_cases['primary/mixed_150_Gamma']['full48']['median_shape_percent']:.2f}\\%",
+            f"{p_ov['full48']['joint']}/280",
+            "\\textbf{0/400}",
+            "1.00$\\times$",
+        ],
+        [
+            "\\textbf{Pos-Sens 33 (ours)}",
+            "33",
+            f"{pos['cases']['primary/symmetric_PH']['median_shape_percent']:.2f}\\%",
+            f"{pos['cases']['primary/mixed_150_PH']['median_shape_percent']:.2f}\\% / \\textbf{{{pos['cases']['primary/mixed_150_Gamma']['median_shape_percent']:.2f}\\%}}",
+            f"{pos['overall']['primary']['pos33']['joint']}/280",
+            "\\textbf{0/400}",
+            f"{pos['overall']['primary']['pos33']['median_paired_speedup_vs_full48']:.2f}$\\times$",
+        ],
+        [
+            "\\textbf{Interp. 33 (2-sided)}",
+            "33",
+            f"{p_cases['primary/symmetric_PH']['sp33']['median_shape_percent']:.2f}\\%",
+            f"\\textbf{{{p_cases['primary/mixed_150_PH']['sp33']['median_shape_percent']:.2f}\\%}} / \\textbf{{{p_cases['primary/mixed_150_Gamma']['sp33']['median_shape_percent']:.2f}\\%}}",
+            f"\\textbf{{{p_ov['sp33']['joint']}/280}}",
+            "400/400",
+            "1.90$\\times$",
+        ],
+        [
+            "Symmetry closure",
+            "33",
+            f"\\textbf{{{p_cases['primary/symmetric_PH']['sym33']['median_shape_percent']:.2f}\\%}}",
+            f"{p_cases['primary/mixed_150_PH']['sym33']['median_shape_percent']:.2f}\\% / {p_cases['primary/mixed_150_Gamma']['sym33']['median_shape_percent']:.2f}\\%",
+            f"{p_ov['sym33']['joint']}/280",
+            "400/400",
+            "2.31$\\times$",
+        ],
+        [
+            "Interp. 18 (1-anchor)",
+            "18",
+            f"{p_cases['primary/symmetric_PH']['sp18']['median_shape_percent']:.2f}\\%",
+            f"{p_cases['primary/mixed_150_PH']['sp18']['median_shape_percent']:.2f}\\% / {p_cases['primary/mixed_150_Gamma']['sp18']['median_shape_percent']:.2f}\\%",
+            f"{p_ov['sp18']['joint']}/280",
+            "400/400",
+            "\\textbf{2.34$\\times$}",
+        ],
+    ]
     write_tex_table(
         "tab1_compression_summary.tex",
         "lcrrrrr",
         [
             "Realization",
             "States",
-            "Sym. Err. $\\downarrow$",
+            "Sym. $\\downarrow$",
             "$\\epsilon{=}0.15$ (PH / $\\Gamma$) $\\downarrow$",
             "Primary $\\uparrow$",
-            "Interior $\\uparrow$",
-            "Warm (ms) $\\downarrow$",
+            "Neg. Early $\\downarrow$",
+            "Speedup $\\uparrow$",
         ],
         t1_rows,
     )
 
-    # Table 2: Rate, shape, and persistent-trait recovery vs NoMaSS
-    bsum = ev["benchmark_summary"]
+    # Table 2: Rate, shape, persistent-trait, and high-dim 48-parameter recovery
+    hd_rec = gsc["highdim_gamma_recovery"]
+    assert [r["ph_joint_hits_of_5"] for r in hd_rec] == [5, 5, 5]
     t2_rows = [
         [
             "6-regime Gamma",
@@ -843,14 +1010,6 @@ def build_tables() -> None:
             "\\textbf{4.52\\%}",
             "\\textbf{59/60}",
             "\\textbf{19.32$\\times$ cold}",
-        ],
-        [
-            "",
-            "NoMaSS (Uniform)",
-            "2.39\\%",
-            "11.86\\%",
-            "24/60",
-            "---",
         ],
         [
             "",
@@ -879,25 +1038,30 @@ def build_tables() -> None:
         ],
         [
             "",
-            "NoMaSS (Uniform)",
-            "3.71\\%",
-            "15.99\\%",
-            "0/10",
-            "---",
-        ],
-        [
-            "",
             "NoMaSS (Fisher)",
             "1.73\\%",
             "8.84\\%",
             "\\textbf{9/10}",
             "1.00$\\times$ ref.",
         ],
+        "\\midrule",
+        [
+            "High-dim Gamma",
+            "\\textbf{Compiled PH}",
+            f"\\textbf{{{hd_rec[2]['ph_rate_rms_median_pct']:.2f}\\%}}",
+            f"\\textbf{{{hd_rec[2]['ph_shape_rms_median_pct']:.2f}\\%}}",
+            "\\textbf{15/15}",
+            "\\textbf{8.3$\\times$ states}",
+        ],
+        [
+            "($V{=}4..12$, 16--48p)",
+            "MC search (DE+Powell)",
+            f"{hd_rec[2]['mc_rate_rms_median_pct']:.2f}\\%",
+            f"{hd_rec[2]['mc_shape_rms_median_pct']:.2f}\\%",
+            "0/15",
+            "fails ($>26\\%$)",
+        ],
     ]
-    assert (
-        round(100.0 * float(np.median([r["phase"]["shape_error"] for r in ev["benchmark"]])), 2)
-        == 4.52
-    )
     write_tex_table(
         "tab2_fisher_and_traits.tex",
         "llrrrr",
@@ -907,42 +1071,58 @@ def build_tables() -> None:
             "Rate / Mean $\\downarrow$",
             "Shape RMS $\\downarrow$",
             "Joint Hits $\\uparrow$",
-            "Paired Speedup $\\uparrow$",
+            "Gain / Scaling $\\uparrow$",
         ],
         t2_rows,
     )
 
-    # Table 3: Conditional neural clocks, mid-visit pulse, and 4-coeff transfer
-    p_mod = nm["primary"]["models"]
-    l_mod = nm["lognormal"]["models"]
+    # Table 3: Conditional neural clocks vs tuned LTC, S4D, and Latent ODE + transfer
     pu_mod = nmp["studies"]["primary"]
     tr_400 = rt["heldout_ph"]["400"]["arms"]
     tr_8000 = rt["heldout_ph"]["8000"]["arms"]
     t3_rows = [
         [
-            "Moment PH",
-            "18",
-            f"{p_mod['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
-            f"{l_mod['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
-            f"{100*pu_mod['mean_shape']['median_arm_rmse']['exit_increase']:.2f}\\,\\text{{pp}}",
-            "---",
-            "---",
-        ],
-        [
             "\\textbf{Neural clock}",
             "185",
-            f"\\textbf{{{p_mod['neural_phase']['metrics']['balanced_kl']['median']:.5f}}}",
-            f"\\textbf{{{l_mod['neural_phase']['metrics']['balanced_kl']['median']:.5f}}}",
+            f"\\textbf{{{mnb['primary']['neural_phase']['metrics']['balanced_kl']['median']:.5f}}}",
+            f"\\textbf{{{mnb['lognormal']['neural_phase']['metrics']['balanced_kl']['median']:.5f}}}",
             f"\\textbf{{{100*pu_mod['neural_phase']['median_arm_rmse']['exit_increase']:.2f}\\,\\text{{pp}}}}",
             f"\\textbf{{{tr_400['neural_phase.pretrained_code']['balanced_kl']:.5f}}}",
             f"\\textbf{{{tr_8000['neural_phase.pretrained_full']['balanced_kl']:.5f}}}",
         ],
         [
-            "Latent ODE",
+            "Moment PH",
+            "18",
+            f"{mnb['primary']['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
+            f"{mnb['lognormal']['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
+            f"{100*pu_mod['mean_shape']['median_arm_rmse']['exit_increase']:.2f}\\,\\text{{pp}}",
+            "---",
+            "---",
+        ],
+        [
+            "LTC ODE (3-start)",
+            "378",
+            f"{mnb['primary']['ltc_ode_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{mnb['lognormal']['ltc_ode_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{100*mnb['primary']['ltc_ode_3start']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
+            "---",
+            "---",
+        ],
+        [
+            "S4D ODE (3-start)",
+            "435",
+            f"{mnb['primary']['s4d_ode_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{mnb['lognormal']['s4d_ode_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{100*mnb['primary']['s4d_ode_3start']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
+            "---",
+            "---",
+        ],
+        [
+            "Latent ODE (3-start)",
             "387",
-            f"{p_mod['latent_ode']['metrics']['balanced_kl']['median']:.5f}",
-            f"{l_mod['latent_ode']['metrics']['balanced_kl']['median']:.5f}",
-            f"{100*pu_mod['latent_ode']['median_arm_rmse']['exit_increase']:.2f}\\,\\text{{pp}}",
+            f"{mnb['primary']['latent_ode_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{mnb['lognormal']['latent_ode_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{100*mnb['primary']['latent_ode_3start']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
             f"{tr_400['latent_ode.pretrained_code']['balanced_kl']:.5f}",
             f"{tr_8000['latent_ode.pretrained_code']['balanced_kl']:.5f}",
         ],
@@ -962,47 +1142,50 @@ def build_tables() -> None:
         t3_rows,
     )
 
-    # Table 4: Cross-visit persistence on synthetic snapshots & biological cohorts
+    # Table 4: Continuous biological renewal networks & cross-visit persistence
+    ec_m = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]
+    sl_b = rcb["sleep_5node_branching_network"]
+    sl_m = sl_b["models_5fold_mean"]
     s_n2 = rvm["sleep"]["models"]["adjusted"]["previous"]["2"]
     s_ec1 = rvm["nomass"]["models"]["adjusted"]["previous"]["all"]
     s_ec2 = rvm["tanouchi"]["models"]["adjusted"]["previous"]["all"]
     t4_rows = [
         [
-            "Synthetic resampled ($\\rho{=}0$)",
-            "10 seeds (8k cells)",
-            "\\textbf{KL 0.00251}",
-            "$\\hat\\rho = 0.000$ (9/10 hits)",
+            "\\emph{E.\\ coli} 3-phase ring",
+            "18,972 cyc.",
+            f"\\textbf{{{ec_m['drn_fresh_only']['aged_kl']:.4f}}} vs.\\ {ec_m['latent_ode_fresh_only']['aged_kl']:.4f}",
+            "$37^\\circ$C $k{=}25.8$ ($27.1$)",
         ],
         [
-            "Synthetic persistent ($\\rho{=}1$)",
-            "10 seeds (8k cells)",
-            "\\textbf{KL 0.00416}",
-            "$\\hat\\rho = 0.875$ (8/10 hits)",
+            "Sleep-EDF 5-node net",
+            "75 adults",
+            f"\\textbf{{{sl_m['drn_fresh_only']['aged_kl_mean']:.4f}}} vs.\\ {sl_m['latent_ode_fresh_only']['aged_kl_mean']:.4f}",
+            "$6{,}144{\\to}117$ ($52.5\\times$)",
         ],
         "\\midrule",
         [
-            "Sleep-EDF (stage N2)",
-            "75 adults (2,957 visits)",
+            "Synthetic persistent",
+            "20 runs",
+            "\\textbf{KL 0.00416} ($7.9\\times$)",
+            "$\\hat\\rho$: $0.000$ vs.\\ $0.875$",
+        ],
+        [
+            "Sleep-EDF N2 returns",
+            "2,957 bouts",
             f"\\textbf{{{s_n2['gain']:+.5f}}} nats",
-            "Shuffle $+0.00725$ ($p{=}0.002$)",
+            "Perm. $+0.0073$ ($p{=}.002$)",
         ],
         [
             "\\emph{E.\\ coli} (Si et al.)",
-            "114 groups (7,389 cycles)",
+            "7,389 cyc.",
             f"\\textbf{{{s_ec1['gain']:+.5f}}} nats",
-            "95\\% CI $[+0.0087, +0.0171]$",
+            "CI $[+0.0087, +0.0171]$",
         ],
         [
             "\\emph{E.\\ coli} (Tanouchi)",
-            "49 groups (18,693 cycles)",
+            "18,693 cyc.",
             f"${s_ec2['gain']:+.5f}$ nats",
-            "Size/time absorb $+0.0132$",
-        ],
-        [
-            "Multi-scorer sleep",
-            "20 adults (58 nights)",
-            "$+0.00068$ nats",
-            "4-night pool ($p{=}0.0213$)",
+            "Size absorbs $+0.0132$",
         ],
     ]
     assert "resampled" in rt6["targets"] and "persistent" in rt6["targets"]
@@ -1010,10 +1193,10 @@ def build_tables() -> None:
         "tab4_persistence_and_trajectories.tex",
         "llll",
         [
-            "Cohort / Truth",
-            "Sample Size",
-            "Carry KL or Gain",
-            "Key Control or Estimate",
+            "System / Cohort",
+            "Scale",
+            "0-Shot KL / Gain",
+            "Law / Control",
         ],
         t4_rows,
     )
@@ -1035,15 +1218,15 @@ def build_tables() -> None:
         ],
     )
 
-    # Appendix Tables A2 & A3: Full 14-row primary & 6-row later-time reduction tables
+    # Appendix Tables A2 & A3: Full 14-row primary & 6-row later-time reduction tables incl. Pos-Sens 33
     r_labels = {
-        "symmetric": "Symmetric ($\\epsilon{=}0$)",
-        "mixed_025": "Mixed $\\epsilon{=}0.025$",
-        "mixed_075": "Mixed $\\epsilon{=}0.075$",
-        "mixed_150": "Mixed $\\epsilon{=}0.150$",
-        "mixed_250": "Mixed $\\epsilon{=}0.250$",
-        "mean_only_150": "Mean-only $\\epsilon{=}0.150$",
-        "shape_only_150": "Shape-only $\\epsilon{=}0.150$",
+        "symmetric": "Sym. ($\\epsilon{=}0$)",
+        "mixed_025": "Mixed $0.025$",
+        "mixed_075": "Mixed $0.075$",
+        "mixed_150": "Mixed $0.150$",
+        "mixed_250": "Mixed $0.250$",
+        "mean_only_150": "Mean $0.150$",
+        "shape_only_150": "Shape $0.150$",
     }
     for design, out_fname in [
         ("primary", "tab_a2_primary_regimes.tex"),
@@ -1055,21 +1238,29 @@ def build_tables() -> None:
             if which != design:
                 continue
             regime, law = case.rsplit("_", 1)
-            diff = rec["sp33"]["paired_shape_difference_vs_full_pp"]
-            vals = [f"{rec[m]['median_shape_percent']:.2f}" for m in ("full48", "sym33", "sp33", "sp18")]
+            pos_rec = pos["cases"][key]
+            diff = pos_rec["paired_shape_difference_vs_full_pp"]
+            vals = [
+                f"{rec['full48']['median_shape_percent']:.2f}",
+                f"{pos_rec['median_shape_percent']:.2f}",
+                f"{rec['sp33']['median_shape_percent']:.2f}",
+                f"{rec['sym33']['median_shape_percent']:.2f}",
+                f"{rec['sp18']['median_shape_percent']:.2f}",
+            ]
             ci_str = f"${diff['median']:+.2f}\\;[{diff['ci95'][0]:+.2f}, {diff['ci95'][1]:+.2f}]$"
             rows_sp.append([law, r_labels[regime], *vals, ci_str])
         write_tex_table(
             out_fname,
-            "llrrrrl",
+            "llrrrrrl",
             [
-                "Truth",
+                "Law",
                 "Regime",
                 "Full 48",
+                "Pos. 33",
+                "Int. 33",
                 "Sym. 33",
-                "Interp. 33",
-                "Interp. 18",
-                "Interp. 33 $-$ Full [95\\% CI]",
+                "Int. 18",
+                "$\\Delta$ Pos.$-$Full [CI]",
             ],
             rows_sp,
         )
@@ -1151,6 +1342,42 @@ def build_tables() -> None:
         ],
     )
 
+    # Appendix Table A7: Graph and out-degree marked-race scaling across V=4..48, d=2..4
+    rows_g7 = []
+    for r in gsc["gradient_and_state_scaling"]:
+        if r["nodes"] not in (4, 8, 16, 48):
+            continue
+        sp_str = (
+            "OOM / $>35$k"
+            if r["grad_speedup_vs_tensor"] is None
+            else f"\\textbf{{{r['grad_speedup_vs_tensor']:.2f}$\\times$}}"
+        )
+        rows_g7.append(
+            [
+                f"$d{{=}}{r['out_degree']},\\,V{{=}}{r['nodes']}$",
+                f"{r['parameters']}",
+                f"{r['joint_tensor_states']:,}",
+                f"{r['compact_race_states']:,}",
+                f"{r['state_compression_ratio']:.1f}$\\times$",
+                f"{r['compact_grad_warm_ms']:.1f}",
+                sp_str,
+            ]
+        )
+    write_tex_table(
+        "tab_a7_graph_scaling.tex",
+        "lrrrrrr",
+        [
+            "Graph $(d, V)$",
+            "Params",
+            "Tensor",
+            "Race",
+            "Comp. $\\uparrow$",
+            "Grad (ms)",
+            "Speedup",
+        ],
+        rows_g7,
+    )
+
 
 def main() -> None:
     build_fig1()
@@ -1159,7 +1386,7 @@ def main() -> None:
     build_fig4()
     build_fig5()
     build_tables()
-    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 10 LaTeX tables.")
+    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 11 LaTeX tables.")
 
 
 if __name__ == "__main__":

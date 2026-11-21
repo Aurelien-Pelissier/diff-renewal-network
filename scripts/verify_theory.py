@@ -31,11 +31,16 @@ if str(ROOT / "src") not in sys.path:
 
 from diff_renewal import (  # noqa: E402
     ANCHORS_DEFAULT,
+    READ_POS33,
     SHIFTS_DEFAULT,
     build_interpolatory_basis,
     compact_network_state_size,
+    make_cycle_engine,
+    make_interpolatory_engine,
+    make_positive_33_engine,
     moment_matched_logits,
     network_state_size,
+    pos33_cycle_matrices,
     resolvent_sensitivity_diagnostic,
     solve_compact_renewal_network,
     solve_renewal_network,
@@ -171,6 +176,93 @@ def _verify_marked_race_diffrax() -> dict:
     }
 
 
+def _verify_positivity_and_fisher_bias_bound() -> dict:
+    """Verify Theorem 4: global Metzler simplex invariance of Pos-Sens 33 and Fisher-metric bias bound."""
+    pos_summary = json.loads(
+        (ROOT / "results" / "archived" / "positive_sensitivity_summary.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    psi_star = np.asarray(pos_summary["psi_star"], dtype=float)
+    rng = np.random.default_rng(2026)
+
+    max_col_sum_err = 0.0
+    min_off_diag = 0.0
+    min_pos33_prob = 1.0
+    for _ in range(25):
+        th = np.r_[
+            rng.uniform(np.log(0.95), np.log(3.8), size=3),
+            rng.uniform(np.log(3.0), np.log(12.0), size=3),
+        ]
+        gen, fresh = map(np.asarray, pos33_cycle_matrices(th, psi_star))
+        off_diag = gen - np.diag(np.diag(gen))
+        min_off_diag = min(min_off_diag, float(off_diag.min()))
+        max_col_sum_err = max(max_col_sum_err, float(np.max(np.abs(gen.sum(axis=0)))))
+        assert float(fresh.min()) >= 0.0
+        assert float(np.max(np.abs(fresh.sum(axis=0) - 1.0))) < 1e-14
+        for t in (1e-4, 1e-2, 0.05, 0.25, 1.5):
+            p_t = READ_POS33 @ expm(t * gen) @ fresh
+            min_pos33_prob = min(min_pos33_prob, float(p_t.min()))
+            assert float(np.max(np.abs(p_t.sum(axis=0) - 1.0))) < 1e-13
+
+    assert min_off_diag >= 0.0 and max_col_sum_err < 1e-13 and min_pos33_prob > 0.0
+
+    # Contrast with signed Baur et al. Interp. 33 away from symmetry (exhibits negative early probability)
+    q33, _ = build_interpolatory_basis(33)
+    sp33_eval = make_interpolatory_engine(q33)
+    th0 = np.log([2.0, 2.0, 2.0, 6.0, 6.0, 6.0])
+    th_het = th0 + 0.15 * np.array([1.0, 0.0, -1.0, -1.0, 1.0, 0.0])
+    sp33_min_early = float(sp33_eval(th_het)[0][:2].min())
+    assert sp33_min_early < 0.0
+
+    # Verify Theorem 4's orthogonal-projector Fisher-metric misspecification bound:
+    # ||I_r^{1/2} (theta_r^* - theta_eps)||_2 <= ||D_p^{1/2} dp||_2 + eps * ||D_p^{1/2} dJ h||_2 + O(||dp||^2 + eps^2)
+    full_eval = make_cycle_engine(reduced=False)
+    pos_eval = make_positive_33_engine(psi_star)
+    sample = np.arange(2, 14)
+    pf0, jf0 = full_eval(th0)
+    pr0, jr0 = pos_eval(th0)
+    p_vec = pr0[sample].ravel()
+    dp_vec = p_vec - pf0[sample].ravel()
+    jr_mat = jr0[sample].reshape(-1, 6)
+    dj_mat = jr_mat - jf0[sample].reshape(-1, 6)
+
+    w_diag = 1.0 / p_vec  # proportional to D_p with uniform stratum weights
+    ir_mat = jr_mat.T @ (w_diag[:, None] * jr_mat)
+    # Check column orthonormality of U = D_p^{1/2} J_r I_r^{-1/2}
+    eigvals, eigvecs = np.linalg.eigh(ir_mat)
+    ir_inv_sqrt = eigvecs @ np.diag(1.0 / np.sqrt(eigvals)) @ eigvecs.T
+    ir_sqrt = eigvecs @ np.diag(np.sqrt(eigvals)) @ eigvecs.T
+    u_mat = (np.sqrt(w_diag)[:, None] * jr_mat) @ ir_inv_sqrt
+    ortho_err = float(np.max(np.abs(u_mat.T @ u_mat - np.eye(6))))
+    assert ortho_err < 1e-12
+
+    h_dir = np.array([1.0, 0.0, -1.0, -1.0, 1.0, 0.0])
+    eps = 0.02
+    lhs_linear = float(
+        np.linalg.norm(
+            ir_sqrt
+            @ np.linalg.solve(
+                ir_mat, jr_mat.T @ (w_diag * (-dp_vec - eps * (dj_mat @ h_dir)))
+            )
+        )
+    )
+    rhs_bound = float(
+        np.linalg.norm(np.sqrt(w_diag) * dp_vec)
+        + eps * np.linalg.norm(np.sqrt(w_diag) * (dj_mat @ h_dir))
+    )
+    assert lhs_linear <= rhs_bound + 1e-14
+    return {
+        "metzler_min_off_diagonal": min_off_diag,
+        "generator_col_sum_max_abs": max_col_sum_err,
+        "pos33_min_early_probability": min_pos33_prob,
+        "sp33_min_early_probability": sp33_min_early,
+        "fisher_projector_orthonormality_error": ortho_err,
+        "linearized_fisher_bias": lhs_linear,
+        "fisher_whitened_residual_bound": rhs_bound,
+    }
+
+
 def _verify_interpolatory_projection() -> dict:
     q33, info33 = build_interpolatory_basis(33)
     assert info33["relative_span_residual"] < 1e-14
@@ -293,7 +385,8 @@ def main() -> None:
         },
         "duhamel_gradient_defect": _verify_duhamel_gradient_defect(),
         "interpolatory_projection_baur2011": _verify_interpolatory_projection(),
-        "theorem_4_two_preparation_rank": 2,
+        "theorem_4_positive_sensitivity_reduction": _verify_positivity_and_fisher_bias_bound(),
+        "theorem_5_two_preparation_rank": 2,
         "proposition_2_lag2_covariance": cov_lag2,
     }
 

@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 17 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 21 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -96,10 +96,17 @@ def verify_headline_numbers() -> dict:
     nm = json.loads((ARCH / "neural_memory_summary.json").read_text(encoding="utf-8"))
     rt6 = json.loads((ARCH / "renewal_transfer_six_parameter.json").read_text(encoding="utf-8"))
     rvm = json.loads((ARCH / "real_visit_memory.json").read_text(encoding="utf-8"))
+    pos = json.loads((ARCH / "positive_sensitivity_summary.json").read_text(encoding="utf-8"))
+    gsc = json.loads((ARCH / "graph_scaling_summary.json").read_text(encoding="utf-8"))
+    mnb = json.loads((ARCH / "modern_neural_baselines.json").read_text(encoding="utf-8"))
+    rcb = json.loads((ARCH / "real_continuous_benchmarks.json").read_text(encoding="utf-8"))
 
-    # Finding 1: Compression & sensitivity interpolation
+    # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
     assert joint_primary == [238, 161, 239, 164]
+    assert pos["overall"]["primary"]["pos33"]["joint"] == 228
+    assert pos["overall"]["primary"]["pos33"]["early_negative_fits"] == 0
+    assert pos["overall"]["late"]["pos33"]["early_negative_fits"] == 0
 
     # Finding 2: Fisher design & NoMaSS benchmark
     recs = ev["benchmark"]
@@ -113,23 +120,49 @@ def verify_headline_numbers() -> dict:
     ]
     assert len(ratios) == 46 and round(float(np.median(ratios)), 2) == 19.32
 
-    # Finding 3: Neural clocks
+    # Graph & out-degree scaling + 48-parameter Gamma recovery
+    max_comp = max(r["state_compression_ratio"] for r in gsc["gradient_and_state_scaling"])
+    assert round(max_comp, 2) == 1074.36
+    assert [r["ph_joint_hits_of_5"] for r in gsc["highdim_gamma_recovery"]] == [5, 5, 5]
+    assert [r["mc_joint_hits_of_5"] for r in gsc["highdim_gamma_recovery"]] == [0, 0, 0]
+
+    # Finding 3: Neural clocks vs 3-start Latent ODE, LTC, and S4D
     kl_nc = round(float(nm["primary"]["models"]["neural_phase"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_ms = round(float(nm["primary"]["models"]["mean_shape"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_lo = round(float(nm["primary"]["models"]["latent_ode"]["metrics"]["balanced_kl"]["median"]), 5)
-    assert (kl_nc, kl_ms, kl_lo) == (0.00197, 0.01095, 0.08315)
+    kl_ltc = round(float(mnb["primary"]["ltc_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
+    kl_s4d = round(float(mnb["primary"]["s4d_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
+    assert (kl_nc, kl_ms, kl_lo, kl_ltc, kl_s4d) == (0.00197, 0.01095, 0.08315, 0.05644, 0.06793)
 
-    # Finding 4: Persistent speed & real visit memory
+    # Finding 4: Real continuous-time networks & cross-visit persistence
+    ec_zs_drn = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]["drn_fresh_only"]["aged_kl"]
+    ec_zs_lode = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]["latent_ode_fresh_only"]["aged_kl"]
+    sl_comp = rcb["sleep_5node_branching_network"]["state_compression_ratio"]
+    assert (ec_zs_drn, ec_zs_lode, sl_comp) == (0.05691, 0.42433, 52.51)
     n2_gain = round(float(rvm["datasets"]["sleep"]["models"]["adjusted"]["previous"]["2"]["gain"]), 5)
     ecoli_si = round(float(rvm["datasets"]["nomass"]["models"]["adjusted"]["previous"]["all"]["gain"]), 5)
     assert (n2_gain, ecoli_si) == (0.01201, 0.01293)
 
     return {
-        "cyclic_primary_joint_hits_of_280": dict(zip(("full48", "sym33", "sp33", "sp18"), joint_primary)),
+        "cyclic_primary_joint_hits_of_280": {
+            **dict(zip(("full48", "sym33", "sp33", "sp18"), joint_primary)),
+            "pos33": pos["overall"]["primary"]["pos33"]["joint"],
+        },
+        "pos33_negative_early_fits_of_400": 0,
+        "max_marked_race_compression": max_comp,
+        "highdim_ph_joint_hits_of_15": 15,
         "fisher_shape_median_pct": {"ph": ph_med, "nomass": nm_med},
         "fisher_cold_speedup_median": round(float(np.median(ratios)), 2),
         "trait_datasets": tf["audit"]["datasets"],
-        "neural_clock_balanced_kl": {"neural_clock": kl_nc, "moment_ph": kl_ms, "latent_ode": kl_lo},
+        "neural_clock_balanced_kl": {
+            "neural_clock": kl_nc,
+            "moment_ph": kl_ms,
+            "ltc_3start": kl_ltc,
+            "s4d_3start": kl_s4d,
+            "latent_ode": kl_lo,
+        },
+        "real_continuous_zeroshot_aged_kl": {"ecoli_drn": ec_zs_drn, "ecoli_lode": ec_zs_lode},
+        "sleep_5node_state_compression": sl_comp,
         "persistent_carry_targets": list(rt6["targets"].keys()),
         "real_visit_gains_nats": {"sleep_n2": n2_gain, "ecoli_si": ecoli_si},
     }
