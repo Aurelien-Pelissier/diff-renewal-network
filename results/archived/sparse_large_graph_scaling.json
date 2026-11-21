@@ -1,0 +1,92 @@
+{
+  "dense_vs_sparse_v16_check": {
+    "value_max_abs_error": 3.552713678800501e-15,
+    "gradient_relative_l2_error": 2.7828100429984582e-14
+  },
+  "scaling_rows": [
+    {
+      "nodes": 16,
+      "out_degree": 2,
+      "stages": 16,
+      "parameters": 64,
+      "tensor_states": 4096,
+      "compiled_states": 496,
+      "dense_matrix_mb": 1.876953125,
+      "sparse_operator_mb": 0.01513671875,
+      "memory_compression_vs_dense": 124.0,
+      "forward_warm_ms": 15.407337411306798,
+      "grad_warm_ms": 36.05881920084357,
+      "simplex_mass_error": 7.771561172376096e-16
+    },
+    {
+      "nodes": 64,
+      "out_degree": 2,
+      "stages": 16,
+      "parameters": 256,
+      "tensor_states": 16384,
+      "compiled_states": 1984,
+      "dense_matrix_mb": 30.03125,
+      "sparse_operator_mb": 0.060546875,
+      "memory_compression_vs_dense": 496.0,
+      "forward_warm_ms": 6.791473785415292,
+      "grad_warm_ms": 25.011325418017805,
+      "simplex_mass_error": 4.440892098500626e-16
+    },
+    {
+      "nodes": 128,
+      "out_degree": 2,
+      "stages": 16,
+      "parameters": 512,
+      "tensor_states": 32768,
+      "compiled_states": 3968,
+      "dense_matrix_mb": 120.125,
+      "sparse_operator_mb": 0.12109375,
+      "memory_compression_vs_dense": 992.0,
+      "forward_warm_ms": 11.644797795452178,
+      "grad_warm_ms": 39.58290359005332,
+      "simplex_mass_error": 7.771561172376096e-16
+    },
+    {
+      "nodes": 256,
+      "out_degree": 2,
+      "stages": 16,
+      "parameters": 1024,
+      "tensor_states": 65536,
+      "compiled_states": 7936,
+      "dense_matrix_mb": 480.5,
+      "sparse_operator_mb": 0.2421875,
+      "memory_compression_vs_dense": 1984.0,
+      "forward_warm_ms": 22.96622139401734,
+      "grad_warm_ms": 78.80292581394315,
+      "simplex_mass_error": 2.220446049250313e-16
+    },
+    {
+      "nodes": 512,
+      "out_degree": 2,
+      "stages": 16,
+      "parameters": 2048,
+      "tensor_states": 131072,
+      "compiled_states": 15872,
+      "dense_matrix_mb": 1922.0,
+      "sparse_operator_mb": 0.484375,
+      "memory_compression_vs_dense": 3968.0,
+      "forward_warm_ms": 59.7263916162774,
+      "grad_warm_ms": 202.6511545991525,
+      "simplex_mass_error": 4.440892098500626e-16
+    },
+    {
+      "nodes": 1024,
+      "out_degree": 2,
+      "stages": 16,
+      "parameters": 4096,
+      "tensor_states": 262144,
+      "compiled_states": 31744,
+      "dense_matrix_mb": 7688.0,
+      "sparse_operator_mb": 0.96875,
+      "memory_compression_vs_dense": 7936.0,
+      "forward_warm_ms": 121.3603314012289,
+      "grad_warm_ms": 451.86087978072464,
+      "simplex_mass_error": 4.440892098500626e-16
+    }
+  ]
+}

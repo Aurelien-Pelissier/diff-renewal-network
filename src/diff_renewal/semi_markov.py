@@ -78,6 +78,13 @@ def build_edge_memory_hyper_generator(
     fibre_fluxes: dict[int, tuple[tuple[int, jnp.ndarray], ...]] = {}
 
     for d_v, f_ids in by_deg.items():
+        if d_v == 0:
+            for fi in f_ids:
+                fibre_blk[fi] = jnp.zeros((1, 1), dtype=params.dtype)
+                fibre_ent[fi] = jnp.ones((1,), dtype=params.dtype)
+                fibre_surv[fi] = jnp.ones((1,), dtype=params.dtype)
+                fibre_fluxes[fi] = ()
+            continue
         f_arr = jnp.array(f_ids, dtype=jnp.int32)
         grp_mat = jnp.array([outgoing[fibre_nodes[fi]] for fi in f_ids], dtype=jnp.int32)
 

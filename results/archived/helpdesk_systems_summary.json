@@ -1,0 +1,338 @@
+{
+  "dataset": {
+    "name": "IT Helpdesk Ticketing Management Event Log (Polato, 2017)",
+    "doi": "10.4121/uuid:0c60edf1-6f83-4e75-9367-4c63b3e9d5bb",
+    "md5": "a91d74377c55be5cbdfda05dae69db30",
+    "tickets_used": 4576,
+    "nodes": 5,
+    "edges": 9,
+    "aged_threshold_days": 7.0,
+    "horizons_days": [
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      15.0,
+      25.0,
+      35.0,
+      45.0
+    ],
+    "sojourn_statistics": {
+      "Assign seriousness": {
+        "n": 4499,
+        "mean_days": 4.09434108042528,
+        "median_days": 0.6766666666666666,
+        "sd_days": 7.306154328579535,
+        "cv": 1.784451804347635
+      },
+      "Take in charge ticket": {
+        "n": 4950,
+        "mean_days": 3.943346277590722,
+        "median_days": 0.2199305555555553,
+        "sd_days": 7.5212360236010545,
+        "cv": 1.9073232463359333
+      },
+      "Wait": {
+        "n": 1339,
+        "mean_days": 10.453509243700385,
+        "median_days": 7.305624999999999,
+        "sd_days": 9.93522489793247,
+        "cv": 0.9504200614659379
+      },
+      "Resolve ticket": {
+        "n": 4719,
+        "mean_days": 28.545468044861984,
+        "median_days": 30.00027777777778,
+        "sd_days": 13.116358974432174,
+        "cv": 0.4594900652467333
+      }
+    }
+  },
+  "state_counts": {
+    "ctmc_states": 5,
+    "ctmc_params": 9,
+    "renewal_drn_tensor_states_K6": 325,
+    "renewal_drn_race_states_K6": 50,
+    "renewal_drn_params_K6": 63,
+    "edge_memory_drn_states_K6": 151,
+    "edge_memory_drn_params_K6": 174,
+    "neural_cme_params": 289,
+    "latent_ode_params": 489,
+    "neural_competing_risks_params": 324
+  },
+  "cv_5fold_summary": {
+    "ctmc": {
+      "fresh_kl_mean": 0.14184044968438725,
+      "fresh_kl_sd": 0.00279863843461523,
+      "aged_kl_mean": 0.1555831488615797,
+      "aged_kl_sd": 0.008582169367908501,
+      "folds": {
+        "fresh_kl": [
+          0.14271784142708865,
+          0.13959833616074255,
+          0.14469950822070937,
+          0.1439430077974682,
+          0.13824355481592746
+        ],
+        "aged_kl": [
+          0.1565820851331797,
+          0.14693583736268198,
+          0.15103166201332252,
+          0.1695477574052388,
+          0.15381840239347552
+        ]
+      }
+    },
+    "renewal_drn_fresh_only": {
+      "fresh_kl_mean": 0.05964912024780735,
+      "fresh_kl_sd": 0.004409650357093967,
+      "aged_kl_mean": 0.06866308004322957,
+      "aged_kl_sd": 0.008178419764894756,
+      "folds": {
+        "fresh_kl": [
+          0.06343128790307007,
+          0.057098490553979184,
+          0.05954577143745769,
+          0.06439174192258436,
+          0.053778309421945475
+        ],
+        "aged_kl": [
+          0.07121817397392792,
+          0.05768665399568277,
+          0.06505277790674867,
+          0.07992872443903876,
+          0.06942906990074978
+        ]
+      }
+    },
+    "renewal_drn_joint": {
+      "fresh_kl_mean": 0.06541775513511291,
+      "fresh_kl_sd": 0.003265119552540391,
+      "aged_kl_mean": 0.033191118416942875,
+      "aged_kl_sd": 0.0015576090338041966,
+      "folds": {
+        "fresh_kl": [
+          0.06380205002384359,
+          0.06754410170779516,
+          0.07003901885991128,
+          0.06355460627759733,
+          0.062148998806417236
+        ],
+        "aged_kl": [
+          0.03156644340669029,
+          0.031564500334574454,
+          0.03371757335571144,
+          0.03409007117954428,
+          0.035017003808193954
+        ]
+      }
+    },
+    "edge_memory_drn_fresh_only": {
+      "fresh_kl_mean": 0.025547928212666805,
+      "fresh_kl_sd": 0.0029264591640998983,
+      "aged_kl_mean": 0.03484321810868053,
+      "aged_kl_sd": 0.002082524523511872,
+      "folds": {
+        "fresh_kl": [
+          0.02423583840245949,
+          0.024849961512621525,
+          0.03066951550833973,
+          0.024690892893249484,
+          0.023293432746663803
+        ],
+        "aged_kl": [
+          0.0333472838475143,
+          0.03206093887617026,
+          0.035579281131901855,
+          0.037140379254619396,
+          0.03608820743319686
+        ]
+      }
+    },
+    "edge_memory_drn_joint": {
+      "fresh_kl_mean": 0.024310745833080516,
+      "fresh_kl_sd": 0.0033201084434817535,
+      "aged_kl_mean": 0.02296427100306615,
+      "aged_kl_sd": 0.0013299848600871135,
+      "folds": {
+        "fresh_kl": [
+          0.02149013020001332,
+          0.02419459946653915,
+          0.02925436045363822,
+          0.025506190089539606,
+          0.021108448955672272
+        ],
+        "aged_kl": [
+          0.02097487289404726,
+          0.02244506152934599,
+          0.023375813316644508,
+          0.02450267461609369,
+          0.023522932659199303
+        ]
+      }
+    },
+    "neural_cme_fresh_only": {
+      "fresh_kl_mean": 0.018221308542693056,
+      "fresh_kl_sd": 0.0021790878900677445,
+      "aged_kl_mean": 0.3316210746071785,
+      "aged_kl_sd": 0.06329980414443982,
+      "folds": {
+        "fresh_kl": [
+          0.01690590102590662,
+          0.017406239380347,
+          0.022075402725917903,
+          0.01771977109991216,
+          0.016999228481381596
+        ],
+        "aged_kl": [
+          0.2919375676809775,
+          0.35968797787667295,
+          0.26946712189984484,
+          0.30900522797831265,
+          0.4280074776000847
+        ]
+      }
+    },
+    "neural_cme_joint": {
+      "fresh_kl_mean": 0.019489834196282908,
+      "fresh_kl_sd": 0.002350946793997723,
+      "aged_kl_mean": 0.012024007976731085,
+      "aged_kl_sd": 0.003152139838105337,
+      "folds": {
+        "fresh_kl": [
+          0.018332847779534697,
+          0.01748635502342585,
+          0.02352508098166826,
+          0.018840997081499365,
+          0.01926389011528637
+        ],
+        "aged_kl": [
+          0.00891696008974378,
+          0.01113912451335199,
+          0.017290633348176838,
+          0.010771270158149451,
+          0.012002051774233373
+        ]
+      }
+    },
+    "latent_ode_fresh_only": {
+      "fresh_kl_mean": 0.009118976241850067,
+      "fresh_kl_sd": 0.0033206677591180677,
+      "aged_kl_mean": 0.2542239093859726,
+      "aged_kl_sd": 0.025700120553328976,
+      "folds": {
+        "fresh_kl": [
+          0.005313246770953982,
+          0.0097562935494688,
+          0.011881265875647236,
+          0.012601128503656914,
+          0.006042946509523408
+        ],
+        "aged_kl": [
+          0.23673785736338387,
+          0.2352496475698612,
+          0.2533765787005136,
+          0.29817152554851833,
+          0.2475839377475862
+        ]
+      }
+    },
+    "latent_ode_joint": {
+      "fresh_kl_mean": 0.01111436502578656,
+      "fresh_kl_sd": 0.005333232722064863,
+      "aged_kl_mean": 0.014905670880644605,
+      "aged_kl_sd": 0.0013619733618688045,
+      "folds": {
+        "fresh_kl": [
+          0.019762100141375517,
+          0.006488348873287801,
+          0.01076157756393024,
+          0.011596701902135029,
+          0.006963096648204213
+        ],
+        "aged_kl": [
+          0.016430056257690683,
+          0.014729351644445575,
+          0.012812050718622873,
+          0.014829072924813943,
+          0.015727822857649947
+        ]
+      }
+    }
+  },
+  "coarsening_panel_sweep": [
+    {
+      "delta_t_days": 0.5,
+      "n_grid_snapshots": 11,
+      "panel_transitions": 301158,
+      "observed_unconnected_multihop_fraction": 0.002154961308649231,
+      "neural_competing_risks_direct_kl": 0.958587876044359,
+      "neural_competing_risks_composed_kl": 0.23008822837288115,
+      "neural_competing_risks_best_kl": 0.23008822837288115,
+      "ctmc_panel_kl": 0.12144243326667313,
+      "drn_multihop_kl": 0.0637265726533194,
+      "drn_multihop_aged_kl": 0.08079475871793737,
+      "edge_memory_drn_multihop_kl": 0.031111541783313868,
+      "edge_memory_drn_multihop_aged_kl": 0.037953318354117666,
+      "neural_cme_multihop_kl": 0.023270960955554025,
+      "neural_cme_multihop_aged_kl": 0.21380868157020333,
+      "latent_ode_multihop_kl": 0.01582770818851102,
+      "latent_ode_multihop_aged_kl": 0.12677683755706692
+    },
+    {
+      "delta_t_days": 2.0,
+      "n_grid_snapshots": 10,
+      "panel_transitions": 76818,
+      "observed_unconnected_multihop_fraction": 0.0018650917003419335,
+      "neural_competing_risks_direct_kl": 0.9084069527224605,
+      "neural_competing_risks_composed_kl": 0.2437490264562192,
+      "neural_competing_risks_best_kl": 0.2437490264562192,
+      "ctmc_panel_kl": 0.12580289095517702,
+      "drn_multihop_kl": 0.06597478625160674,
+      "drn_multihop_aged_kl": 0.04473346295510043,
+      "edge_memory_drn_multihop_kl": 0.03621314814652141,
+      "edge_memory_drn_multihop_aged_kl": 0.03755973104846495,
+      "neural_cme_multihop_kl": 0.02645252846894739,
+      "neural_cme_multihop_aged_kl": 0.2945905423955732,
+      "latent_ode_multihop_kl": 0.022361494901260846,
+      "latent_ode_multihop_aged_kl": 0.15711347546045237
+    },
+    {
+      "delta_t_days": 7.0,
+      "n_grid_snapshots": 6,
+      "panel_transitions": 23214,
+      "observed_unconnected_multihop_fraction": 0.0012360939431396785,
+      "neural_competing_risks_direct_kl": 1.5247561019355151,
+      "neural_competing_risks_composed_kl": 0.7951633292835129,
+      "neural_competing_risks_best_kl": 0.7951633292835129,
+      "ctmc_panel_kl": 0.15987906023253182,
+      "drn_multihop_kl": 0.09572596292241702,
+      "drn_multihop_aged_kl": 0.04048660625845309,
+      "edge_memory_drn_multihop_kl": 0.08288617222746134,
+      "edge_memory_drn_multihop_aged_kl": 0.037992096294441474,
+      "neural_cme_multihop_kl": 0.040342335244512806,
+      "neural_cme_multihop_aged_kl": 0.28388602269854285,
+      "latent_ode_multihop_kl": 0.0620418069835653,
+      "latent_ode_multihop_aged_kl": 0.20943060511409028
+    },
+    {
+      "delta_t_days": 14.0,
+      "n_grid_snapshots": 3,
+      "panel_transitions": 12887,
+      "observed_unconnected_multihop_fraction": 0.0005963740458015267,
+      "neural_competing_risks_direct_kl": 2.7916444571130654,
+      "neural_competing_risks_composed_kl": 2.251648746537919,
+      "neural_competing_risks_best_kl": 2.251648746537919,
+      "ctmc_panel_kl": 0.1895799430264385,
+      "drn_multihop_kl": 0.3363933994855645,
+      "drn_multihop_aged_kl": 0.07049407698877436,
+      "edge_memory_drn_multihop_kl": 0.4041793646292619,
+      "edge_memory_drn_multihop_aged_kl": 0.06286772591101289,
+      "neural_cme_multihop_kl": 0.0814024216801298,
+      "neural_cme_multihop_aged_kl": 0.22889655234914344,
+      "latent_ode_multihop_kl": 0.2044638302372667,
+      "latent_ode_multihop_aged_kl": 0.24352741360138733
+    }
+  ]
+}

@@ -49,6 +49,7 @@ from diff_renewal import (  # noqa: E402
     network_state_size,
     pos33_cycle_matrices,
     resolvent_sensitivity_diagnostic,
+    seicr_mean_field_predict,
     solve_compact_renewal_network,
     solve_renewal_network,
 )
@@ -287,10 +288,10 @@ def _verify_hyper_race_and_universal_pos_sens() -> dict:
     assert float(p_ag.min()) > 0.0 and float(np.max(np.abs(p_ag.sum(axis=0) - 1.0))) < 1e-13
 
     return {
-        "proposition_3_naive_states": naive_dim,
-        "proposition_3_compiled_states": comp_dim,
-        "proposition_3_win_prob_quad_error": win_err,
-        "proposition_3_autodiff_grad_error": hyper_grad_err,
+        "proposition_2_hyper_race_naive_states": naive_dim,
+        "proposition_2_hyper_race_compiled_states": comp_dim,
+        "proposition_2_hyper_race_win_prob_quad_error": win_err,
+        "proposition_2_hyper_race_autodiff_grad_error": hyper_grad_err,
         "universal_pos_sens_certificate": cert,
         "edge_memory_hyper_metzler_col_sum_err": float(np.max(np.abs(gen_em.sum(axis=0)))),
     }
@@ -403,6 +404,126 @@ def _verify_interpolatory_projection() -> dict:
     }
 
 
+def _verify_multiplicity_sharpness_and_converse() -> dict:
+    """Verify:
+    1. Theorem 3 Sharpness: Repeated survival zero (m_zeta = 2) under shape/numerator
+       perturbation restores exact pole order m_zeta = 2 (eliminating the square-free
+       assumption via Kalman canonical decomposition -> exact d_sens = V*n).
+    2. Theorem 5 (Aldous-Shepp Positive-Reduction Impossibility Lower Bound): Every
+       positive K_r-stage Markov clock approximating shape k > K_r obeys exact W2 cone
+       distance >= (1 - sqrt(K_r/k)) / sqrt(K_r + 1) and mean-matched weighted survival
+       integral >= (m^2 / 2) * (1/K_r - 1/k).
+    3. Proposition 4 (MeanFieldDRN Global Positivity & Simplex Invariance).
+    """
+    # 1. Symbolic repeated-zero (m_zeta = 2) shape perturbation on 3-node cycle
+    cycle = sp.Matrix([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+    pi = sp.ones(3, 1) / 3
+    eps_sym = sp.Symbol("eps")
+    zero = -sp.Rational(3, 2)
+    n0 = (s_sym - zero) ** 2
+    d0 = (s_sym + 1) ** 3
+    s0 = n0 / d0
+    # Shape perturbation on node 0 shifting numerator N_0(s) = N(s) + eps * 1 (q(zero) = 1 != 0)
+    laws_eps = [(n0 + eps_sym) / d0, s0, s0]
+    y_eps = (
+        sp.diag(*laws_eps)
+        * (sp.eye(3) - cycle * sp.diag(*[1 - s_sym * x for x in laws_eps])).inv()
+        * pi
+    )
+    dy_shape = [sp.cancel(sp.diff(x, eps_sym).subs(eps_sym, 0)) for x in y_eps]
+    # Multiply by (s - zero)^2 and evaluate at s = zero -> must equal (pi_0 / zero) * (e_0 - pi) != 0!
+    principal_m2 = sp.Matrix([sp.simplify(sp.cancel((s_sym - zero) ** 2 * x).subs(s_sym, zero)) for x in dy_shape])
+    expected_m2 = (pi[0] / zero) * (sp.eye(3)[:, 0] - pi)
+    assert principal_m2 == expected_m2
+    # Confirm nominal transfer is analytic at s = zero
+    nom3 = sp.diag(*([s0] * 3)) * (sp.eye(3) - cycle * (1 - s_sym * s0)).inv()
+    assert all(sp.denom(sp.cancel(x)).subs(s_sym, zero) != 0 for x in nom3)
+
+    # 2. Aldous-Shepp positive-reduction lower bound check across (K_r, k) with k > K_r
+    from scipy.optimize import minimize
+    from scipy.stats import gamma as sp_gamma
+
+    as_rows = []
+    u_grid = np.linspace(0.0, 5.0, 500)
+    du = u_grid[1] - u_grid[0]
+    q_grid = np.linspace(0.002, 0.998, 250)
+    for k_red, k_true in [(6, 8), (6, 12), (10, 14), (10, 16)]:
+        m_true = 1.0
+        # Exact target Erlang(k_true, rate=k_true) quantiles & survival (mean=1, var=1/k_true)
+        target_q = sp_gamma.ppf(q_grid, a=k_true, scale=1.0 / k_true)
+        target_s = sp_gamma.sf(u_grid, a=k_true, scale=1.0 / k_true)
+
+        # Optimize best mean-matched K_r-stage positive Coxian clock (Aldous-Shepp extremum is Erlang(K_r))
+        # Test random positive Coxian chains + Erlang(K_r) boundary to verify inequality holds everywhere
+        # For Erlang(K_r, rate=K_r), mean=1, var=1/K_r (minimum variance among ALL positive K_r-stage PH!)
+        opt_q = sp_gamma.ppf(q_grid, a=k_red, scale=1.0 / k_red)
+        opt_s = sp_gamma.sf(u_grid, a=k_red, scale=1.0 / k_red)
+        w2_erlang = float(np.sqrt(np.mean((opt_q - target_q) ** 2)))
+        w2_lb_unconstrained = float((1.0 - np.sqrt(k_red / k_true)) / np.sqrt(k_red + 1.0))
+        w2_lb_mean_matched = float(1.0 / np.sqrt(k_red) - 1.0 / np.sqrt(k_true))
+        weighted_surv_int = float(np.trapz(u_grid * np.abs(opt_s - target_s), u_grid))
+        surv_lb = 0.5 * (1.0 / k_red - 1.0 / k_true)
+        assert w2_erlang >= w2_lb_mean_matched - 1e-3
+        assert w2_erlang >= w2_lb_unconstrained
+        assert weighted_surv_int >= surv_lb - 1e-3
+
+        # Also check 10 random positive non-Erlang K_r-stage Coxian clocks obey the cone lower bound!
+        rng = np.random.default_rng(100 * k_red + k_true)
+        for _ in range(10):
+            r_raw = rng.uniform(0.5, 4.0, size=k_red)
+            b_raw = rng.dirichlet(np.ones(k_red))
+            # Exact mean and second moment of forward chain: T_j ~ Exp(r_j), entry b_raw
+            m_rem = np.cumsum(1.0 / r_raw[::-1])[::-1]
+            v_rem = np.cumsum(1.0 / (r_raw[::-1] ** 2))[::-1]
+            mean_ph = float(b_raw @ m_rem)
+            var_ph = float(b_raw @ (v_rem + (m_rem - mean_ph) ** 2))
+            assert var_ph / (mean_ph**2) >= (1.0 / k_red) - 1e-12
+            w2_cone_dist = float(np.sqrt((mean_ph - m_true) ** 2 + (np.sqrt(var_ph) - 1.0 / np.sqrt(k_true)) ** 2))
+            assert w2_cone_dist >= w2_lb_unconstrained - 1e-12
+
+        as_rows.append(
+            {
+                "K_r": k_red,
+                "k_true": k_true,
+                "w2_unconstrained_lower_bound": w2_lb_unconstrained,
+                "w2_mean_matched_lower_bound": w2_lb_mean_matched,
+                "w2_erlang_extremum": w2_erlang,
+                "weighted_surv_lower_bound": surv_lb,
+                "weighted_surv_erlang_extremum": weighted_surv_int,
+            }
+        )
+
+    # 3. Proposition 4: MeanFieldDRN Global Positivity & Simplex Conservation across 15 random draws
+    rng_mf = np.random.default_rng(2027)
+    ts_mf = jnp.linspace(0.5, 20.0, 25)
+    min_x = 1.0
+    max_mass_err = 0.0
+    for _ in range(15):
+        p_mf, x_mf = seicr_mean_field_predict(
+            jnp.array(rng_mf.uniform(0.5, 3.0)),
+            jnp.array(rng_mf.uniform(0.5, 3.0)),
+            jnp.array(rng_mf.uniform(1.5, 7.5)),
+            jnp.array(rng_mf.uniform(1.0, 5.0)),
+            jnp.array(rng_mf.uniform(1.5, 7.5)),
+            jnp.array(rng_mf.uniform(1.0, 5.0)),
+            jnp.array(rng_mf.uniform(1.5, 7.5)),
+            jnp.array(rng_mf.uniform(0.002, 0.05)),
+            jnp.array(rng_mf.uniform(0.002, 0.05)),
+            ts_mf,
+            stages=8,
+        )
+        min_x = min(min_x, float(jnp.min(x_mf)))
+        max_mass_err = max(max_mass_err, float(jnp.max(jnp.abs(jnp.sum(p_mf, axis=-1) - 1.0))))
+    assert min_x >= -1e-7 and max_mass_err < 1e-12
+
+    return {
+        "theorem_3_double_zero_shape_principal_coeff": list(map(str, principal_m2)),
+        "theorem_5_aldous_shepp_bounds": as_rows,
+        "proposition_4_mean_field_min_phase": min_x,
+        "proposition_4_mean_field_max_mass_err": max_mass_err,
+    }
+
+
 def main() -> None:
     alt = sp.Matrix([[0, 1], [1, 0]])
     cycle = sp.Matrix([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
@@ -448,6 +569,17 @@ def main() -> None:
     )
     assert dag_rk == 5
     hankel_cases["dag_with_sink"] = dag_rk
+
+    # Counterexamples (Appendix Table A1 Rows 7-8):
+    # 1) Reducible routing R = I on two Erlang-2 clocks -> block-Hankel order 2
+    reducible_rk = _exact_hankel_order(*_rational_network([e2, e2], sp.eye(2)))
+    assert reducible_rk == 2
+    hankel_cases["counterexample_reducible_R_I"] = reducible_rk
+    # 2) Stationary mixture preparation only (B_stat = B * pi) on 3-node Erlang-3 cycle -> order 1
+    a_c3, b_c3, c_c3 = _rational_network([e3] * 3, cycle)
+    stat_rk = _exact_hankel_order(a_c3, b_c3 * (sp.ones(3, 1) / 3), c_c3)
+    assert stat_rk == 1
+    hankel_cases["counterexample_stationary_mixture_only"] = stat_rk
 
     numerator_16 = sp.Poly(sp.cancel(((s_sym + 1) ** 16 - 1) / s_sym), s_sym)
     assert numerator_16.degree() == 15
@@ -506,9 +638,10 @@ def main() -> None:
         "duhamel_gradient_defect": _verify_duhamel_gradient_defect(),
         "interpolatory_projection_baur2011": _verify_interpolatory_projection(),
         "theorem_4_positive_sensitivity_reduction": _verify_positivity_and_fisher_bias_bound(),
-        "proposition_3_and_universal_pos_sens": _verify_hyper_race_and_universal_pos_sens(),
-        "theorem_5_two_preparation_rank": 2,
-        "proposition_2_lag2_covariance": cov_lag2,
+        "proposition_2_and_universal_pos_sens": _verify_hyper_race_and_universal_pos_sens(),
+        "multiplicity_sharpness_aldous_shepp_and_mean_field": _verify_multiplicity_sharpness_and_converse(),
+        "theorem_6_two_preparation_rank": 2,
+        "proposition_3_lag2_covariance": cov_lag2,
     }
 
     out_path = ROOT / "results" / "theory_verification.json"

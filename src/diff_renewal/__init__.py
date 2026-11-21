@@ -1,9 +1,9 @@
 """Differentiable Renewal Networks (diff_renewal).
 
 Core JAX and Diffrax primitives for differentiable phase-type renewal networks,
-exact marked-race compilation, sensitivity-interpolating model reduction,
-conditional neural waiting-time clocks, persistent individual traits, and
-scenario-robust Fisher observation design.
+exact mixed- and Hyper-Erlang marked-race compilation, positivity-preserving
+Fisher-sensitivity reduction, incoming-edge semi-Markov clocks, nonlinear
+mean-field renewal ODEs, matrix-free sparse graph solvers, and Fisher design.
 """
 
 from .baselines import (
@@ -27,6 +27,11 @@ from .diagnostics import (
     coarsened_fisher,
     efficient_fisher,
     multinomial_score_design,
+)
+from .mean_field import (
+    seicr_mean_field_predict,
+    simulate_interacting_seicr_gillespie,
+    solve_mean_field_renewal,
 )
 from .memory import (
     MemoryCutoff,
@@ -84,6 +89,11 @@ from .semi_markov import (
     build_edge_memory_hyper_generator,
     edge_memory_param_size,
 )
+from .sparse_network import (
+    apply_sparse_generator,
+    compile_sparse_regular_network,
+    solve_sparse_renewal_network,
+)
 from .traits import (
     endpoint_coefficients,
     moment_matched_logits,
@@ -101,6 +111,7 @@ __all__ = [
     "a_optimal_value_gradient",
     "adjoint_residual_estimate",
     "adjoint_sensitivity_residual",
+    "apply_sparse_generator",
     "build_edge_memory_hyper_generator",
     "build_interpolatory_basis",
     "build_universal_pos_network_generator",
@@ -111,6 +122,7 @@ __all__ = [
     "capped_network_tv_bound",
     "coarsened_fisher",
     "compact_network_state_size",
+    "compile_sparse_regular_network",
     "coxian_generator",
     "cycle_symmetry_matrices",
     "edge_memory_param_size",
@@ -142,11 +154,15 @@ __all__ = [
     "pos33_cycle_matrices",
     "predict_population_baseline",
     "resolvent_sensitivity_diagnostic",
+    "seicr_mean_field_predict",
+    "simulate_interacting_seicr_gillespie",
     "smooth_erlang_logits",
     "solve_compact_renewal_network",
     "solve_erlang_chain",
+    "solve_mean_field_renewal",
     "solve_memory",
     "solve_renewal_network",
+    "solve_sparse_renewal_network",
     "static_preserving_cutoff",
     "survivor_phases",
     "trait_mean_shape",

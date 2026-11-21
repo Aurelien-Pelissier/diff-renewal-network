@@ -12,7 +12,9 @@
     "distinct_clocks_shared_zero": 3,
     "distinct_clocks_coprime": 4,
     "repeated_double_zero_cycle": 7,
-    "dag_with_sink": 5
+    "dag_with_sink": 5,
+    "counterexample_reducible_R_I": 2,
+    "counterexample_stationary_mixture_only": 1
   },
   "theorem_3_erlang16": {
     "occupation_order": 33,
@@ -54,21 +56,68 @@
     "linearized_fisher_bias": 0.017691310447873265,
     "fisher_whitened_residual_bound": 0.028540974319557225
   },
-  "proposition_3_and_universal_pos_sens": {
-    "proposition_3_naive_states": 1728,
-    "proposition_3_compiled_states": 128,
-    "proposition_3_win_prob_quad_error": 1.1102230246251565e-16,
-    "proposition_3_autodiff_grad_error": 1.30942047135707e-10,
+  "proposition_2_and_universal_pos_sens": {
+    "proposition_2_hyper_race_naive_states": 1728,
+    "proposition_2_hyper_race_compiled_states": 128,
+    "proposition_2_hyper_race_win_prob_quad_error": 1.1102230246251565e-16,
+    "proposition_2_hyper_race_autodiff_grad_error": 1.30942047135707e-10,
     "universal_pos_sens_certificate": {
       "stages_red": 10,
       "stages_full": 16,
       "cone_max_shape": 9.5,
       "sup_survival_abs_error": 0.003978968260087479,
       "sup_shape_sens_abs_error": 0.018592262532105386,
-      "calibration_seconds": 9.203023580950685
+      "calibration_seconds": 9.399147809948772
     },
     "edge_memory_hyper_metzler_col_sum_err": 1.3322676295501878e-15
   },
-  "theorem_5_two_preparation_rank": 2,
-  "proposition_2_lag2_covariance": 0.5132160000000001
+  "multiplicity_sharpness_aldous_shepp_and_mean_field": {
+    "theorem_3_double_zero_shape_principal_coeff": [
+      "-4/27",
+      "2/27",
+      "2/27"
+    ],
+    "theorem_5_aldous_shepp_bounds": [
+      {
+        "K_r": 6,
+        "k_true": 8,
+        "w2_unconstrained_lower_bound": 0.050637637655238675,
+        "w2_mean_matched_lower_bound": 0.05469489987058934,
+        "w2_erlang_extremum": 0.05517567090420546,
+        "weighted_surv_lower_bound": 0.02083333333333333,
+        "weighted_surv_erlang_extremum": 0.0485818901494197
+      },
+      {
+        "K_r": 6,
+        "k_true": 12,
+        "w2_unconstrained_lower_bound": 0.11070323109680281,
+        "w2_mean_matched_lower_bound": 0.11957315586905015,
+        "w2_erlang_extremum": 0.12037146998070893,
+        "weighted_surv_lower_bound": 0.041666666666666664,
+        "weighted_surv_erlang_extremum": 0.10453568585706596
+      },
+      {
+        "K_r": 10,
+        "k_true": 14,
+        "w2_unconstrained_lower_bound": 0.04668774885895085,
+        "w2_mean_matched_lower_bound": 0.048966524104413545,
+        "w2_erlang_extremum": 0.049171723863163506,
+        "weighted_surv_lower_bound": 0.01428571428571429,
+        "weighted_surv_erlang_extremum": 0.04170240324184191
+      },
+      {
+        "K_r": 10,
+        "k_true": 16,
+        "w2_unconstrained_lower_bound": 0.06314569726636553,
+        "w2_mean_matched_lower_bound": 0.06622776601683794,
+        "w2_erlang_extremum": 0.0664758242685561,
+        "weighted_surv_lower_bound": 0.018750000000000003,
+        "weighted_surv_erlang_extremum": 0.05620469546227794
+      }
+    ],
+    "proposition_4_mean_field_min_phase": -4.561743538262439e-09,
+    "proposition_4_mean_field_max_mass_err": 1.7763568394002505e-15
+  },
+  "theorem_6_two_preparation_rank": 2,
+  "proposition_3_lag2_covariance": 0.5132160000000001
 }

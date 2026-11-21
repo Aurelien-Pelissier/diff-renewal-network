@@ -91,6 +91,19 @@
     "results/archived/two_preparation_inverse.json": {
       "sha256": "c37fd3b65bfecd6ee039c85f0c4d3528309405ee8256d4a40bc864c847884312",
       "bytes": 14633
+    },
+    "results/archived/helpdesk_systems_summary.json": {
+      "sha256": "4dc26bd358d7e2509f86099aca7d08a44303eb07ce81b8f7b0aa9b9efbd7a657",
+      "bytes": 10557
+    },
+    "results/archived/mean_field_epidemic_summary.json": {
+      "sha256": "7ec5640b076f17d2f6ce83168ed655ff852183e60832c8d415a429a0bf83da35",
+      "bytes": 13709
+    },
+    "results/archived/sparse_large_graph_scaling.json": {
+      "sha256": "b0f8338da68e5921e94cde21b595d1167d0d3f13f863125d59968aeaf5462322",
+      "bytes": 2670
     }
-  }
+  },
+  "archive_count": 26
 }

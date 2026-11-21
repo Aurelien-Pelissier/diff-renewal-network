@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 23 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 26 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -102,6 +102,9 @@ def verify_headline_numbers() -> dict:
     rcb = json.loads((ARCH / "real_continuous_benchmarks.json").read_text(encoding="utf-8"))
     ems = json.loads((ARCH / "edge_memory_sleep_summary.json").read_text(encoding="utf-8"))
     hem = json.loads((ARCH / "hematopoiesis_branching_summary.json").read_text(encoding="utf-8"))
+    hdk = json.loads((ARCH / "helpdesk_systems_summary.json").read_text(encoding="utf-8"))
+    mfe = json.loads((ARCH / "mean_field_epidemic_summary.json").read_text(encoding="utf-8"))
+    spg = json.loads((ARCH / "sparse_large_graph_scaling.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -131,14 +134,14 @@ def verify_headline_numbers() -> dict:
     # Finding 3: Neural clocks vs 3-start Latent ODE, LTC, S4D, and Neural-CME
     kl_nc = round(float(nm["primary"]["models"]["neural_phase"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_ms = round(float(nm["primary"]["models"]["mean_shape"]["metrics"]["balanced_kl"]["median"]), 5)
-    kl_lo = round(float(nm["primary"]["models"]["latent_ode"]["metrics"]["balanced_kl"]["median"]), 5)
+    kl_lo = round(float(mnb["primary"]["latent_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_ltc = round(float(mnb["primary"]["ltc_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_s4d = round(float(mnb["primary"]["s4d_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_cme = round(float(mnb["primary"]["neural_cme_3start"]["metrics"]["balanced_kl"]["median"]), 5)
     assert (kl_nc, kl_ms, kl_lo, kl_ltc, kl_s4d, kl_cme) == (
         0.00197,
         0.01095,
-        0.08315,
+        0.07982,
         0.05644,
         0.06793,
         0.12854,
@@ -162,6 +165,19 @@ def verify_headline_numbers() -> dict:
     n2_gain = round(float(rvm["datasets"]["sleep"]["models"]["adjusted"]["previous"]["2"]["gain"]), 5)
     ecoli_si = round(float(rvm["datasets"]["nomass"]["models"]["adjusted"]["previous"]["all"]["gain"]), 5)
     assert (n2_gain, ecoli_si) == (0.01201, 0.01293)
+
+    # New Systems ML (IT Helpdesk), Nonlinear MeanFieldDRN (Influenza), & SparseDRN (V=1024) checks
+    hdk_em_zs = round(float(hdk["cv_5fold_summary"]["edge_memory_drn_fresh_only"]["aged_kl_mean"]), 4)
+    hdk_lo_zs = round(float(hdk["cv_5fold_summary"]["latent_ode_fresh_only"]["aged_kl_mean"]), 4)
+    hdk_cme_zs = round(float(hdk["cv_5fold_summary"]["neural_cme_fresh_only"]["aged_kl_mean"]), 4)
+    assert hdk_em_zs < 0.04 and hdk_lo_zs > 0.20 and hdk_cme_zs > 0.25
+    mfe_drn_ex8 = round(float(mfe["extrapolation_splits"]["days_1to8_to_9to14"]["mean_field_drn"]["test"]["mean_kl_nats"]), 4)
+    mfe_mkv_ex8 = round(float(mfe["extrapolation_splits"]["days_1to8_to_9to14"]["markov_seicr"]["test"]["mean_kl_nats"]), 4)
+    mfe_slope = round(float(mfe["kurtz_propagation_of_chaos"]["empirical_slope"]), 3)
+    assert mfe_drn_ex8 < 0.02 and mfe_mkv_ex8 > 0.05 and -0.65 <= mfe_slope <= -0.35
+    sp_1024 = [r for r in spg["scaling_rows"] if r["nodes"] == 1024][0]
+    assert sp_1024["compiled_states"] == 31744 and sp_1024["sparse_operator_mb"] < 1.0
+    assert spg["dense_vs_sparse_v16_check"]["gradient_relative_l2_error"] < 1e-10
 
     return {
         "cyclic_primary_joint_hits_of_280": {
@@ -192,6 +208,21 @@ def verify_headline_numbers() -> dict:
         "sleep_5node_state_compression": sl_comp,
         "persistent_carry_targets": list(rt6["targets"].keys()),
         "real_visit_gains_nats": {"sleep_n2": n2_gain, "ecoli_si": ecoli_si},
+        "helpdesk_zeroshot_aged_kl": {
+            "edge_memory_drn": hdk_em_zs,
+            "latent_ode": hdk_lo_zs,
+            "neural_cme": hdk_cme_zs,
+        },
+        "mean_field_influenza_day9to14_kl": {
+            "mean_field_drn": mfe_drn_ex8,
+            "markov_seicr": mfe_mkv_ex8,
+            "kurtz_slope": mfe_slope,
+        },
+        "sparse_drn_v1024": {
+            "compiled_states": sp_1024["compiled_states"],
+            "sparse_operator_mb": round(sp_1024["sparse_operator_mb"], 3),
+            "grad_warm_ms": round(sp_1024["grad_warm_ms"], 1),
+        },
     }
 
 

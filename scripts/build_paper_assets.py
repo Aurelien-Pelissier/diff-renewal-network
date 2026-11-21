@@ -20,6 +20,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.patches import FancyBboxPatch
 from matplotlib.transforms import ScaledTranslation
 import numpy as np
@@ -245,12 +246,12 @@ def build_fig1() -> None:
         (0.02, 0.25, 2.96, 2.00, PALETTE["light_blue"], PALETTE["navy"],
          "Marked & hyper-race",
          "Mixed & Hyper-Erlang\n$(MK)^d \\to M^d(1 + d(K-1))$\nUp to $1{,}074\\times$ smaller"),
-        (3.48, 0.25, 3.04, 2.00, PALETTE["light_teal"], PALETTE["teal"],
-         "Neural & edge clocks",
-         "Age & $(u{\\to}v)$ fibres\n$P_\\theta(t),\\, \\partial P_\\theta / \\partial\\theta$\nSnapshot NLL & $I(\\theta)$"),
-        (7.02, 0.25, 2.96, 2.00, PALETTE["light_amber"], PALETTE["amber"],
+        (3.48, 0.25, 3.04, 2.00, PALETTE["light_amber"], PALETTE["amber"],
          "Positive reduction",
          "$15$ modes cancel in $P$\n$P$: $33$  |  $\\partial P / \\partial\\theta$: $48$\nUniversal Pos-Sens"),
+        (7.02, 0.25, 2.96, 2.00, PALETTE["light_teal"], PALETTE["teal"],
+         "Renewal & MF solvers",
+         "Age, $(u{\\to}v)$ & mean-field\n$P_\\theta(t),\\, \\partial P_\\theta / \\partial\\theta$\nSnapshot NLL & $I(\\theta)$"),
     ]
     for x0, y0, bw, bh, fc, ec, title, body in boxes:
         patch = FancyBboxPatch(
@@ -313,7 +314,7 @@ def build_fig1() -> None:
     add_panel_tag(ax_b, "b", x_pt=-22.0, y_pt=4.0)
 
     ax_c.axhline(0.0, color=PALETTE["slate"], lw=0.6, ls=":")
-    ax_c.plot(ts, full_d, color=PALETTE["navy"], lw=1.8, label="Exact 48")
+    ax_c.plot(ts, full_d, color=PALETTE["navy"], lw=1.8, label="Full 48")
     ax_c.plot(ts, red_d, color=PALETTE["amber"], lw=1.35, ls="--", label="Sym. 33")
     ax_c.set_xlabel("Time $t$")
     ax_c.set_ylabel(r"$\partial P_A / \partial \log\lambda_A$")
@@ -478,18 +479,28 @@ def build_fig3() -> None:
     hem = load_archived("hematopoiesis_branching_summary.json")
     ev = load_archived("evidence.json")
     gsc = load_archived("graph_scaling_summary.json")
+    spg = load_archived("sparse_large_graph_scaling.json")
     records = ev["benchmark"]
 
-    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.86))
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.52))
     fig.subplots_adjust(
-        left=0.11, right=0.975, top=0.905, bottom=0.11, hspace=0.58, wspace=0.40
+        left=0.11, right=0.975, top=0.895, bottom=0.115, hspace=0.62, wspace=0.40
     )
 
-    # Panel a: Marked-race warm gradient scaling across V in {4..48} and d in {2,3,4}
+    # Panel a: Marked-race (V=4..48) & Matrix-Free SparseDRN (V=16..1024) gradient scaling
     ax_a = axes[0, 0]
     g_rows = gsc["gradient_and_state_scaling"]
+    sp_rows = spg["scaling_rows"]
+    ax_a.plot(
+        [r["nodes"] for r in sp_rows],
+        [r["grad_warm_ms"] for r in sp_rows],
+        marker="o",
+        color=PALETTE["navy"],
+        ms=3.3,
+        lw=1.55,
+        label="Sparse $d{=}2$",
+    )
     for deg, col, mk, lbl in [
-        (2, PALETTE["navy"], "o", "Race $d{=}2$"),
         (3, PALETTE["teal"], "s", "Race $d{=}3$"),
         (4, PALETTE["violet"], "^", "Race $d{=}4$"),
     ]:
@@ -499,8 +510,8 @@ def build_fig3() -> None:
             [r["compact_grad_warm_ms"] for r in sub],
             marker=mk,
             color=col,
-            ms=3.3,
-            lw=1.45,
+            ms=3.2,
+            lw=1.4,
             label=lbl,
         )
     sub_j3 = [r for r in g_rows if r["out_degree"] == 3 and r["joint_grad_warm_ms"] is not None]
@@ -514,10 +525,12 @@ def build_fig3() -> None:
         lw=1.4,
         label="Tensor $d{=}3$",
     )
+    ax_a.set_xscale("log")
     ax_a.set_yscale("log")
-    ax_a.set_xlim(2, 50)
-    ax_a.set_ylim(8.0, 700.0)
-    ax_a.set_xticks([4, 16, 32, 48])
+    ax_a.set_xlim(3.2, 1350)
+    ax_a.set_ylim(10.0, 900.0)
+    ax_a.set_xticks([4, 16, 64, 256, 1024], ["4", "16", "64", "256", "1024"])
+    ax_a.minorticks_off()
     ax_a.set_xlabel("Graph nodes $V$")
     ax_a.set_ylabel("Warm grad. (ms)")
     ax_a.legend(
@@ -748,20 +761,24 @@ def build_fig4() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Figure 5: Continuous Biological Renewal Networks & Cross-Visit Persistence
+# Figure 5: Multi-Domain Real Networks (Sleep, IT Helpdesk, Mean-Field Outbreak, Persistence)
 # ---------------------------------------------------------------------------
 def build_fig5() -> None:
     rcb = load_archived("real_continuous_benchmarks.json")
     ems = load_archived("edge_memory_sleep_summary.json")
+    hdk = load_archived("helpdesk_systems_summary.json")
+    mfe = load_archived("mean_field_epidemic_summary.json")
     rvm = load_archived("real_visit_memory.json")["datasets"]
 
-    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.38))
-    fig.subplots_adjust(left=0.115, right=0.985, top=0.73, bottom=0.20, wspace=0.52)
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.44))
+    fig.subplots_adjust(
+        left=0.12, right=0.975, top=0.862, bottom=0.118, hspace=0.72, wspace=0.49
+    )
 
-    # Panel a: 5-Node Sleep-EDF Architecture Comparison (Joint vs Zero-Shot Aged-Survivor KL)
+    # Panel a: 5-Node Human Sleep-EDF (Linear y-axis starting at 0.00 -> proportional bars!)
+    ax_a = axes[0, 0]
     sl_m = rcb["sleep_5node_branching_network"]["models_5fold_mean"]
-    x_c = np.arange(2)  # 0: Joint aged KL, 1: Zero-shot aged KL
-    y_floor = 0.015
+    x_c = np.arange(2)
     for mlabel, vals, sds, col, dx in [
         (
             "Edge-Mem",
@@ -792,86 +809,128 @@ def build_fig5() -> None:
             0.27,
         ),
     ]:
-        axes[0].bar(
+        ax_a.bar(
             x_c + dx,
-            np.asarray(vals) - y_floor,
-            bottom=y_floor,
+            np.asarray(vals),
             width=0.16,
             color=col,
             edgecolor=PALETTE["ink"],
             linewidth=0.5,
             label=mlabel,
         )
-        axes[0].errorbar(
+        ax_a.errorbar(
             x_c + dx,
             vals,
             yerr=sds,
             fmt="none",
             ecolor=PALETTE["ink"],
             elinewidth=0.75,
-            capsize=1.6,
+            capsize=1.5,
         )
-    axes[0].set_yscale("log")
-    axes[0].set_xticks(x_c, ["Sleep\n(joint)", "Sleep\n(0-shot)"])
-    axes[0].set_xlim(-0.52, 1.52)
-    axes[0].set_ylim(y_floor, 0.13)
-    axes[0].set_yticks([0.02, 0.05, 0.10], [".02", ".05", ".10"])
-    axes[0].minorticks_off()
-    axes[0].set_ylabel("Aged-survivor KL (nats)")
-    axes[0].legend(
-        loc="lower center",
-        bbox_to_anchor=(0.55, 1.02),
-        ncol=2,
-        handlelength=0.82,
-        columnspacing=0.38,
-        handletextpad=0.2,
-        labelspacing=0.18,
-        borderpad=0.05,
-    )
-    add_panel_tag(axes[0], "a", x_pt=-26.0, y_pt=25.0)
-
-    # Panel b: Single-cell E. coli division-cycle duration recovery from snapshots alone
-    rec_stats = rcb["ecoli_continuous_cycle"]["zero_shot_cycle_law_recovery"]
-    temps_x = np.arange(len(rec_stats))
-    axes[1].bar(
-        temps_x - 0.17,
-        [r["true_longitudinal_mean_min"] for r in rec_stats],
-        width=0.31,
-        color=PALETTE["slate"],
-        edgecolor=PALETTE["ink"],
-        linewidth=0.5,
-        label="True cell",
-    )
-    axes[1].bar(
-        temps_x + 0.17,
-        [r["snapshot_recovered_mean_min"] for r in rec_stats],
-        width=0.31,
-        color=PALETTE["navy"],
-        edgecolor=PALETTE["ink"],
-        linewidth=0.5,
-        label="DRN snap.",
-    )
-    axes[1].set_xticks(temps_x, [f"{r['temp_C']}\u00b0C" for r in rec_stats])
-    axes[1].set_ylim(0.0, 78.0)
-    axes[1].set_ylabel("Cycle mean (min)")
-    axes[1].legend(
+    ax_a.set_xticks(x_c, ["Sleep (joint)", "Sleep (0-shot)"])
+    ax_a.set_xlim(-0.52, 1.52)
+    ax_a.set_ylim(0.0, 0.115)
+    ax_a.set_yticks([0.0, 0.04, 0.08, 0.11], ["0", ".04", ".08", ".11"])
+    ax_a.set_ylabel("Aged KL (nats)")
+    ax_a.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=0.95,
-        columnspacing=0.5,
-        handletextpad=0.25,
+        handlelength=0.85,
+        columnspacing=0.45,
+        handletextpad=0.22,
+        labelspacing=0.18,
         borderpad=0.05,
     )
-    add_panel_tag(axes[1], "b", x_pt=-22.0, y_pt=25.0)
+    add_panel_tag(ax_a, "a", x_pt=-32.0, y_pt=20.0)
 
-    # Panel c: Longitudinal cross-visit persistence gain (before vs after covariates)
+    # Panel b: IT Helpdesk Coarsening Sweep across ALL 4 intervals {0.5, 2, 7, 14}d (log marker plot!)
+    ax_b = axes[0, 1]
+    c_rows = hdk["coarsening_panel_sweep"]
+    x_dt = np.arange(len(c_rows))
+    for mlabel, key, col, mk, ls in [
+        ("Edge-Mem 0-sh.", "edge_memory_drn_multihop_aged_kl", PALETTE["navy"], "o", "-"),
+        ("LODE 0-sh.", "latent_ode_multihop_aged_kl", PALETTE["crimson"], "d", "--"),
+        ("CME 0-sh.", "neural_cme_multihop_aged_kl", PALETTE["amber"], "^", ":"),
+        ("Neural-CR", "neural_competing_risks_best_kl", PALETTE["slate"], "s", "-."),
+    ]:
+        ys = [float(r[key]) for r in c_rows]
+        ax_b.plot(
+            x_dt,
+            ys,
+            marker=mk,
+            ls=ls,
+            color=col,
+            ms=3.6,
+            lw=1.4,
+            label=mlabel,
+        )
+    ax_b.set_yscale("log")
+    ax_b.set_xticks(x_dt, [f"{r['delta_t_days']:g}d" for r in c_rows])
+    ax_b.set_xlim(-0.25, 3.25)
+    ax_b.set_ylim(0.025, 3.2)
+    ax_b.set_yticks([0.04, 0.2, 1.0, 2.5], [".04", ".2", "1.0", "2.5"])
+    ax_b.minorticks_off()
+    ax_b.set_xlabel(r"Panel interval $\Delta t$ (IT Helpdesk)")
+    ax_b.set_ylabel("Held-out KL (nats)")
+    ax_b.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        handlelength=1.0,
+        columnspacing=0.45,
+        handletextpad=0.22,
+        labelspacing=0.18,
+        borderpad=0.05,
+    )
+    add_panel_tag(ax_b, "b", x_pt=-32.0, y_pt=20.0)
+
+    # Panel c: Nonlinear MeanFieldDRN on 1978 Influenza (Color=compartment, Linestyle=model!)
+    ax_c = axes[1, 0]
+    days_e = np.asarray(mfe["dataset"]["days"], dtype=float)
+    obs_bed = np.asarray(mfe["dataset"]["in_bed"], dtype=float)
+    obs_conv = np.asarray(mfe["dataset"]["convalescent"], dtype=float)
+    ex8 = mfe["extrapolation_splits"]["days_1to8_to_9to14"]
+    ax_c.axvline(8.5, color=PALETTE["slate"], lw=0.75, ls="--")
+    ax_c.scatter(days_e, obs_bed, s=13, color=PALETTE["navy"], marker="o", zorder=5)
+    ax_c.scatter(days_e, obs_conv, s=13, color=PALETTE["teal"], marker="s", zorder=5)
+    ax_c.plot(days_e, ex8["mean_field_drn"]["pred_in_bed"], color=PALETTE["navy"], lw=1.5, ls="-")
+    ax_c.plot(days_e, ex8["mean_field_drn"]["pred_convalescent"], color=PALETTE["teal"], lw=1.5, ls="-")
+    ax_c.plot(days_e, ex8["markov_seicr"]["pred_in_bed"], color=PALETTE["navy"], lw=1.25, ls="--")
+    ax_c.plot(days_e, ex8["markov_seicr"]["pred_convalescent"], color=PALETTE["teal"], lw=1.25, ls="--")
+    ax_c.set_xlim(0.6, 14.4)
+    ax_c.set_ylim(-10, 335)
+    ax_c.set_xticks([1, 5, 8, 11, 14])
+    ax_c.set_yticks([0, 100, 200, 300])
+    ax_c.set_xlabel("Outbreak day (1978 Influenza)")
+    ax_c.set_ylabel("Cases (of 763)")
+    leg_c = [
+        Line2D([0], [0], color=PALETTE["navy"], marker="o", ms=3.3, lw=1.4, label="In-bed"),
+        Line2D([0], [0], color=PALETTE["teal"], marker="s", ms=3.3, lw=1.4, label="Conval."),
+        Line2D([0], [0], color=PALETTE["ink"], lw=1.4, ls="-", label="MF-DRN"),
+        Line2D([0], [0], color=PALETTE["ink"], lw=1.25, ls="--", label="Markov"),
+    ]
+    ax_c.legend(
+        handles=leg_c,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        handlelength=1.1,
+        columnspacing=0.55,
+        handletextpad=0.25,
+        labelspacing=0.18,
+        borderpad=0.05,
+    )
+    add_panel_tag(ax_c, "c", x_pt=-32.0, y_pt=20.0)
+
+    # Panel d: Longitudinal cross-visit persistence gain (before vs after covariates)
+    ax_d = axes[1, 1]
     cohorts = [
         ("sleep", "2", "Sleep N2"),
         ("nomass", "all", "Si E. coli"),
-        ("tanouchi", "all", "Tanouchi"),
+        ("tanouchi", "all", "Tan. E. coli"),
     ]
-    axes[2].axvline(0.0, color=PALETTE["slate"], lw=0.8, ls="--")
+    ax_d.axvline(0.0, color=PALETTE["slate"], lw=0.8, ls="--")
     for idx_y, (dkey, subk, _) in enumerate(cohorts):
         y_coord = 2 - idx_y
         for mkey, mlabel, col, mk, dy in [
@@ -881,7 +940,7 @@ def build_fig5() -> None:
             est = rvm[dkey]["models"][mkey]["previous"][subk]
             val = 100.0 * float(est["gain"])
             lo, hi = [100.0 * float(v) for v in est["interval"]]
-            axes[2].errorbar(
+            ax_d.errorbar(
                 val,
                 y_coord + dy,
                 xerr=[[val - lo], [hi - val]],
@@ -892,11 +951,11 @@ def build_fig5() -> None:
                 capsize=2.0,
                 label=mlabel if idx_y == 0 else None,
             )
-    axes[2].set_yticks([2, 1, 0], [lbl for _, _, lbl in cohorts])
-    axes[2].set_ylim(-0.52, 2.55)
-    axes[2].set_xlim(-0.45, 2.45)
-    axes[2].set_xlabel("Gain / 100 visits (nats)")
-    axes[2].legend(
+    ax_d.set_yticks([2, 1, 0], [lbl for _, _, lbl in cohorts])
+    ax_d.set_ylim(-0.52, 2.55)
+    ax_d.set_xlim(-0.45, 2.45)
+    ax_d.set_xlabel("Gain / 100 visits (nats)")
+    ax_d.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
@@ -904,7 +963,7 @@ def build_fig5() -> None:
         handletextpad=0.2,
         borderpad=0.05,
     )
-    add_panel_tag(axes[2], "c", x_pt=-38.0, y_pt=25.0)
+    add_panel_tag(ax_d, "d", x_pt=-32.0, y_pt=20.0)
 
     export_figure(fig, "fig5_persistence_and_sleep_calibration")
 
@@ -921,6 +980,9 @@ def build_tables() -> None:
     rcb = load_archived("real_continuous_benchmarks.json")
     ems = load_archived("edge_memory_sleep_summary.json")
     hem = load_archived("hematopoiesis_branching_summary.json")
+    hdk = load_archived("helpdesk_systems_summary.json")
+    mfe = load_archived("mean_field_epidemic_summary.json")
+    spg = load_archived("sparse_large_graph_scaling.json")
     tf = load_archived("trait_fisher_summary.json")
     nm = load_archived("neural_memory_summary.json")
     nmp = load_archived("neural_memory_pulse.json")
@@ -947,7 +1009,7 @@ def build_tables() -> None:
             "\\textbf{Pos-Sens 33 (ours)}",
             "33",
             f"{pos['cases']['primary/symmetric_PH']['median_shape_percent']:.2f}\\%",
-            f"{pos['cases']['primary/mixed_150_PH']['median_shape_percent']:.2f}\\% / \\textbf{{{pos['cases']['primary/mixed_150_Gamma']['median_shape_percent']:.2f}\\%}}",
+            f"{pos['cases']['primary/mixed_150_PH']['median_shape_percent']:.2f}\\% / {pos['cases']['primary/mixed_150_Gamma']['median_shape_percent']:.2f}\\%",
             f"{pos['overall']['primary']['pos33']['joint']}/280",
             "\\textbf{0/400}",
             f"{pos['overall']['primary']['pos33']['median_paired_speedup_vs_full48']:.2f}$\\times$",
@@ -1058,7 +1120,7 @@ def build_tables() -> None:
             "\\textbf{8.3$\\times$ states}",
         ],
         [
-            "($V{=}4..12$, 16--48p)",
+            "($V{=}12$, 48p; all $V$)",
             "MC search (DE+Powell)",
             f"{hd_rec[2]['mc_rate_rms_median_pct']:.2f}\\%",
             f"{hd_rec[2]['mc_shape_rms_median_pct']:.2f}\\%",
@@ -1080,8 +1142,8 @@ def build_tables() -> None:
         t2_rows,
     )
 
-    # Table 3: Conditional neural clocks vs tuned LTC, S4D, and Latent ODE + transfer
-    pu_mod = nmp["studies"]["primary"]
+    # Table 3: Conditional neural clocks vs tuned LTC, S4D, Latent ODE, and Neural-CME + transfer
+    # Use uniform pulse_effect_rmse across all 6 rows (Forensic E6) and uniform pretrained_code at 8k (Forensic A2)
     tr_400 = rt["heldout_ph"]["400"]["arms"]
     tr_8000 = rt["heldout_ph"]["8000"]["arms"]
     t3_rows = [
@@ -1090,16 +1152,16 @@ def build_tables() -> None:
             "185",
             f"\\textbf{{{mnb['primary']['neural_phase']['metrics']['balanced_kl']['median']:.5f}}}",
             f"\\textbf{{{mnb['lognormal']['neural_phase']['metrics']['balanced_kl']['median']:.5f}}}",
-            f"\\textbf{{{100*pu_mod['neural_phase']['median_arm_rmse']['exit_increase']:.2f}\\,\\text{{pp}}}}",
+            f"\\textbf{{{100*mnb['primary']['neural_phase']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}}}",
             f"\\textbf{{{tr_400['neural_phase.pretrained_code']['balanced_kl']:.5f}}}",
-            f"\\textbf{{{tr_8000['neural_phase.pretrained_full']['balanced_kl']:.5f}}}",
+            f"\\textbf{{{tr_8000['neural_phase.pretrained_code']['balanced_kl']:.5f}}}",
         ],
         [
             "Moment PH",
             "18",
             f"{mnb['primary']['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
             f"{mnb['lognormal']['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
-            f"{100*pu_mod['mean_shape']['median_arm_rmse']['exit_increase']:.2f}\\,\\text{{pp}}",
+            f"{100*mnb['primary']['mean_shape']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
             "---",
             "---",
         ],
@@ -1155,56 +1217,52 @@ def build_tables() -> None:
         t3_rows,
     )
 
-    # Table 4: Continuous biological renewal networks & cross-visit persistence
+    # Table 4: Real-world biological, operations-queueing, nonlinear mean-field, & persistence benchmarks
     ec_m = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]
     sl_b = rcb["sleep_5node_branching_network"]
     sl_m = sl_b["models_5fold_mean"]
+    hdk_cv = hdk["cv_5fold_summary"]
+    mfe_ex8 = mfe["extrapolation_splits"]["days_1to8_to_9to14"]
     s_n2 = rvm["sleep"]["models"]["adjusted"]["previous"]["2"]
     s_ec1 = rvm["nomass"]["models"]["adjusted"]["previous"]["all"]
     s_ec2 = rvm["tanouchi"]["models"]["adjusted"]["previous"]["all"]
     t4_rows = [
         [
+            "\\textbf{IT Helpdesk (Edge-Mem)}",
+            "4,576 tkt.",
+            f"0-sh.\\ \\textbf{{{hdk_cv['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}} (vs.\\ {hdk_cv['ctmc']['aged_kl_mean']:.4f} CTMC)",
+            "7d 0-sh.: $0.038$ vs.\\ $0.209$",
+        ],
+        [
+            "\\textbf{Influenza (Mean-Field)}",
+            "763 boys",
+            f"D9--14 \\textbf{{{mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.4f}}} (vs.\\ {mfe_ex8['markov_seicr']['test']['mean_kl_nats']:.4f})",
+            f"Kurtz slope ${mfe['kurtz_propagation_of_chaos']['empirical_slope']:.3f}$",
+        ],
+        [
             "Human hematopoiesis",
             "78 FACS",
-            f"Day-7 \\textbf{{{hem['day1to5_to_day7_extrapolation']['compiled_drn']['day7_kl']:.4f}}} (vs.\\ {hem['day1to5_to_day7_extrapolation']['neural_cme']['day7_kl']:.4f})",
+            f"D7 \\textbf{{{hem['day1to5_to_day7_extrapolation']['compiled_drn']['day7_kl']:.4f}}} (vs.\\ {hem['day1to5_to_day7_extrapolation']['ctmc']['day7_kl']:.4f} CTMC)",
             "Univ.\\ Pos-Sens $49$ st.",
         ],
         [
             "\\emph{E.\\ coli} 3-phase ring",
             "18,972 cyc.",
-            f"0-sh.\\ \\textbf{{{ec_m['drn_fresh_only']['aged_kl']:.4f}}} (vs.\\ {ec_m['latent_ode_fresh_only']['aged_kl']:.4f})",
+            f"0-sh.\\ \\textbf{{{ec_m['drn_fresh_only']['aged_kl']:.4f}}} (vs.\\ {ec_m['ctmc']['aged_kl']:.4f} CTMC)",
             "$37^\\circ$C $k{=}25.8$ ($27.1$)",
         ],
         [
-            "Sleep 5-node (Renew.)",
+            "Sleep 5-node (Edge-Mem)",
             "75 adults",
-            f"0-sh.\\ \\textbf{{{sl_m['drn_fresh_only']['aged_kl_mean']:.4f}}} / jt.\\ {sl_m['drn_joint']['aged_kl_mean']:.4f}",
-            "$6{,}144{\\to}117$ ($52.5\\times$)",
-        ],
-        [
-            "\\textbf{Sleep (Edge-Mem)}",
-            "75 adults",
-            f"0-sh.\\ \\textbf{{{ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}} / jt.\\ \\textbf{{{ems['edge_memory_drn_joint']['aged_kl_mean']:.4f}}}",
-            "Closes LODE ($0.0208$)",
+            f"0-sh.\\ \\textbf{{{ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}} (vs.\\ {sl_m['ctmc']['aged_kl_mean']:.4f} CTMC)",
+            f"jt.\\ {ems['edge_memory_drn_joint']['aged_kl_mean']:.4f} (LODE $0.0208$)",
         ],
         "\\midrule",
         [
-            "Synthetic persistent",
-            "20 runs",
-            "\\textbf{KL 0.00416} ($7.9\\times$)",
-            "$\\hat\\rho$: $0.000$ vs.\\ $0.875$",
-        ],
-        [
-            "Sleep-EDF N2 returns",
-            "2,957 bouts",
-            f"\\textbf{{{s_n2['gain']:+.5f}}} nats",
-            "Perm. $+0.0073$ ($p{=}.002$)",
-        ],
-        [
-            "\\emph{E.\\ coli} (Si / Tan.)",
-            "26,082 cyc.",
-            f"\\textbf{{{s_ec1['gain']:+.5f}}} / ${s_ec2['gain']:+.5f}$",
-            "Size absorbs Tanouchi",
+            "Sleep / \\emph{E.\\ coli} pers.",
+            "29,039 tr.",
+            f"N2 \\textbf{{{100*s_n2['gain']:+.2f}}} / Si \\textbf{{{100*s_ec1['gain']:+.2f}}}",
+            f"Tan.\\ ${100*s_ec2['gain']:+.2f}$ nats/100",
         ],
     ]
     assert "resampled" in rt6["targets"] and "persistent" in rt6["targets"]
@@ -1327,7 +1385,7 @@ def build_tables() -> None:
             ],
             [
                 "Continuous $\\Gamma$ quadrature",
-                f"\\textbf{{{at_sc['gamma_reference']['best']['loss']:.5f}}}",
+                f"{at_sc['gamma_reference']['best']['loss']:.5f}",
                 f"{at_sc['gamma_reference']['best']['params'][0]:.5f}",
                 f"{at_sc['gamma_reference']['best']['params'][1]:.5f}",
                 "\\textbf{0.40\\,s}",
@@ -1335,7 +1393,7 @@ def build_tables() -> None:
             [
                 "NoMaSS $\\Gamma$ (3-seed median)",
                 "0.01787",
-                "0.03249",
+                "0.03264",
                 "0.01658",
                 "68.37\\,s",
             ],
@@ -1382,6 +1440,21 @@ def build_tables() -> None:
                 sp_str,
             ]
         )
+    rows_g7.append("\\midrule")
+    for r in spg["scaling_rows"]:
+        if r["nodes"] not in (64, 256, 512, 1024):
+            continue
+        rows_g7.append(
+            [
+                f"Sparse $V{{=}}{r['nodes']}$",
+                f"{r['parameters']:,}",
+                f"{r['tensor_states']:,}",
+                f"{r['compiled_states']:,}",
+                f"{r['sparse_operator_mb']:.2f}\\,MB",
+                f"{r['grad_warm_ms']:.1f}",
+                f"{r['memory_compression_vs_dense']:,.0f}$\\times$ mem",
+            ]
+        )
     write_tex_table(
         "tab_a7_graph_scaling.tex",
         "lrrrrrr",
@@ -1390,9 +1463,9 @@ def build_tables() -> None:
             "Params",
             "Tensor",
             "Race",
-            "Comp. $\\uparrow$",
+            "Comp. / Mem",
             "Grad (ms)",
-            "Speedup",
+            "Gain",
         ],
         rows_g7,
     )
@@ -1423,7 +1496,7 @@ def build_tables() -> None:
             [
                 "(7-node tree)",
                 "\\textbf{Univ. Pos-Sens}",
-                "\\textbf{49 (14)}",
+                "49 (14)",
                 f"{h_cv['universal_pos_sens']['kl']:.4f}",
                 f"{h_ex['universal_pos_sens']['day7_kl']:.4f}",
                 f"\\textbf{{{h_cv['universal_pos_sens']['prob_rmse']:.4f}}}",
@@ -1457,41 +1530,160 @@ def build_tables() -> None:
                 "Sleep-EDF",
                 "\\textbf{Edge-Mem DRN}",
                 "246 (254)",
-                f"{ems['edge_memory_drn_joint']['aged_kl_mean']:.4f}",
-                f"\\textbf{{{ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}}",
+                f"${ems['edge_memory_drn_joint']['aged_kl_mean']:.4f}\\pm.003$",
+                f"\\textbf{{${ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}\\pm.013$}}",
                 f"{ems['edge_memory_drn_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "(5-node net)",
                 "Renewal DRN",
                 "117 (144)",
-                f"{sl_m['drn_joint']['aged_kl_mean']:.4f}",
-                f"{sl_m['drn_fresh_only']['aged_kl_mean']:.4f}",
+                f"${sl_m['drn_joint']['aged_kl_mean']:.4f}\\pm.008$",
+                f"${sl_m['drn_fresh_only']['aged_kl_mean']:.4f}\\pm.011$",
                 f"{sl_m['drn_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Memoryless CTMC",
                 "5 (16)",
-                f"{sl_m['ctmc']['aged_kl_mean']:.4f}",
-                f"{sl_m['ctmc']['aged_kl_mean']:.4f}",
+                f"${sl_m['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
+                f"${sl_m['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
                 f"{sl_m['ctmc']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Neural-CME$(t)$",
                 "5 (394)",
-                f"{ems['neural_cme_joint']['aged_kl_mean']:.4f}",
-                f"{ems['neural_cme_fresh_only']['aged_kl_mean']:.4f}",
+                f"${ems['neural_cme_joint']['aged_kl_mean']:.4f}\\pm.005$",
+                f"${ems['neural_cme_fresh_only']['aged_kl_mean']:.4f}\\pm.011$",
                 f"{ems['neural_cme_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Latent ODE",
                 "11 (540)",
-                f"\\textbf{{{sl_m['latent_ode_joint']['aged_kl_mean']:.4f}}}",
-                f"{sl_m['latent_ode_fresh_only']['aged_kl_mean']:.4f}",
+                f"\\textbf{{${sl_m['latent_ode_joint']['aged_kl_mean']:.4f}\\pm.001$}}",
+                f"${sl_m['latent_ode_fresh_only']['aged_kl_mean']:.4f}\\pm.014$",
                 f"\\textbf{{{sl_m['latent_ode_joint']['fresh_kl_mean']:.4f}}}",
+            ],
+            "\\midrule",
+            [
+                "\\emph{E.\\ coli} ring",
+                "\\textbf{Renewal DRN}",
+                "24 (18)",
+                f"${ec_m['drn_joint']['aged_kl']:.4f}\\pm.002$",
+                f"\\textbf{{${ec_m['drn_fresh_only']['aged_kl']:.4f}\\pm.003$}}",
+                f"{ec_m['drn_joint']['fresh_kl']:.4f}",
+            ],
+            [
+                "(18,972 cyc.)",
+                "Memoryless CTMC",
+                "3 (9)",
+                f"${ec_m['ctmc']['aged_kl']:.4f}\\pm.003$",
+                f"${ec_m['ctmc']['aged_kl']:.4f}\\pm.003$",
+                f"{ec_m['ctmc']['fresh_kl']:.4f}",
+            ],
+            [
+                "",
+                "Latent ODE",
+                "9 (---)",
+                f"\\textbf{{${ec_m['latent_ode_joint']['aged_kl']:.4f}\\pm.002$}}",
+                f"${ec_m['latent_ode_fresh_only']['aged_kl']:.4f}\\pm.015$",
+                f"\\textbf{{{ec_m['latent_ode_joint']['fresh_kl']:.4f}}}",
+            ],
+        ],
+    )
+
+    # Appendix Table A9: IT Helpdesk Systems ML (5-Fold CV & Coarsening) + Nonlinear MeanFieldDRN Influenza
+    mfe_full = mfe["full_fit_days_1to14"]
+    mfe_ex9 = mfe["extrapolation_splits"]["days_1to9_to_10to14"]
+    mfe_reg = mfe["regularized_latent_ode_sensitivity"]
+    c7 = hdk["coarsening_panel_sweep"][2]
+    c14 = hdk["coarsening_panel_sweep"][3]
+    write_tex_table(
+        "tab_a9_systems_and_meanfield.tex",
+        "llrrrr",
+        [
+            "Benchmark",
+            "Architecture",
+            "States (Params)",
+            "Primary KL $\\downarrow$",
+            "0-Shot / Extrap. $\\downarrow$",
+            "7d / 14d (RMSE) $\\downarrow$",
+        ],
+        [
+            [
+                "IT Helpdesk",
+                "\\textbf{Edge-Mem DRN}",
+                f"{hdk['state_counts']['edge_memory_drn_states_K6']} ({hdk['state_counts']['edge_memory_drn_params_K6']})",
+                f"${hdk_cv['edge_memory_drn_joint']['aged_kl_mean']:.4f}\\pm.001$",
+                f"\\textbf{{${hdk_cv['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}\\pm.002$}}",
+                f"\\textbf{{{c7['edge_memory_drn_multihop_aged_kl']:.3f}}} / \\textbf{{{c14['edge_memory_drn_multihop_aged_kl']:.3f}}}",
+            ],
+            [
+                "(4,576 tkt.)",
+                "Renewal DRN",
+                f"{hdk['state_counts']['renewal_drn_race_states_K6']} ({hdk['state_counts']['renewal_drn_params_K6']})",
+                f"${hdk_cv['renewal_drn_joint']['aged_kl_mean']:.4f}\\pm.002$",
+                f"${hdk_cv['renewal_drn_fresh_only']['aged_kl_mean']:.4f}\\pm.008$",
+                f"{c7['drn_multihop_aged_kl']:.3f} / {c14['drn_multihop_aged_kl']:.3f}",
+            ],
+            [
+                "",
+                "Memoryless CTMC",
+                "5 (9)",
+                f"${hdk_cv['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
+                f"${hdk_cv['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
+                f"{c7['ctmc_panel_kl']:.3f} / {c14['ctmc_panel_kl']:.3f}",
+            ],
+            [
+                "",
+                "Neural-CR (Omi/DH)",
+                f"--- ({hdk['state_counts']['neural_competing_risks_params']})",
+                "---",
+                "---",
+                f"{c7['neural_competing_risks_best_kl']:.3f} / {c14['neural_competing_risks_best_kl']:.3f}",
+            ],
+            [
+                "",
+                "Neural-CME$(t)$",
+                f"5 ({hdk['state_counts']['neural_cme_params']})",
+                f"\\textbf{{${hdk_cv['neural_cme_joint']['aged_kl_mean']:.4f}\\pm.003$}}",
+                f"${hdk_cv['neural_cme_fresh_only']['aged_kl_mean']:.4f}\\pm.063$",
+                f"{c7['neural_cme_multihop_aged_kl']:.3f} / {c14['neural_cme_multihop_aged_kl']:.3f}",
+            ],
+            [
+                "",
+                "Latent ODE",
+                f"11 ({hdk['state_counts']['latent_ode_params']})",
+                f"${hdk_cv['latent_ode_joint']['aged_kl_mean']:.4f}\\pm.002$",
+                f"${hdk_cv['latent_ode_fresh_only']['aged_kl_mean']:.4f}\\pm.026$",
+                f"{c7['latent_ode_multihop_aged_kl']:.3f} / {c14['latent_ode_multihop_aged_kl']:.3f}",
+            ],
+            "\\midrule",
+            [
+                "1978 Influenza",
+                "\\textbf{MeanFieldDRN}",
+                f"{mfe_full['mean_field_drn']['states']} ({mfe_full['mean_field_drn']['params_count']})",
+                f"{mfe_full['mean_field_drn']['mean_kl_nats']:.4f}",
+                f"\\textbf{{{mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.4f}}} / \\textbf{{{mfe_ex9['mean_field_drn']['test']['mean_kl_nats']:.4f}}}",
+                f"\\textbf{{{mfe_ex8['mean_field_drn']['test']['count_rmse_boys']:.1f}}} boys",
+            ],
+            [
+                "(763 boys)",
+                "Markov SEICR",
+                f"{mfe_full['markov_seicr']['states']} ({mfe_full['markov_seicr']['params_count']})",
+                f"{mfe_full['markov_seicr']['mean_kl_nats']:.4f}",
+                f"{mfe_ex8['markov_seicr']['test']['mean_kl_nats']:.4f} / {mfe_ex9['markov_seicr']['test']['mean_kl_nats']:.4f}",
+                f"{mfe_ex8['markov_seicr']['test']['count_rmse_boys']:.1f} boys",
+            ],
+            [
+                "",
+                "Latent ODE (best $L_2$)",
+                f"{mfe_full['latent_ode']['states']} ({mfe_full['latent_ode']['params_count']})",
+                f"\\textbf{{{mfe_full['latent_ode']['mean_kl_nats']:.4f}}}",
+                f"{mfe_reg['days_1to8_to_9to14']['test']['mean_kl_nats']:.4f} / {mfe_reg['days_1to9_to_10to14']['test']['mean_kl_nats']:.4f}",
+                f"{mfe_reg['days_1to8_to_9to14']['test']['count_rmse_boys']:.1f} boys",
             ],
         ],
     )
@@ -1504,7 +1696,7 @@ def main() -> None:
     build_fig4()
     build_fig5()
     build_tables()
-    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 12 LaTeX tables.")
+    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 13 LaTeX tables.")
 
 
 if __name__ == "__main__":
