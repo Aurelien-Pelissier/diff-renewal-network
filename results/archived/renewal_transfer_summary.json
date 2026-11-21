@@ -1,0 +1,5291 @@
+{
+  "max_probability_refinement": 9.863354016701603e-05,
+  "heldout_ph": {
+    "400": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 30,
+          "balanced_kl": 0.025086253373712578,
+          "fresh": 0.030761410112760505,
+          "aged": 0.02650329461563793,
+          "pulse": 0.01962190547547096,
+          "pulse_effect_rmse": 0.05672446332356994,
+          "observed_nll": 0.7828981033079053,
+          "zero_shot_per_system": [
+            0.15784872397094502,
+            0.09050375067663302,
+            0.15479153793212366
+          ],
+          "fit_s": 0.5264491997659206,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 24.0,
+          "selected_zero": 1,
+          "mean_rms": 0.12465363344033811,
+          "shape_rms": 0.2692200287673724
+        },
+        "neural_phase.pretrained_full": {
+          "n": 30,
+          "balanced_kl": 0.019370449176219173,
+          "fresh": 0.020305295795071433,
+          "aged": 0.01920143821787985,
+          "pulse": 0.013320689356885634,
+          "pulse_effect_rmse": 0.0439696112929132,
+          "observed_nll": 0.7628295828162812,
+          "zero_shot_per_system": [
+            0.023214984259722876,
+            0.1998115255400855,
+            0.028983106936496833
+          ],
+          "fit_s": 0.5156551997642964,
+          "hits": 3,
+          "hit_s": 0.017024300061166286,
+          "final_hits": 1,
+          "selected_iteration": 6.0,
+          "selected_zero": 4,
+          "mean_rms": 0.13352017743767342,
+          "shape_rms": 0.10982608479131775
+        },
+        "neural_phase.pretrained_code": {
+          "n": 30,
+          "balanced_kl": 0.008437163990209558,
+          "fresh": 0.008852576306196812,
+          "aged": 0.008560642279299003,
+          "pulse": 0.00816853905860818,
+          "pulse_effect_rmse": 0.025691774560439404,
+          "observed_nll": 0.7689274045173706,
+          "zero_shot_per_system": [
+            0.023214984259722876,
+            0.1998115255400855,
+            0.028983106936496833
+          ],
+          "fit_s": 0.07258119992911816,
+          "hits": 11,
+          "hit_s": 0.02894100034609437,
+          "final_hits": 10,
+          "selected_iteration": 9.0,
+          "selected_zero": 4,
+          "mean_rms": 0.07943835102480501,
+          "shape_rms": 0.08650626109766593
+        },
+        "latent_ode.scratch": {
+          "n": 30,
+          "balanced_kl": 0.24766946564239498,
+          "fresh": 0.10468602692750709,
+          "aged": 0.2687496349721747,
+          "pulse": 0.3227419027035726,
+          "pulse_effect_rmse": 0.11349637994196066,
+          "observed_nll": 0.9925566356092894,
+          "zero_shot_per_system": [
+            0.2156995740211537,
+            0.22647430404382574,
+            0.2504929488525563
+          ],
+          "fit_s": 0.878689999692142,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 30,
+          "balanced_kl": 0.025928278883862718,
+          "fresh": 0.028179365386399282,
+          "aged": 0.03706152668125565,
+          "pulse": 0.024231603464009006,
+          "pulse_effect_rmse": 0.04442705073640735,
+          "observed_nll": 0.768634881026885,
+          "zero_shot_per_system": [
+            0.08565691068996607,
+            0.03972527183656721,
+            0.025458411755679745
+          ],
+          "fit_s": 0.8824112508445978,
+          "hits": 1,
+          "hit_s": 0.028985400218516588,
+          "final_hits": 1,
+          "selected_iteration": 3.0,
+          "selected_zero": 9
+        },
+        "latent_ode.pretrained_code": {
+          "n": 30,
+          "balanced_kl": 0.010869585322712939,
+          "fresh": 0.011259642442009683,
+          "aged": 0.012112337832188612,
+          "pulse": 0.008493572465950571,
+          "pulse_effect_rmse": 0.03362351722673751,
+          "observed_nll": 0.7560680712888748,
+          "zero_shot_per_system": [
+            0.08565691068996607,
+            0.03972527183656721,
+            0.025458411755679745
+          ],
+          "fit_s": 0.07597630005329847,
+          "hits": 1,
+          "hit_s": 0.027775300201028585,
+          "final_hits": 1,
+          "selected_iteration": 3.0,
+          "selected_zero": 7
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0062001384330831666,
+            "ci": [
+              -0.011133278905308935,
+              -0.0016132935474096948
+            ],
+            "wins": 21,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.006498262328357873,
+            "ci": [
+              -0.011952471942706822,
+              -0.0016840921565898226
+            ],
+            "wins": 22,
+            "n": 30
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.014762571207401948,
+            "ci": [
+              -0.01860836821464216,
+              -0.010130803356602238
+            ],
+            "wins": 25,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.014611567534266845,
+            "ci": [
+              -0.022199773312383153,
+              -0.009171693242891577
+            ],
+            "wins": 25,
+            "n": 30
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.0058375221246281875,
+            "ci": [
+              -0.011142968611380756,
+              -3.773814650226328e-05
+            ],
+            "wins": 20,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.003913348724253418,
+            "ci": [
+              -0.010764418108584306,
+              -0.00020144015171674745
+            ],
+            "wins": 20,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.2254845318212289,
+            "ci": [
+              -0.23513852783172168,
+              -0.18962912291335132
+            ],
+            "wins": 30,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.2224383535787614,
+            "ci": [
+              -0.2389851450153404,
+              -0.1996158341885697
+            ],
+            "wins": 30,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.2404276229687816,
+            "ci": [
+              -0.24738284855572523,
+              -0.20961722160786883
+            ],
+            "wins": 30,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.22972716666229154,
+            "ci": [
+              -0.256680604510677,
+              -0.20421280416268306
+            ],
+            "wins": 30,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.012105500693504523,
+            "ci": [
+              -0.01923237599657078,
+              -0.0026790718695223785
+            ],
+            "wins": 23,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.012811088594196607,
+            "ci": [
+              -0.018111123386324535,
+              -0.0005999000005679211
+            ],
+            "wins": 20,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.0021491099527379785,
+            "ci": [
+              -0.005311383201928701,
+              0.005855944069289231
+            ],
+            "wins": 12,
+            "n": 30
+          },
+          "observed": {
+            "median": 0.0016429504341916035,
+            "ci": [
+              -0.005134146096994807,
+              0.0063426272406054696
+            ],
+            "wins": 13,
+            "n": 30
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 10,
+            "neural_phase.pretrained_full": 20
+          },
+          "balanced_kl": 0.0163823967107825,
+          "final_hits": 3,
+          "online_s": 0.5965244502294809
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 18,
+            "latent_ode.pretrained_full": 12
+          },
+          "balanced_kl": 0.014761513719852022,
+          "final_hits": 1,
+          "online_s": 0.9610532503575087
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 4,
+            "neural_phase.pretrained_full": 9,
+            "latent_ode.pretrained_code": 11,
+            "latent_ode.pretrained_full": 6
+          },
+          "balanced_kl": 0.023016084616999354,
+          "final_hits": 0,
+          "online_s": 1.5609580005984753
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4530558998230845,
+          "tasks_full_fit": 90
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.8107076000887901,
+          "tasks_full_fit": 75
+        }
+      }
+    },
+    "2000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 30,
+          "balanced_kl": 0.005781233154927341,
+          "fresh": 0.006390996267041815,
+          "aged": 0.005820872877197095,
+          "pulse": 0.004459704993822378,
+          "pulse_effect_rmse": 0.023108876899508596,
+          "observed_nll": 0.7437023188621976,
+          "zero_shot_per_system": [
+            0.15784872397094502,
+            0.09050375067663302,
+            0.15479153793212366
+          ],
+          "fit_s": 0.5165713494643569,
+          "hits": 14,
+          "hit_s": 0.1473126499913633,
+          "final_hits": 13,
+          "selected_iteration": 48.0,
+          "selected_zero": 0,
+          "mean_rms": 0.05424405750118176,
+          "shape_rms": 0.14523407043576705
+        },
+        "neural_phase.pretrained_full": {
+          "n": 30,
+          "balanced_kl": 0.005221517914601144,
+          "fresh": 0.005153805042217378,
+          "aged": 0.005324696256470839,
+          "pulse": 0.004697093939467883,
+          "pulse_effect_rmse": 0.020258740166127265,
+          "observed_nll": 0.7438976519636422,
+          "zero_shot_per_system": [
+            0.023214984259722876,
+            0.1998115255400855,
+            0.028983106936496833
+          ],
+          "fit_s": 0.5112515494693071,
+          "hits": 18,
+          "hit_s": 0.03596739983186126,
+          "final_hits": 14,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.059123108331289684,
+          "shape_rms": 0.10262357075804668
+        },
+        "neural_phase.pretrained_code": {
+          "n": 30,
+          "balanced_kl": 0.0024986200356302895,
+          "fresh": 0.0024285470443325624,
+          "aged": 0.00270451939238143,
+          "pulse": 0.0022410179540055305,
+          "pulse_effect_rmse": 0.016681068727767125,
+          "observed_nll": 0.7438595805472248,
+          "zero_shot_per_system": [
+            0.023214984259722876,
+            0.1998115255400855,
+            0.028983106936496833
+          ],
+          "fit_s": 0.06520600034855306,
+          "hits": 20,
+          "hit_s": 0.025093649746850133,
+          "final_hits": 20,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03734576170362088,
+          "shape_rms": 0.059191559434789404
+        },
+        "latent_ode.scratch": {
+          "n": 30,
+          "balanced_kl": 0.07400959951667363,
+          "fresh": 0.02742119254825898,
+          "aged": 0.09836738265866916,
+          "pulse": 0.10827879503986904,
+          "pulse_effect_rmse": 0.09503026525775156,
+          "observed_nll": 0.8380065685916671,
+          "zero_shot_per_system": [
+            0.2156995740211537,
+            0.22647430404382574,
+            0.2504929488525563
+          ],
+          "fit_s": 0.8714922002982348,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 48.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 30,
+          "balanced_kl": 0.0077976006461177964,
+          "fresh": 0.006868650743946372,
+          "aged": 0.008278173943546909,
+          "pulse": 0.00806610078371192,
+          "pulse_effect_rmse": 0.026073510579048866,
+          "observed_nll": 0.7486146889256815,
+          "zero_shot_per_system": [
+            0.08565691068996607,
+            0.03972527183656721,
+            0.025458411755679745
+          ],
+          "fit_s": 0.8700581002049148,
+          "hits": 2,
+          "hit_s": 0.03501924988813698,
+          "final_hits": 1,
+          "selected_iteration": 4.5,
+          "selected_zero": 1
+        },
+        "latent_ode.pretrained_code": {
+          "n": 30,
+          "balanced_kl": 0.004920245243627017,
+          "fresh": 0.004376707363803716,
+          "aged": 0.004492195225668023,
+          "pulse": 0.005415540911630925,
+          "pulse_effect_rmse": 0.022388648034825473,
+          "observed_nll": 0.7465231628969011,
+          "zero_shot_per_system": [
+            0.08565691068996607,
+            0.03972527183656721,
+            0.025458411755679745
+          ],
+          "fit_s": 0.07931614993140101,
+          "hits": 17,
+          "hit_s": 0.02887569973245263,
+          "final_hits": 16,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.00042441970927047296,
+            "ci": [
+              -0.0012397995197230786,
+              0.0001772183651447375
+            ],
+            "wins": 19,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0015733758976914092,
+            "ci": [
+              -0.002835270496487241,
+              0.0002591104257577692
+            ],
+            "wins": 17,
+            "n": 30
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0030436742373334967,
+            "ci": [
+              -0.004460186876601425,
+              -0.0019172706397193938
+            ],
+            "wins": 20,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0012366272697604819,
+            "ci": [
+              -0.004273609461501682,
+              0.00015726168502722127
+            ],
+            "wins": 18,
+            "n": 30
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.002146152317206579,
+            "ci": [
+              -0.0033348624006674012,
+              -0.0012157866693340304
+            ],
+            "wins": 20,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0010037688648140697,
+            "ci": [
+              -0.0023092834213234714,
+              1.202966391689042e-05
+            ],
+            "wins": 18,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.06780475499581537,
+            "ci": [
+              -0.07689848446590238,
+              -0.05816340668580576
+            ],
+            "wins": 30,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0724003332979451,
+            "ci": [
+              -0.08251355938988734,
+              -0.06003669547988044
+            ],
+            "wins": 30,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.06936884006775747,
+            "ci": [
+              -0.0853023343855719,
+              -0.06252874562562595
+            ],
+            "wins": 30,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0728873411281043,
+            "ci": [
+              -0.08880736671161388,
+              -0.06500568229208847
+            ],
+            "wins": 30,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.0029364574398357264,
+            "ci": [
+              -0.004009720967267134,
+              -0.002204330374587498
+            ],
+            "wins": 26,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0033958299399961533,
+            "ci": [
+              -0.005499661311503146,
+              -0.0011695473541905033
+            ],
+            "wins": 25,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.0029844740437492646,
+            "ci": [
+              0.0026619217611520097,
+              0.0035586544408463495
+            ],
+            "wins": 8,
+            "n": 30
+          },
+          "observed": {
+            "median": 0.0025994969740470997,
+            "ci": [
+              0.000392825713346312,
+              0.004228408996475752
+            ],
+            "wins": 11,
+            "n": 30
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 12,
+            "neural_phase.pretrained_full": 18
+          },
+          "balanced_kl": 0.004457472073251033,
+          "final_hits": 18,
+          "online_s": 0.578704500105232
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 23,
+            "latent_ode.pretrained_full": 7
+          },
+          "balanced_kl": 0.00523657667695305,
+          "final_hits": 13,
+          "online_s": 0.9358436500187963
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 8,
+            "neural_phase.pretrained_full": 13,
+            "latent_ode.pretrained_code": 6,
+            "latent_ode.pretrained_full": 3
+          },
+          "balanced_kl": 0.005039469742004114,
+          "final_hits": 15,
+          "online_s": 1.5082616007421166
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4465800989419222,
+          "tasks_full_fit": 92
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7959718499332666,
+          "tasks_full_fit": 77
+        }
+      }
+    },
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 30,
+          "balanced_kl": 0.0018123095948222488,
+          "fresh": 0.002102872139103815,
+          "aged": 0.0018522037467954729,
+          "pulse": 0.0016493520809003001,
+          "pulse_effect_rmse": 0.015475159830331923,
+          "observed_nll": 0.743415806881359,
+          "zero_shot_per_system": [
+            0.15784872397094502,
+            0.09050375067663302,
+            0.15479153793212366
+          ],
+          "fit_s": 0.5221188995055854,
+          "hits": 30,
+          "hit_s": 0.08561444957740605,
+          "final_hits": 30,
+          "selected_iteration": 80.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03187335541688725,
+          "shape_rms": 0.08468019261001566
+        },
+        "neural_phase.pretrained_full": {
+          "n": 30,
+          "balanced_kl": 0.0014039178715767697,
+          "fresh": 0.001660182023719964,
+          "aged": 0.0013158456112905231,
+          "pulse": 0.0013104468543059145,
+          "pulse_effect_rmse": 0.013161589318326339,
+          "observed_nll": 0.7450585038041452,
+          "zero_shot_per_system": [
+            0.023214984259722876,
+            0.1998115255400855,
+            0.028983106936496833
+          ],
+          "fit_s": 0.5049390504136682,
+          "hits": 29,
+          "hit_s": 0.03957710042595863,
+          "final_hits": 29,
+          "selected_iteration": 48.0,
+          "selected_zero": 0,
+          "mean_rms": 0.030525810147438215,
+          "shape_rms": 0.0616514912440895
+        },
+        "neural_phase.pretrained_code": {
+          "n": 30,
+          "balanced_kl": 0.0016582080398196445,
+          "fresh": 0.0016570331836580402,
+          "aged": 0.0017035227493905985,
+          "pulse": 0.0013651085910152644,
+          "pulse_effect_rmse": 0.013800431996896564,
+          "observed_nll": 0.7434985362211788,
+          "zero_shot_per_system": [
+            0.023214984259722876,
+            0.1998115255400855,
+            0.028983106936496833
+          ],
+          "fit_s": 0.06515135057270527,
+          "hits": 20,
+          "hit_s": 0.025293850107118487,
+          "final_hits": 20,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03416279793230824,
+          "shape_rms": 0.03414688544002886
+        },
+        "latent_ode.scratch": {
+          "n": 30,
+          "balanced_kl": 0.042052009318900255,
+          "fresh": 0.009215144574485877,
+          "aged": 0.05147824811932579,
+          "pulse": 0.06028306776107265,
+          "pulse_effect_rmse": 0.06760890209058912,
+          "observed_nll": 0.7854354276633253,
+          "zero_shot_per_system": [
+            0.2156995740211537,
+            0.22647430404382574,
+            0.2504929488525563
+          ],
+          "fit_s": 0.8499590002465993,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 80.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 30,
+          "balanced_kl": 0.004516236101621678,
+          "fresh": 0.0035363889050938594,
+          "aged": 0.0039026346454372612,
+          "pulse": 0.005203945468292925,
+          "pulse_effect_rmse": 0.02078599260833514,
+          "observed_nll": 0.7481961502950438,
+          "zero_shot_per_system": [
+            0.08565691068996607,
+            0.03972527183656721,
+            0.025458411755679745
+          ],
+          "fit_s": 0.8461900495458394,
+          "hits": 18,
+          "hit_s": 0.041450500255450606,
+          "final_hits": 17,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 30,
+          "balanced_kl": 0.004470066548675681,
+          "fresh": 0.003293089547946029,
+          "aged": 0.0030651812488680643,
+          "pulse": 0.005084342575214961,
+          "pulse_effect_rmse": 0.02125046115601313,
+          "observed_nll": 0.7463900217036834,
+          "zero_shot_per_system": [
+            0.08565691068996607,
+            0.03972527183656721,
+            0.025458411755679745
+          ],
+          "fit_s": 0.07532615005038679,
+          "hits": 25,
+          "hit_s": 0.0279339998960495,
+          "final_hits": 23,
+          "selected_iteration": 10.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.00041932271406153567,
+            "ci": [
+              -0.0007002347769675145,
+              -0.0001854834268207225
+            ],
+            "wins": 22,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0004618999875162233,
+            "ci": [
+              -0.0007670268277129577,
+              0.00019251944190395998
+            ],
+            "wins": 19,
+            "n": 30
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0001676112570553977,
+            "ci": [
+              -0.0005275043383705999,
+              0.0006440825704685907
+            ],
+            "wins": 16,
+            "n": 30
+          },
+          "observed": {
+            "median": 0.0006048130239966754,
+            "ci": [
+              1.3746186700636098e-05,
+              0.0014422545600738523
+            ],
+            "wins": 10,
+            "n": 30
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 8.48506868759896e-05,
+            "ci": [
+              -0.0002509335874499764,
+              0.0005855796594172384
+            ],
+            "wins": 14,
+            "n": 30
+          },
+          "observed": {
+            "median": 0.0007107779295875138,
+            "ci": [
+              0.00011143149465603353,
+              0.0017708143701816725
+            ],
+            "wins": 10,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.036594784064733224,
+            "ci": [
+              -0.04207646288457501,
+              -0.03408861100889381
+            ],
+            "wins": 30,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.035606892653494815,
+            "ci": [
+              -0.039293971332967415,
+              -0.03216219412307464
+            ],
+            "wins": 30,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.03731893239605745,
+            "ci": [
+              -0.04250610822376645,
+              -0.035020477159684024
+            ],
+            "wins": 30,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.036303642283728066,
+            "ci": [
+              -0.042988303952610996,
+              -0.03073250505485181
+            ],
+            "wins": 30,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.0006026301795742852,
+            "ci": [
+              -0.001026456892295198,
+              -0.00017869809558531085
+            ],
+            "wins": 20,
+            "n": 30
+          },
+          "observed": {
+            "median": -0.0018434670381248242,
+            "ci": [
+              -0.0026980228109413362,
+              -0.0007015453243543468
+            ],
+            "wins": 21,
+            "n": 30
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.003417767212040544,
+            "ci": [
+              0.002655736140846645,
+              0.003632360433129054
+            ],
+            "wins": 10,
+            "n": 30
+          },
+          "observed": {
+            "median": 0.0021264833366742564,
+            "ci": [
+              -0.000599857964914241,
+              0.0031292086400935837
+            ],
+            "wins": 13,
+            "n": 30
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 8,
+            "neural_phase.pretrained_full": 22
+          },
+          "balanced_kl": 0.001333138188669206,
+          "final_hits": 29,
+          "online_s": 0.5696213995106518
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 19,
+            "latent_ode.pretrained_full": 11
+          },
+          "balanced_kl": 0.0044956115759738,
+          "final_hits": 22,
+          "online_s": 0.922723799943924
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 8,
+            "neural_phase.pretrained_full": 17,
+            "latent_ode.pretrained_code": 4,
+            "latent_ode.pretrained_full": 1
+          },
+          "balanced_kl": 0.0014103595527770506,
+          "final_hits": 29,
+          "online_s": 1.4946470991708338
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.46261224965564907,
+          "tasks_full_fit": 89
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7741434504278004,
+          "tasks_full_fit": 79
+        }
+      }
+    },
+    "cross_budget": {
+      "neural_phase400": {
+        "median": 0.0057151747316182555,
+        "ci": [
+          0.0033098343859599604,
+          0.010637669604225625
+        ],
+        "wins": 1,
+        "n": 30
+      },
+      "neural_phase2000": {
+        "median": 0.00035812360235812054,
+        "ci": [
+          6.633096266113036e-05,
+          0.001345347183885094
+        ],
+        "wins": 10,
+        "n": 30
+      },
+      "latent_ode400": {
+        "median": -0.03022697545040741,
+        "ci": [
+          -0.03306927588843106,
+          -0.02736362206801672
+        ],
+        "wins": 29,
+        "n": 30
+      },
+      "latent_ode2000": {
+        "median": -0.03580774646972433,
+        "ci": [
+          -0.04178262759566511,
+          -0.03330539342239561
+        ],
+        "wins": 30,
+        "n": 30
+      }
+    }
+  },
+  "ph1": {
+    "400": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.023962340826436432,
+          "fresh": 0.0268329145375281,
+          "aged": 0.02650745486869302,
+          "pulse": 0.01889853681719809,
+          "pulse_effect_rmse": 0.07703601680303554,
+          "observed_nll": 0.8353449736675389,
+          "zero_shot_per_system": [
+            0.15784872397094502
+          ],
+          "fit_s": 0.689229499315843,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 15.0,
+          "selected_zero": 0,
+          "mean_rms": 0.12680848984815665,
+          "shape_rms": 0.26836195799508933
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.01756291596016863,
+          "fresh": 0.020260456911775037,
+          "aged": 0.020759144145055683,
+          "pulse": 0.010340532626290902,
+          "pulse_effect_rmse": 0.059403812804336834,
+          "observed_nll": 0.8324840313343398,
+          "zero_shot_per_system": [
+            0.023214984259722876
+          ],
+          "fit_s": 0.7379338999744505,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 4.5,
+          "selected_zero": 2,
+          "mean_rms": 0.13225053343783805,
+          "shape_rms": 0.14248086980304894
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.004781115743433409,
+          "fresh": 0.005229381179355026,
+          "aged": 0.004409347931199391,
+          "pulse": 0.0034750045786255167,
+          "pulse_effect_rmse": 0.0338597952051396,
+          "observed_nll": 0.8197932517278085,
+          "zero_shot_per_system": [
+            0.023214984259722876
+          ],
+          "fit_s": 0.07474419940263033,
+          "hits": 7,
+          "hit_s": 0.03956700023263693,
+          "final_hits": 6,
+          "selected_iteration": 9.0,
+          "selected_zero": 2,
+          "mean_rms": 0.06457761071523486,
+          "shape_rms": 0.09063690949395711
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.20026363169211386,
+          "fresh": 0.10801982680745759,
+          "aged": 0.19509250540513384,
+          "pulse": 0.2632989422343448,
+          "pulse_effect_rmse": 0.1489454295039258,
+          "observed_nll": 0.9762874512888857,
+          "zero_shot_per_system": [
+            0.2156995740211537
+          ],
+          "fit_s": 0.9716660503763705,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.02931057151547071,
+          "fresh": 0.038753535023065805,
+          "aged": 0.023525262963618027,
+          "pulse": 0.03099203665927895,
+          "pulse_effect_rmse": 0.06726658844518565,
+          "observed_nll": 0.8384533188118395,
+          "zero_shot_per_system": [
+            0.08565691068996607
+          ],
+          "fit_s": 0.983042300445959,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 3.0,
+          "selected_zero": 1
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.008691051191531001,
+          "fresh": 0.011500471587803894,
+          "aged": 0.008389772180017444,
+          "pulse": 0.006727902829147425,
+          "pulse_effect_rmse": 0.037219851162139744,
+          "observed_nll": 0.8152618794831801,
+          "zero_shot_per_system": [
+            0.08565691068996607
+          ],
+          "fit_s": 0.09377870010212064,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 6.0,
+          "selected_zero": 1
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.004827435056705857,
+            "ci": [
+              -0.009133740506856435,
+              0.0011345184919029968
+            ],
+            "wins": 6,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.008312022098996341,
+            "ci": [
+              -0.011345918663709709,
+              0.00014104047932261832
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.017343505929278386,
+            "ci": [
+              -0.023325700091553304,
+              -0.008767969665652773
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.018937137238814516,
+            "ci": [
+              -0.02829768387921794,
+              -0.007592018034031811
+            ],
+            "wins": 9,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.00785649155710307,
+            "ci": [
+              -0.01978683872184743,
+              -0.003068245959203708
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.00868860775146224,
+            "ci": [
+              -0.01876668906612111,
+              -0.0014195981283150472
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.15681218390922147,
+            "ci": [
+              -0.18682460035624388,
+              -0.12472173665182781
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.14399604018890866,
+            "ci": [
+              -0.18431457716484423,
+              -0.12159080375003872
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.1739930496107791,
+            "ci": [
+              -0.21833085120308274,
+              -0.1323599543909688
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.15964332889848792,
+            "ci": [
+              -0.22005715890728517,
+              -0.12465718338191356
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.015729641008374578,
+            "ci": [
+              -0.0235091923786792,
+              -0.007222213303874358
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.014690564243709625,
+            "ci": [
+              -0.025200693966466847,
+              -0.006644114825511915
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.0037697847087616596,
+            "ci": [
+              -0.0031796656308032785,
+              0.010852371559504104
+            ],
+            "wins": 2,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.0024116084774934987,
+            "ci": [
+              -0.005702371684585095,
+              0.011656343743153108
+            ],
+            "wins": 3,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 4,
+            "neural_phase.pretrained_full": 6
+          },
+          "balanced_kl": 0.017474313719438427,
+          "final_hits": 1,
+          "online_s": 0.8135673503857106
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 7,
+            "latent_ode.pretrained_full": 3
+          },
+          "balanced_kl": 0.016138262123924395,
+          "final_hits": 0,
+          "online_s": 1.0878208498470485
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 2,
+            "neural_phase.pretrained_full": 3,
+            "latent_ode.pretrained_code": 4,
+            "latent_ode.pretrained_full": 1
+          },
+          "balanced_kl": 0.023214984259722876,
+          "final_hits": 0,
+          "online_s": 1.8969487997237593
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.6205985993146896,
+          "tasks_full_fit": 66
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.8700164000038058,
+          "tasks_full_fit": 70
+        }
+      }
+    },
+    "2000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.007852884078272775,
+          "fresh": 0.007259749328784204,
+          "aged": 0.008222244920237584,
+          "pulse": 0.007459225841936176,
+          "pulse_effect_rmse": 0.041837774824569796,
+          "observed_nll": 0.8184988934319896,
+          "zero_shot_per_system": [
+            0.15784872397094502
+          ],
+          "fit_s": 0.7656550502870232,
+          "hits": 3,
+          "hit_s": 0.14478300046175718,
+          "final_hits": 2,
+          "selected_iteration": 36.0,
+          "selected_zero": 0,
+          "mean_rms": 0.06142734484696357,
+          "shape_rms": 0.17691428057539982
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.006729226076810415,
+          "fresh": 0.007243481802395278,
+          "aged": 0.006264491097407059,
+          "pulse": 0.006255504246311189,
+          "pulse_effect_rmse": 0.03115350468161017,
+          "observed_nll": 0.817261384165842,
+          "zero_shot_per_system": [
+            0.023214984259722876
+          ],
+          "fit_s": 0.7998922502156347,
+          "hits": 4,
+          "hit_s": 0.04870924982242286,
+          "final_hits": 3,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.0710274691763465,
+          "shape_rms": 0.13785472559272993
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.002279041715826006,
+          "fresh": 0.0023093627299574752,
+          "aged": 0.00270451939238143,
+          "pulse": 0.001584625255161331,
+          "pulse_effect_rmse": 0.021682336780847508,
+          "observed_nll": 0.809698850538968,
+          "zero_shot_per_system": [
+            0.023214984259722876
+          ],
+          "fit_s": 0.07038335083052516,
+          "hits": 10,
+          "hit_s": 0.021899200277402997,
+          "final_hits": 10,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03734576170362088,
+          "shape_rms": 0.05255321643970709
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.06654894630705169,
+          "fresh": 0.026423043842662614,
+          "aged": 0.09675952118652711,
+          "pulse": 0.09168757933026747,
+          "pulse_effect_rmse": 0.10985282758714303,
+          "observed_nll": 0.883049983173218,
+          "zero_shot_per_system": [
+            0.2156995740211537
+          ],
+          "fit_s": 0.9722171006724238,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 24.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.012775557315949818,
+          "fresh": 0.01088197890660094,
+          "aged": 0.011275987570978797,
+          "pulse": 0.013043276809183718,
+          "pulse_effect_rmse": 0.048169339026729256,
+          "observed_nll": 0.8172713585245683,
+          "zero_shot_per_system": [
+            0.08565691068996607
+          ],
+          "fit_s": 1.0077833503019065,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.00581701608166676,
+          "fresh": 0.0079422650621296,
+          "aged": 0.004363286944719954,
+          "pulse": 0.005891693617139119,
+          "pulse_effect_rmse": 0.034057619078495055,
+          "observed_nll": 0.8129602137856762,
+          "zero_shot_per_system": [
+            0.08565691068996607
+          ],
+          "fit_s": 0.09603410004638135,
+          "hits": 2,
+          "hit_s": 0.05191759974695742,
+          "final_hits": 2,
+          "selected_iteration": 9.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0006958149879911107,
+            "ci": [
+              -0.0023484541874217607,
+              0.0003217480298300956
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.000647957364462548,
+            "ci": [
+              -0.0064880817043841965,
+              0.0031227599671316275
+            ],
+            "wins": 5,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.004836658359258554,
+            "ci": [
+              -0.007558468132665756,
+              -0.0036126544350271877
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.004273609461501682,
+            "ci": [
+              -0.009873590084243211,
+              -0.0007306083739507252
+            ],
+            "wins": 9,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.0037369350041273324,
+            "ci": [
+              -0.006024525742706184,
+              -0.002726612826671854
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0023092834213234714,
+            "ci": [
+              -0.005405216154949044,
+              -0.00018931106499930905
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.057107219607356666,
+            "ci": [
+              -0.06850731878765237,
+              -0.044265492307213175
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.06144027670766816,
+            "ci": [
+              -0.07629798314135738,
+              -0.04237746821625332
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.05874644581692964,
+            "ci": [
+              -0.08596643822207614,
+              -0.05485809967330484
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.06902073077603399,
+            "ci": [
+              -0.1001191069186948,
+              -0.04987426177605103
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.007058653893789079,
+            "ci": [
+              -0.0119981710969667,
+              -0.0035450387323248535
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.007929353365459302,
+            "ci": [
+              -0.013088346762996472,
+              -0.003299857252779148
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.003700880387469829,
+            "ci": [
+              0.0030049731455891234,
+              0.005278233159171393
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.0033881892511340994,
+            "ci": [
+              0.0010465303159048478,
+              0.006971868049091501
+            ],
+            "wins": 2,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 4,
+            "neural_phase.pretrained_full": 6
+          },
+          "balanced_kl": 0.004830656457984197,
+          "final_hits": 5,
+          "online_s": 0.8602349502034485
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 7,
+            "latent_ode.pretrained_full": 3
+          },
+          "balanced_kl": 0.007696892946755871,
+          "final_hits": 1,
+          "online_s": 1.1080141498241574
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 2,
+            "neural_phase.pretrained_full": 5,
+            "latent_ode.pretrained_code": 2,
+            "latent_ode.pretrained_full": 1
+          },
+          "balanced_kl": 0.006729226076810415,
+          "final_hits": 3,
+          "online_s": 2.065143651328981
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.6925046003889292,
+          "tasks_full_fit": 59
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.8807768004480749,
+          "tasks_full_fit": 69
+        }
+      }
+    },
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.0017315177915850832,
+          "fresh": 0.0020156405650501195,
+          "aged": 0.0016365229636234081,
+          "pulse": 0.0014420847387693729,
+          "pulse_effect_rmse": 0.019540615032053073,
+          "observed_nll": 0.810302980322881,
+          "zero_shot_per_system": [
+            0.15784872397094502
+          ],
+          "fit_s": 0.839651400456205,
+          "hits": 10,
+          "hit_s": 0.13834009994752705,
+          "final_hits": 10,
+          "selected_iteration": 80.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03187335541688725,
+          "shape_rms": 0.07296017601046509
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.0015527901281742079,
+          "fresh": 0.0018034432332104512,
+          "aged": 0.0013933507116426365,
+          "pulse": 0.0015508033033573916,
+          "pulse_effect_rmse": 0.018977051032550603,
+          "observed_nll": 0.8091656273908829,
+          "zero_shot_per_system": [
+            0.023214984259722876
+          ],
+          "fit_s": 0.7185047497041523,
+          "hits": 10,
+          "hit_s": 0.042255399748682976,
+          "final_hits": 10,
+          "selected_iteration": 48.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03348615863916485,
+          "shape_rms": 0.06788795426318739
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.0015001318990084602,
+          "fresh": 0.0016570331836580402,
+          "aged": 0.0016487032327112418,
+          "pulse": 0.0010146222906744359,
+          "pulse_effect_rmse": 0.020019823167022104,
+          "observed_nll": 0.8098200171585914,
+          "zero_shot_per_system": [
+            0.023214984259722876
+          ],
+          "fit_s": 0.06902020028792322,
+          "hits": 10,
+          "hit_s": 0.01939959987066686,
+          "final_hits": 10,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03416279793230824,
+          "shape_rms": 0.04303426295932373
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.032149468567732,
+          "fresh": 0.011205008041868638,
+          "aged": 0.04188029970962183,
+          "pulse": 0.04629200112127578,
+          "pulse_effect_rmse": 0.07934479852879184,
+          "observed_nll": 0.8449763718333945,
+          "zero_shot_per_system": [
+            0.2156995740211537
+          ],
+          "fit_s": 0.9893715991638601,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 48.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.006253606965292436,
+          "fresh": 0.005311542393178551,
+          "aged": 0.00461529850971267,
+          "pulse": 0.008535774667554046,
+          "pulse_effect_rmse": 0.03947260130655032,
+          "observed_nll": 0.8141671792887997,
+          "zero_shot_per_system": [
+            0.08565691068996607
+          ],
+          "fit_s": 0.9599740498233587,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.00501690153184941,
+          "fresh": 0.007051539144506343,
+          "aged": 0.002856566705534563,
+          "pulse": 0.005103203330131173,
+          "pulse_effect_rmse": 0.03292230767579684,
+          "observed_nll": 0.8109842671493843,
+          "zero_shot_per_system": [
+            0.08565691068996607
+          ],
+          "fit_s": 0.1070286501199007,
+          "hits": 6,
+          "hit_s": 0.04769164999015629,
+          "final_hits": 4,
+          "selected_iteration": 12.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0003603177153094202,
+            "ci": [
+              -0.0005402739892136914,
+              0.00016110823637051764
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -6.2912080073807e-05,
+            "ci": [
+              -0.0014080542027327114,
+              0.000941251407086785
+            ],
+            "wins": 5,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.00033802711529546173,
+            "ci": [
+              -0.0009130463113348141,
+              0.0005091114223146576
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.00040329454575360746,
+            "ci": [
+              -0.0010758009086914155,
+              0.000937073738936367
+            ],
+            "wins": 3,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 8.48506868759896e-05,
+            "ci": [
+              -0.0006414353135531105,
+              0.0005855796594172384
+            ],
+            "wins": 4,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.00022173424799798447,
+            "ci": [
+              -0.0015358478762512728,
+              0.002146570972848316
+            ],
+            "wins": 4,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.02623057067330338,
+            "ci": [
+              -0.0371594133487481,
+              -0.02244474153434077
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.027953671749806286,
+            "ci": [
+              -0.0342837644976946,
+              -0.020703497586471165
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.026640205962846338,
+            "ci": [
+              -0.03821431598147139,
+              -0.023625261592999557
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.028808326641423965,
+            "ci": [
+              -0.03591392131585924,
+              -0.019886640567627456
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.0012807934978721473,
+            "ci": [
+              -0.0018541508867611044,
+              -0.0006410860397297754
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0026261727763228215,
+            "ci": [
+              -0.003975219793485252,
+              -0.0004333194246256
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.003555898413677196,
+            "ci": [
+              0.002892478457998909,
+              0.003828700346039265
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.0031292086400935837,
+            "ci": [
+              0.002173156093659756,
+              0.005151471910103345
+            ],
+            "wins": 1,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 3,
+            "neural_phase.pretrained_full": 7
+          },
+          "balanced_kl": 0.0014103595527770506,
+          "final_hits": 10,
+          "online_s": 0.8080474496819079
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 5,
+            "latent_ode.pretrained_full": 5
+          },
+          "balanced_kl": 0.0056532592628328725,
+          "final_hits": 3,
+          "online_s": 1.066427999874577
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 3,
+            "neural_phase.pretrained_full": 7,
+            "latent_ode.pretrained_code": 0,
+            "latent_ode.pretrained_full": 0
+          },
+          "balanced_kl": 0.0014103595527770506,
+          "final_hits": 10,
+          "online_s": 1.9339756008703262
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.7455036013852805,
+          "tasks_full_fit": 55
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.8815040490590036,
+          "tasks_full_fit": 69
+        }
+      }
+    }
+  },
+  "ph2": {
+    "400": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.024247960219195498,
+          "fresh": 0.026489743372072362,
+          "aged": 0.026223179009776096,
+          "pulse": 0.01873275654821991,
+          "pulse_effect_rmse": 0.0540454578072197,
+          "observed_nll": 0.7434712709451883,
+          "zero_shot_per_system": [
+            0.09050375067663302
+          ],
+          "fit_s": 0.487443899968639,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 18.0,
+          "selected_zero": 1,
+          "mean_rms": 0.12880811587487517,
+          "shape_rms": 0.2771591086365267
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.020816853460900297,
+          "fresh": 0.020305295795071433,
+          "aged": 0.023154297736836582,
+          "pulse": 0.015536330503195316,
+          "pulse_effect_rmse": 0.04020195756560928,
+          "observed_nll": 0.7331737950518114,
+          "zero_shot_per_system": [
+            0.1998115255400855
+          ],
+          "fit_s": 0.49395025009289384,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 6.0,
+          "selected_zero": 0,
+          "mean_rms": 0.13696219726429704,
+          "shape_rms": 0.028462965561326797
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.013238762515709362,
+          "fresh": 0.011155269420129031,
+          "aged": 0.01668841660297948,
+          "pulse": 0.013475636256481231,
+          "pulse_effect_rmse": 0.024860505829999713,
+          "observed_nll": 0.7381375750624719,
+          "zero_shot_per_system": [
+            0.1998115255400855
+          ],
+          "fit_s": 0.08274185005575418,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 14.5,
+          "selected_zero": 1,
+          "mean_rms": 0.09898283962650312,
+          "shape_rms": 0.03533470143804415
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.2610940504887822,
+          "fresh": 0.07703142953183875,
+          "aged": 0.3367845355415223,
+          "pulse": 0.3372206477101557,
+          "pulse_effect_rmse": 0.09745613030007713,
+          "observed_nll": 0.989485491694739,
+          "zero_shot_per_system": [
+            0.22647430404382574
+          ],
+          "fit_s": 0.8815041005145758,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 18.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.037981587227998104,
+          "fresh": 0.028179365386399282,
+          "aged": 0.04216971350638345,
+          "pulse": 0.03886122493985254,
+          "pulse_effect_rmse": 0.04442705073640735,
+          "observed_nll": 0.7442157027437353,
+          "zero_shot_per_system": [
+            0.03972527183656721
+          ],
+          "fit_s": 0.8517694000620395,
+          "hits": 1,
+          "hit_s": 0.028985400218516588,
+          "final_hits": 1,
+          "selected_iteration": 2.0,
+          "selected_zero": 3
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.009661287190889007,
+          "fresh": 0.009477844276355193,
+          "aged": 0.012134910811373776,
+          "pulse": 0.008493572465950571,
+          "pulse_effect_rmse": 0.023864364189936028,
+          "observed_nll": 0.7290788003320223,
+          "zero_shot_per_system": [
+            0.03972527183656721
+          ],
+          "fit_s": 0.06712969997897744,
+          "hits": 1,
+          "hit_s": 0.027775300201028585,
+          "final_hits": 1,
+          "selected_iteration": 1.0,
+          "selected_zero": 2
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0057209528897435215,
+            "ci": [
+              -0.021338040148167668,
+              0.0013749463327884653
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.008149182161812096,
+            "ci": [
+              -0.023823426364436073,
+              0.0003186249687429088
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.00850331812107797,
+            "ci": [
+              -0.015119784900166095,
+              0.011687882869317982
+            ],
+            "wins": 6,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.004548146775062711,
+            "ci": [
+              -0.018178746020400594,
+              0.014413062492750761
+            ],
+            "wins": 6,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.0008678189785665336,
+            "ci": [
+              -0.012152916177114469,
+              0.017727891053531987
+            ],
+            "wins": 4,
+            "n": 10
+          },
+          "observed": {
+            "median": 3.835631836146547e-06,
+            "ci": [
+              -0.009217544173651615,
+              0.01564031721042114
+            ],
+            "wins": 5,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.23757817293433575,
+            "ci": [
+              -0.2803270383405222,
+              -0.1741038495253626
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.24313717958785147,
+            "ci": [
+              -0.2782131739673006,
+              -0.18027005493657655
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.24988403747232243,
+            "ci": [
+              -0.2803270383405222,
+              -0.17774389890695227
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.267452546120676,
+            "ci": [
+              -0.2864355941139367,
+              -0.17184655413987804
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.004060724860267323,
+            "ci": [
+              -0.031523498893012224,
+              0.0
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0005999000005679211,
+            "ci": [
+              -0.032963480825241476,
+              0.0016071657450822396
+            ],
+            "wins": 5,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": -0.00620225055340427,
+            "ci": [
+              -0.03838921370829118,
+              0.00027228043368026505
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.01086078312865213,
+            "ci": [
+              -0.0374899953304379,
+              0.0034026323762105792
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 1,
+            "neural_phase.pretrained_full": 9
+          },
+          "balanced_kl": 0.01905100493229423,
+          "final_hits": 0,
+          "online_s": 0.579931850079447
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 5,
+            "latent_ode.pretrained_full": 5
+          },
+          "balanced_kl": 0.014046199954162973,
+          "final_hits": 1,
+          "online_s": 0.9174937498755753
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 5,
+            "latent_ode.pretrained_code": 3,
+            "latent_ode.pretrained_full": 2
+          },
+          "balanced_kl": 0.027832266773625956,
+          "final_hits": 0,
+          "online_s": 1.5020658995490521
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4153058002702892,
+          "tasks_full_fit": 99
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.8139268003869802,
+          "tasks_full_fit": 75
+        }
+      }
+    },
+    "2000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.004350783115555375,
+          "fresh": 0.005117967840034286,
+          "aged": 0.0041950196864552446,
+          "pulse": 0.0035304809301191327,
+          "pulse_effect_rmse": 0.021800277667211283,
+          "observed_nll": 0.7199049028141136,
+          "zero_shot_per_system": [
+            0.09050375067663302
+          ],
+          "fit_s": 0.5082537492271513,
+          "hits": 7,
+          "hit_s": 0.1644353996962309,
+          "final_hits": 7,
+          "selected_iteration": 48.0,
+          "selected_zero": 0,
+          "mean_rms": 0.04984796338429763,
+          "shape_rms": 0.14466467991640908
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.005321278425140212,
+          "fresh": 0.004567462013125282,
+          "aged": 0.00501586646823335,
+          "pulse": 0.005327883742949744,
+          "pulse_effect_rmse": 0.020070704575836658,
+          "observed_nll": 0.7170104596211618,
+          "zero_shot_per_system": [
+            0.1998115255400855
+          ],
+          "fit_s": 0.500074299518019,
+          "hits": 6,
+          "hit_s": 0.061768849613144994,
+          "final_hits": 4,
+          "selected_iteration": 24.0,
+          "selected_zero": 0,
+          "mean_rms": 0.061863349448925326,
+          "shape_rms": 0.038677438670396934
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.00894888685165786,
+          "fresh": 0.007432549571596383,
+          "aged": 0.010488447397700768,
+          "pulse": 0.00940968539721337,
+          "pulse_effect_rmse": 0.016681068727767125,
+          "observed_nll": 0.7188737563673566,
+          "zero_shot_per_system": [
+            0.1998115255400855
+          ],
+          "fit_s": 0.08193544950336218,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.08152482202573214,
+          "shape_rms": 0.0524533681343475
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.07545876926586026,
+          "fresh": 0.02382900200614835,
+          "aged": 0.09532456706717846,
+          "pulse": 0.11012846520870667,
+          "pulse_effect_rmse": 0.07322676103742812,
+          "observed_nll": 0.7932352889940597,
+          "zero_shot_per_system": [
+            0.22647430404382574
+          ],
+          "fit_s": 0.8369103500153869,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 48.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.006050162863182075,
+          "fresh": 0.004629157352816839,
+          "aged": 0.007330344650692919,
+          "pulse": 0.0061953312369130206,
+          "pulse_effect_rmse": 0.02081857127823998,
+          "observed_nll": 0.7204365612834779,
+          "zero_shot_per_system": [
+            0.03972527183656721
+          ],
+          "fit_s": 0.8590366002172232,
+          "hits": 1,
+          "hit_s": 0.02562099974602461,
+          "final_hits": 0,
+          "selected_iteration": 3.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.00436376908920165,
+          "fresh": 0.003889350931787991,
+          "aged": 0.005812480513737778,
+          "pulse": 0.0035472036675299958,
+          "pulse_effect_rmse": 0.02213561562848526,
+          "observed_nll": 0.7190622681978704,
+          "zero_shot_per_system": [
+            0.03972527183656721
+          ],
+          "fit_s": 0.0651343003846705,
+          "hits": 7,
+          "hit_s": 0.026413400191813707,
+          "final_hits": 7,
+          "selected_iteration": 4.5,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.00028962680528703093,
+            "ci": [
+              -0.0007695122206647228,
+              0.0014022841200710982
+            ],
+            "wins": 6,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0016519772404215427,
+            "ci": [
+              -0.002835270496487241,
+              0.0016703813082368235
+            ],
+            "wins": 6,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": 0.004973078798808453,
+            "ci": [
+              0.0032224433806605046,
+              0.00637659779672699
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.003903251708637756,
+            "ci": [
+              0.0006921238288043474,
+              0.011686486793222595
+            ],
+            "wins": 2,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.005445035990298218,
+            "ci": [
+              0.0021321710065636355,
+              0.00625309019396952
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.00453983287746057,
+            "ci": [
+              0.0015601681990157212,
+              0.012293995726629925
+            ],
+            "wins": 1,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.06943742356144339,
+            "ci": [
+              -0.0921507560631066,
+              -0.05893409237538492
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.07335424407548391,
+            "ci": [
+              -0.10097894946960673,
+              -0.05886829178389552
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.07053812574433384,
+            "ci": [
+              -0.10717721873822629,
+              -0.0610574983897061
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.06956783163826724,
+            "ci": [
+              -0.11463164270370568,
+              -0.06332279135563512
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.002204330374587498,
+            "ci": [
+              -0.004366820434811599,
+              0.0014456075417934914
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.00305292984450084,
+            "ci": [
+              -0.008815320801843052,
+              0.004058374048542812
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": -0.0050694702636340985,
+            "ci": [
+              -0.0063357256391492305,
+              -0.0020882047276131357
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.006920911552734332,
+            "ci": [
+              -0.010707991071848166,
+              -0.0017808168338418473
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 3,
+            "neural_phase.pretrained_full": 7
+          },
+          "balanced_kl": 0.005321278425140212,
+          "final_hits": 4,
+          "online_s": 0.57697544968687
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 8,
+            "latent_ode.pretrained_full": 2
+          },
+          "balanced_kl": 0.00436376908920165,
+          "final_hits": 6,
+          "online_s": 0.9229804002679884
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 2,
+            "neural_phase.pretrained_full": 4,
+            "latent_ode.pretrained_code": 2,
+            "latent_ode.pretrained_full": 2
+          },
+          "balanced_kl": 0.005364228865600737,
+          "final_hits": 3,
+          "online_s": 1.4836627496406436
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.43493610015138984,
+          "tasks_full_fit": 94
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7715951495338231,
+          "tasks_full_fit": 79
+        }
+      }
+    },
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.0017926769352251994,
+          "fresh": 0.002102872139103815,
+          "aged": 0.0018764274001165876,
+          "pulse": 0.0015864729029320141,
+          "pulse_effect_rmse": 0.013694653736009442,
+          "observed_nll": 0.715313935998044,
+          "zero_shot_per_system": [
+            0.09050375067663302
+          ],
+          "fit_s": 0.506803049473092,
+          "hits": 10,
+          "hit_s": 0.08220360008999705,
+          "final_hits": 10,
+          "selected_iteration": 48.0,
+          "selected_zero": 0,
+          "mean_rms": 0.033476782356790157,
+          "shape_rms": 0.07346244023406606
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.001320252229424897,
+          "fresh": 0.001660182023719964,
+          "aged": 0.0011698246979426632,
+          "pulse": 0.0012259140686503652,
+          "pulse_effect_rmse": 0.012561109655611618,
+          "observed_nll": 0.716331263377544,
+          "zero_shot_per_system": [
+            0.1998115255400855
+          ],
+          "fit_s": 0.4967046994715929,
+          "hits": 9,
+          "hit_s": 0.044228799641132355,
+          "final_hits": 9,
+          "selected_iteration": 80.0,
+          "selected_zero": 0,
+          "mean_rms": 0.0316359774783295,
+          "shape_rms": 0.06078455917970316
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.008007008509430346,
+          "fresh": 0.006211041528922812,
+          "aged": 0.009189251126468413,
+          "pulse": 0.00862973106248861,
+          "pulse_effect_rmse": 0.013800431996896564,
+          "observed_nll": 0.7177716418302384,
+          "zero_shot_per_system": [
+            0.1998115255400855
+          ],
+          "fit_s": 0.0728458994999528,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.07774514668539256,
+          "shape_rms": 0.027945070005048707
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.04365767575316162,
+          "fresh": 0.008800308894284722,
+          "aged": 0.051813994606792785,
+          "pulse": 0.06483777549759603,
+          "pulse_effect_rmse": 0.07367519962391417,
+          "observed_nll": 0.7599535717930075,
+          "zero_shot_per_system": [
+            0.22647430404382574
+          ],
+          "fit_s": 0.8359321001917124,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 64.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.002663640266796252,
+          "fresh": 0.0025192264863199846,
+          "aged": 0.0028429489403614845,
+          "pulse": 0.0025003624989700457,
+          "pulse_effect_rmse": 0.016827166989105434,
+          "observed_nll": 0.7154584798521465,
+          "zero_shot_per_system": [
+            0.03972527183656721
+          ],
+          "fit_s": 0.8457087997812778,
+          "hits": 9,
+          "hit_s": 0.02737999986857176,
+          "final_hits": 9,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.0023114478303643124,
+          "fresh": 0.0025293773982579563,
+          "aged": 0.0026366530853547026,
+          "pulse": 0.0018981611145477925,
+          "pulse_effect_rmse": 0.02048951505461625,
+          "observed_nll": 0.7145102724908157,
+          "zero_shot_per_system": [
+            0.03972527183656721
+          ],
+          "fit_s": 0.06314534973353148,
+          "hits": 10,
+          "hit_s": 0.026809749891981483,
+          "final_hits": 10,
+          "selected_iteration": 10.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.00017722839442393105,
+            "ci": [
+              -0.0009334359271705381,
+              0.0003300717988323496
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.000572881509745049,
+            "ci": [
+              -0.0009687440845927986,
+              0.00047530084865343714
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": 0.006312106217860985,
+            "ci": [
+              0.005044529499289048,
+              0.006811205657950904
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.00512128365101594,
+            "ci": [
+              0.0025576309250081586,
+              0.012609990751338007
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.006803863355438488,
+            "ci": [
+              0.006157230209842029,
+              0.007095128923930225
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.005722704021011882,
+            "ci": [
+              0.0027521182325200844,
+              0.013898946030968418
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.03935120858583928,
+            "ci": [
+              -0.051418837851171136,
+              -0.03405495151436203
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.03973231061295979,
+            "ci": [
+              -0.057332939724887066,
+              -0.03408734304980188
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.04121356156412846,
+            "ci": [
+              -0.05013888129075371,
+              -0.03542204628010551
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.04322572430556154,
+            "ci": [
+              -0.05889922284937221,
+              -0.03241603747132904
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.0004827341121616854,
+            "ci": [
+              -0.0015681705319018867,
+              0.0001600369334853911
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.002132152967713241,
+            "ci": [
+              -0.004031404979585651,
+              0.0015022122141082894
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": -0.005696305099528646,
+            "ci": [
+              -0.005925603371154491,
+              -0.0055036002485144685
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.007255978271952401,
+            "ci": [
+              -0.01143665281122852,
+              -0.004153713835092443
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 10
+          },
+          "balanced_kl": 0.001320252229424897,
+          "final_hits": 9,
+          "online_s": 0.5657229004427791
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 6,
+            "latent_ode.pretrained_full": 4
+          },
+          "balanced_kl": 0.002205476290569151,
+          "final_hits": 9,
+          "online_s": 0.9091381004545838
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 6,
+            "latent_ode.pretrained_code": 3,
+            "latent_ode.pretrained_full": 1
+          },
+          "balanced_kl": 0.0019198793242354074,
+          "final_hits": 9,
+          "online_s": 1.4828854512888938
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.43579289969056845,
+          "tasks_full_fit": 94
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7715335504617542,
+          "tasks_full_fit": 79
+        }
+      }
+    }
+  },
+  "ph3": {
+    "400": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.028604810960999115,
+          "fresh": 0.03617255779422572,
+          "aged": 0.02637850482436518,
+          "pulse": 0.024059453291374808,
+          "pulse_effect_rmse": 0.04893177095961028,
+          "observed_nll": 0.7703898963937453,
+          "zero_shot_per_system": [
+            0.15479153793212366
+          ],
+          "fit_s": 0.528679899405688,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 36.0,
+          "selected_zero": 0,
+          "mean_rms": 0.11189163773327898,
+          "shape_rms": 0.314944324980527
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.018771489593235623,
+          "fresh": 0.01958489986514945,
+          "aged": 0.015182477458266376,
+          "pulse": 0.014394119037211573,
+          "pulse_effect_rmse": 0.03400432316147632,
+          "observed_nll": 0.7622268903519711,
+          "zero_shot_per_system": [
+            0.028983106936496833
+          ],
+          "fit_s": 0.5090307998470962,
+          "hits": 3,
+          "hit_s": 0.017024300061166286,
+          "final_hits": 1,
+          "selected_iteration": 4.5,
+          "selected_zero": 2,
+          "mean_rms": 0.10340387149862004,
+          "shape_rms": 0.10853903708478005
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.007202213367573868,
+          "fresh": 0.007965889864710828,
+          "aged": 0.0049963081546616425,
+          "pulse": 0.007080463960290882,
+          "pulse_effect_rmse": 0.018095863317300453,
+          "observed_nll": 0.7547508722319792,
+          "zero_shot_per_system": [
+            0.028983106936496833
+          ],
+          "fit_s": 0.06283385027199984,
+          "hits": 4,
+          "hit_s": 0.027029949706047773,
+          "final_hits": 4,
+          "selected_iteration": 6.0,
+          "selected_zero": 1,
+          "mean_rms": 0.07110321217305007,
+          "shape_rms": 0.09921052500271779
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.27195100459681687,
+          "fresh": 0.1307581439778858,
+          "aged": 0.3200119823139078,
+          "pulse": 0.38320013788721774,
+          "pulse_effect_rmse": 0.0842485999641491,
+          "observed_nll": 1.0084294142381491,
+          "zero_shot_per_system": [
+            0.2504929488525563
+          ],
+          "fit_s": 0.8670287502463907,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.025458411755679745,
+          "fresh": 0.015082105121774587,
+          "aged": 0.03706152668125565,
+          "pulse": 0.024231603464009006,
+          "pulse_effect_rmse": 0.03681769608890488,
+          "observed_nll": 0.7682254792033469,
+          "zero_shot_per_system": [
+            0.025458411755679745
+          ],
+          "fit_s": 0.8755750504788011,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 0.5,
+          "selected_zero": 5
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.014229658311298223,
+          "fresh": 0.013927247350445843,
+          "aged": 0.013549764296832294,
+          "pulse": 0.016180963191873107,
+          "pulse_effect_rmse": 0.0313258797409822,
+          "observed_nll": 0.7546336666342208,
+          "zero_shot_per_system": [
+            0.025458411755679745
+          ],
+          "fit_s": 0.07956704962998629,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 1.0,
+          "selected_zero": 4
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.009330740381586003,
+            "ci": [
+              -0.022156468404464832,
+              -0.0010116925910656563
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.005250526058626193,
+            "ci": [
+              -0.027847909301092155,
+              -2.332531091953083e-05
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.017279046927512316,
+            "ci": [
+              -0.024149922396343226,
+              -0.011637606025205204
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.018793198890066476,
+            "ci": [
+              -0.027552858941407354,
+              -0.010015399249956536
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.003645244970673569,
+            "ci": [
+              -0.015578414984845539,
+              -3.773814650226328e-05
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0024955387142745478,
+            "ci": [
+              -0.017226897783222006,
+              0.000973140891945723
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.2421986491874733,
+            "ci": [
+              -0.27297511985243794,
+              -0.22717948114256464
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.24490995210969146,
+            "ci": [
+              -0.2800416844513217,
+              -0.2192388254146579
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.2476427204152991,
+            "ci": [
+              -0.265497815968811,
+              -0.24338331800956292
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.253354159043957,
+            "ci": [
+              -0.2800416844513217,
+              -0.23403948489333626
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.010067482413484324,
+            "ci": [
+              -0.01806633842004561,
+              0.0
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.00769987247842141,
+            "ci": [
+              -0.016888413868531016,
+              0.0
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.006814746284070256,
+            "ci": [
+              -0.004714224262571882,
+              0.016645969492535263
+            ],
+            "wins": 2,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.006470689070709856,
+            "ci": [
+              -0.0021702727617753936,
+              0.012897188484163158
+            ],
+            "wins": 2,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 5,
+            "neural_phase.pretrained_full": 5
+          },
+          "balanced_kl": 0.015033077886910166,
+          "final_hits": 2,
+          "online_s": 0.5712520503439009
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 6,
+            "latent_ode.pretrained_full": 4
+          },
+          "balanced_kl": 0.017132585358385178,
+          "final_hits": 0,
+          "online_s": 0.9551267507486045
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 2,
+            "neural_phase.pretrained_full": 1,
+            "latent_ode.pretrained_code": 4,
+            "latent_ode.pretrained_full": 3
+          },
+          "balanced_kl": 0.01954464280500815,
+          "final_hits": 0,
+          "online_s": 1.521942400606349
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.460038899211213,
+          "tasks_full_fit": 89
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7838489501737058,
+          "tasks_full_fit": 78
+        }
+      }
+    },
+    "2000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.005635995540559125,
+          "fresh": 0.006390116074172074,
+          "aged": 0.005858967897627882,
+          "pulse": 0.004728598277318349,
+          "pulse_effect_rmse": 0.02004887963847532,
+          "observed_nll": 0.7437023188621976,
+          "zero_shot_per_system": [
+            0.15479153793212366
+          ],
+          "fit_s": 0.49875394930131733,
+          "hits": 4,
+          "hit_s": 0.08102169958874583,
+          "final_hits": 4,
+          "selected_iteration": 36.0,
+          "selected_zero": 0,
+          "mean_rms": 0.050924980549676466,
+          "shape_rms": 0.11830217873018584
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.004507774042611024,
+          "fresh": 0.004617679769098194,
+          "aged": 0.005010576575571423,
+          "pulse": 0.0037587564656638836,
+          "pulse_effect_rmse": 0.014848842177232119,
+          "observed_nll": 0.7438976519636422,
+          "zero_shot_per_system": [
+            0.028983106936496833
+          ],
+          "fit_s": 0.5016828507650644,
+          "hits": 8,
+          "hit_s": 0.017767149955034256,
+          "final_hits": 7,
+          "selected_iteration": 9.0,
+          "selected_zero": 0,
+          "mean_rms": 0.050344198750976496,
+          "shape_rms": 0.10877563937457399
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.0015703140132700345,
+          "fresh": 0.0013693203771009516,
+          "aged": 0.00163452120282813,
+          "pulse": 0.0013832899498610206,
+          "pulse_effect_rmse": 0.008156273717306907,
+          "observed_nll": 0.7438595805472248,
+          "zero_shot_per_system": [
+            0.028983106936496833
+          ],
+          "fit_s": 0.057314049918204546,
+          "hits": 10,
+          "hit_s": 0.025404399959370494,
+          "final_hits": 10,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.019497156195045565,
+          "shape_rms": 0.07512116684517446
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.09123310373401522,
+          "fresh": 0.029129416341021872,
+          "aged": 0.11649897687889693,
+          "pulse": 0.12197507029602248,
+          "pulse_effect_rmse": 0.07588074529981892,
+          "observed_nll": 0.8285525819976409,
+          "zero_shot_per_system": [
+            0.2504929488525563
+          ],
+          "fit_s": 0.8684243995230645,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 48.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.007293084508035883,
+          "fresh": 0.00585544803132483,
+          "aged": 0.008573569479571368,
+          "pulse": 0.006539420607822101,
+          "pulse_effect_rmse": 0.024135293482922864,
+          "observed_nll": 0.7486146889256815,
+          "zero_shot_per_system": [
+            0.025458411755679745
+          ],
+          "fit_s": 0.8461281501222402,
+          "hits": 1,
+          "hit_s": 0.04441750003024936,
+          "final_hits": 1,
+          "selected_iteration": 3.0,
+          "selected_zero": 1
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.004708408358833016,
+          "fresh": 0.004190150114402703,
+          "aged": 0.00431695546788219,
+          "pulse": 0.00620211283051732,
+          "pulse_effect_rmse": 0.0203007895687115,
+          "observed_nll": 0.7465231628969011,
+          "zero_shot_per_system": [
+            0.025458411755679745
+          ],
+          "fit_s": 0.08041174989193678,
+          "hits": 8,
+          "hit_s": 0.02922950009815395,
+          "final_hits": 7,
+          "selected_iteration": 4.5,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0017860907939883524,
+            "ci": [
+              -0.0031834185143113473,
+              0.0010312311073250248
+            ],
+            "wins": 6,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0038865961940059424,
+            "ci": [
+              -0.0049069460495009265,
+              0.0011848675537374787
+            ],
+            "wins": 6,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.004533790803640306,
+            "ci": [
+              -0.00614163902820305,
+              -0.002201469369862274
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.006332293347624862,
+            "ci": [
+              -0.009643717002513541,
+              0.000102411744001496
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.0029079071088968234,
+            "ci": [
+              -0.0041767743739992026,
+              -0.0014528845499380595
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0031588371537131787,
+            "ci": [
+              -0.0049124443892732406,
+              -0.0010597728212790036
+            ],
+            "wins": 9,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.08438799810726408,
+            "ci": [
+              -0.11164753221836081,
+              -0.06185533507529928
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.08122126892113762,
+            "ci": [
+              -0.0977518387741626,
+              -0.06120509917586536
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.08634475086364231,
+            "ci": [
+              -0.12554111746347962,
+              -0.06408737619037058
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.08129991884047194,
+            "ci": [
+              -0.10906752980921885,
+              -0.06115715889916984
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.0026196470074558984,
+            "ci": [
+              -0.003039909700318817,
+              -0.0014129266373970025
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0015575103357861608,
+            "ci": [
+              -0.0033663637334637175,
+              -0.00041354382238117937
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.003580190650635674,
+            "ci": [
+              0.0028170457194268764,
+              0.0040714488975510605
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.005201135978674942,
+            "ci": [
+              0.0015892523482161636,
+              0.006975781702514172
+            ],
+            "wins": 1,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 5,
+            "neural_phase.pretrained_full": 5
+          },
+          "balanced_kl": 0.002690380407154007,
+          "final_hits": 9,
+          "online_s": 0.5566430503968149
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 8,
+            "latent_ode.pretrained_full": 2
+          },
+          "balanced_kl": 0.0047736783920850415,
+          "final_hits": 6,
+          "online_s": 0.9244037007447332
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 4,
+            "neural_phase.pretrained_full": 4,
+            "latent_ode.pretrained_code": 2,
+            "latent_ode.pretrained_full": 0
+          },
+          "balanced_kl": 0.0036116596681346445,
+          "final_hits": 9,
+          "online_s": 1.471443051006645
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4437566490378231,
+          "tasks_full_fit": 92
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7845825992990285,
+          "tasks_full_fit": 78
+        }
+      }
+    },
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.002078842286540988,
+          "fresh": 0.0022184052566736005,
+          "aged": 0.0022077243937357162,
+          "pulse": 0.0018747592212376204,
+          "pulse_effect_rmse": 0.01257275272502693,
+          "observed_nll": 0.743415806881359,
+          "zero_shot_per_system": [
+            0.15479153793212366
+          ],
+          "fit_s": 0.5254173001740128,
+          "hits": 10,
+          "hit_s": 0.08307700022123754,
+          "final_hits": 10,
+          "selected_iteration": 100.0,
+          "selected_zero": 0,
+          "mean_rms": 0.029810524764394573,
+          "shape_rms": 0.09389926192608603
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.0012567311484828023,
+          "fresh": 0.0015463273195326314,
+          "aged": 0.001158570759798494,
+          "pulse": 0.0010285690861531183,
+          "pulse_effect_rmse": 0.011127498859082138,
+          "observed_nll": 0.7450585038041452,
+          "zero_shot_per_system": [
+            0.028983106936496833
+          ],
+          "fit_s": 0.5017355005256832,
+          "hits": 10,
+          "hit_s": 0.016807200154289603,
+          "final_hits": 10,
+          "selected_iteration": 24.0,
+          "selected_zero": 0,
+          "mean_rms": 0.026895749177681262,
+          "shape_rms": 0.05924961184840741
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.0005652430631493937,
+          "fresh": 0.0005546721040320698,
+          "aged": 0.000642987226808712,
+          "pulse": 0.0005269329433095814,
+          "pulse_effect_rmse": 0.005745406238788378,
+          "observed_nll": 0.7434985362211788,
+          "zero_shot_per_system": [
+            0.028983106936496833
+          ],
+          "fit_s": 0.060418000211939216,
+          "hits": 10,
+          "hit_s": 0.02629160019569099,
+          "final_hits": 10,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.015709764329741693,
+          "shape_rms": 0.03178997255125515
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.047219555071692454,
+          "fresh": 0.008307493464092899,
+          "aged": 0.06505266147181918,
+          "pulse": 0.06815940399983854,
+          "pulse_effect_rmse": 0.051296046946533204,
+          "observed_nll": 0.78297060997469,
+          "zero_shot_per_system": [
+            0.2504929488525563
+          ],
+          "fit_s": 0.8483001503627747,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 80.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.0034284184525831766,
+          "fresh": 0.003333770817514916,
+          "aged": 0.0033016836578498706,
+          "pulse": 0.00399855683542864,
+          "pulse_effect_rmse": 0.0196218665574485,
+          "observed_nll": 0.7481961502950438,
+          "zero_shot_per_system": [
+            0.025458411755679745
+          ],
+          "fit_s": 0.8389462996274233,
+          "hits": 9,
+          "hit_s": 0.04526259936392307,
+          "final_hits": 8,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.004470066548675681,
+          "fresh": 0.003293089547946029,
+          "aged": 0.004028602606935404,
+          "pulse": 0.005733153949894212,
+          "pulse_effect_rmse": 0.020756016007631252,
+          "observed_nll": 0.7463900217036834,
+          "zero_shot_per_system": [
+            0.025458411755679745
+          ],
+          "fit_s": 0.07678179978393018,
+          "hits": 9,
+          "hit_s": 0.0279339998960495,
+          "final_hits": 9,
+          "selected_iteration": 6.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0009431135985662985,
+            "ci": [
+              -0.0016487345578399823,
+              -0.0003094019777457219
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0006205159077025124,
+            "ci": [
+              -0.0028846916749907248,
+              0.0012953283327472587
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0014079054726982144,
+            "ci": [
+              -0.002924913865692615,
+              -0.0007945505143975547
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.001461582030351516,
+            "ci": [
+              -0.0030347843514735295,
+              0.0002562086184453305
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": -0.0004694520199960032,
+            "ci": [
+              -0.0009493721935458314,
+              -0.0002478876150844428
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0008958570258197907,
+            "ci": [
+              -0.0014344878939963612,
+              0.0003474584918901624
+            ],
+            "wins": 6,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.04314388304513775,
+            "ci": [
+              -0.054130842796823966,
+              -0.03546815367522256
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.03728696589168995,
+            "ci": [
+              -0.055612367388791606,
+              -0.03306218724819798
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.04284783066425023,
+            "ci": [
+              -0.05432902766896054,
+              -0.03549238884982576
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.03881945885516985,
+            "ci": [
+              -0.05642295346695797,
+              -0.03220759683407126
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": 0.0010671931233906232,
+            "ci": [
+              -0.0007170542257053103,
+              0.0012683980134260153
+            ],
+            "wins": 3,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0007285189544714576,
+            "ci": [
+              -0.0021206509517645022,
+              0.0016642118189312827
+            ],
+            "wins": 6,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.0038566882868738667,
+            "ci": [
+              0.0033604424695443252,
+              0.004033264627724355
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.003609596627002054,
+            "ci": [
+              0.000649384440298717,
+              0.006364897865428376
+            ],
+            "wins": 2,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 5,
+            "neural_phase.pretrained_full": 5
+          },
+          "balanced_kl": 0.0007380310691408922,
+          "final_hits": 10,
+          "online_s": 0.5614540507085621
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 8,
+            "latent_ode.pretrained_full": 2
+          },
+          "balanced_kl": 0.004459901522883244,
+          "final_hits": 10,
+          "online_s": 0.9179585494566709
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 5,
+            "neural_phase.pretrained_full": 4,
+            "latent_ode.pretrained_code": 1,
+            "latent_ode.pretrained_full": 0
+          },
+          "balanced_kl": 0.0007380310691408922,
+          "final_hits": 10,
+          "online_s": 1.48583659902215
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4649300000164658,
+          "tasks_full_fit": 88
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7712103005032986,
+          "tasks_full_fit": 79
+        }
+      }
+    }
+  },
+  "lognormal": {
+    "400": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.030445150579395168,
+          "fresh": 0.03386905036508579,
+          "aged": 0.028540415596556245,
+          "pulse": 0.023694710758992862,
+          "pulse_effect_rmse": 0.05677717670626662,
+          "observed_nll": 0.8118828072386987,
+          "zero_shot_per_system": [
+            0.09990691174383166
+          ],
+          "fit_s": 0.5233954994473606,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 18.0,
+          "selected_zero": 1,
+          "mean_rms": 0.1310568614948492,
+          "shape_rms": 0.24791527717455267
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.01791787976188472,
+          "fresh": 0.02039132382450643,
+          "aged": 0.015384264270659309,
+          "pulse": 0.016229728459329223,
+          "pulse_effect_rmse": 0.02905606436787139,
+          "observed_nll": 0.7938678955625873,
+          "zero_shot_per_system": [
+            0.06054535839921505
+          ],
+          "fit_s": 0.5176650995854288,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 3.0,
+          "selected_zero": 0,
+          "mean_rms": 0.11890573466785832,
+          "shape_rms": 0.1725128281150538
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.014857927071355996,
+          "fresh": 0.013711780478511687,
+          "aged": 0.016187671301414887,
+          "pulse": 0.0139101321778548,
+          "pulse_effect_rmse": 0.03783967104548618,
+          "observed_nll": 0.7898070119160894,
+          "zero_shot_per_system": [
+            0.06054535839921505
+          ],
+          "fit_s": 0.0696540002245456,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 9.0,
+          "selected_zero": 0,
+          "mean_rms": 0.07470342648552108,
+          "shape_rms": 0.16584022427840317
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.30443611690896316,
+          "fresh": 0.12325136885193191,
+          "aged": 0.3667510430525206,
+          "pulse": 0.405245070754013,
+          "pulse_effect_rmse": 0.11632684305211133,
+          "observed_nll": 1.0751058854505886,
+          "zero_shot_per_system": [
+            0.21129037104142198
+          ],
+          "fit_s": 0.8826517001725733,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.011061481056908915,
+          "fresh": 0.0113014284581504,
+          "aged": 0.010195002428607564,
+          "pulse": 0.011688012283968782,
+          "pulse_effect_rmse": 0.03331674369653751,
+          "observed_nll": 0.7894295483955988,
+          "zero_shot_per_system": [
+            0.011061481056908915
+          ],
+          "fit_s": 0.8408696006517857,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 0.0,
+          "selected_zero": 7
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.011061481056908915,
+          "fresh": 0.0113014284581504,
+          "aged": 0.010195002428607564,
+          "pulse": 0.011688012283968782,
+          "pulse_effect_rmse": 0.03331674369653751,
+          "observed_nll": 0.7876897811458612,
+          "zero_shot_per_system": [
+            0.011061481056908915
+          ],
+          "fit_s": 0.07203294918872416,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 0.0,
+          "selected_zero": 6
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.014132802137816062,
+            "ci": [
+              -0.02323882403875762,
+              -0.006806206276645306
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.015144141138627998,
+            "ci": [
+              -0.02096946832829094,
+              -0.009160290791074499
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.015809919323464976,
+            "ci": [
+              -0.026603301729490575,
+              -0.009953770084576952
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.019710285364821722,
+            "ci": [
+              -0.02458292496848885,
+              -0.008190809710050873
+            ],
+            "wins": 9,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.0006502902103825235,
+            "ci": [
+              -0.00617330129088996,
+              0.003985764435534237
+            ],
+            "wins": 5,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.0018379380738502982,
+            "ci": [
+              -0.006179909266619987,
+              0.005763142496120421
+            ],
+            "wins": 5,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.29337463585205426,
+            "ci": [
+              -0.31534835972445474,
+              -0.22711799705615807
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.29450166919176646,
+            "ci": [
+              -0.30820098521287653,
+              -0.2281528993801114
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.2939329102744115,
+            "ci": [
+              -0.3163715893371122,
+              -0.23035304499014292
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.2935456389874714,
+            "ci": [
+              -0.3095596437123742,
+              -0.23746123051521273
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": 0.0,
+            "ci": [
+              -0.004911631241469872,
+              2.2257610748387113e-05
+            ],
+            "wins": 4,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.0,
+            "ci": [
+              -0.0036029087420748063,
+              3.3904923568417455e-05
+            ],
+            "wins": 4,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": -0.003796446014447081,
+            "ci": [
+              -0.010144574638580534,
+              -0.0007108354348854731
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.004703825471199963,
+            "ci": [
+              -0.013110075983175318,
+              -0.0005458935745857874
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 2,
+            "neural_phase.pretrained_full": 8
+          },
+          "balanced_kl": 0.01791787976188472,
+          "final_hits": 0,
+          "online_s": 0.5999090000987053
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 7,
+            "latent_ode.pretrained_full": 3
+          },
+          "balanced_kl": 0.011083738667657302,
+          "final_hits": 0,
+          "online_s": 0.9146058501210064
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 2,
+            "neural_phase.pretrained_full": 5,
+            "latent_ode.pretrained_code": 2,
+            "latent_ode.pretrained_full": 1
+          },
+          "balanced_kl": 0.01791787976188472,
+          "final_hits": 0,
+          "online_s": 1.5173207495827228
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.45863934932276607,
+          "tasks_full_fit": 89
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.8156720001716167,
+          "tasks_full_fit": 75
+        }
+      }
+    },
+    "2000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.013780072026695098,
+          "fresh": 0.011025928288399442,
+          "aged": 0.01534628903186048,
+          "pulse": 0.012774384957058982,
+          "pulse_effect_rmse": 0.0380800851180713,
+          "observed_nll": 0.78843904451789,
+          "zero_shot_per_system": [
+            0.09990691174383166
+          ],
+          "fit_s": 0.5110495998524129,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 64.0,
+          "selected_zero": 0,
+          "mean_rms": 0.06880441964723553,
+          "shape_rms": 0.3796425629897665
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.00898094412094248,
+          "fresh": 0.00935072113107776,
+          "aged": 0.00926842805722813,
+          "pulse": 0.007305432873439354,
+          "pulse_effect_rmse": 0.028861297301209295,
+          "observed_nll": 0.781881834393805,
+          "zero_shot_per_system": [
+            0.06054535839921505
+          ],
+          "fit_s": 0.5085862998384982,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 36.0,
+          "selected_zero": 0,
+          "mean_rms": 0.06052850128785456,
+          "shape_rms": 0.20219239482227291
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.011172793740591828,
+          "fresh": 0.00998300120453609,
+          "aged": 0.013014768188908309,
+          "pulse": 0.009538521733078108,
+          "pulse_effect_rmse": 0.03269300242081863,
+          "observed_nll": 0.7867322291577872,
+          "zero_shot_per_system": [
+            0.06054535839921505
+          ],
+          "fit_s": 0.06810614978894591,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.054644249242238055,
+          "shape_rms": 0.11825679498119328
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.09911896303381808,
+          "fresh": 0.039942306886502396,
+          "aged": 0.13189847141772482,
+          "pulse": 0.12288002979010532,
+          "pulse_effect_rmse": 0.09371424670699796,
+          "observed_nll": 0.8772811242198655,
+          "zero_shot_per_system": [
+            0.21129037104142198
+          ],
+          "fit_s": 0.844380400609225,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 48.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.010245910877312712,
+          "fresh": 0.01109405500961586,
+          "aged": 0.009684377178386126,
+          "pulse": 0.010205702865535562,
+          "pulse_effect_rmse": 0.03079832929615882,
+          "observed_nll": 0.7947883873967458,
+          "zero_shot_per_system": [
+            0.011061481056908915
+          ],
+          "fit_s": 0.8451961996033788,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 1.0,
+          "selected_zero": 3
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.009909303954199903,
+          "fresh": 0.010251257996150029,
+          "aged": 0.01013444922889559,
+          "pulse": 0.009548366050226256,
+          "pulse_effect_rmse": 0.03331674369653751,
+          "observed_nll": 0.7854752652944951,
+          "zero_shot_per_system": [
+            0.011061481056908915
+          ],
+          "fit_s": 0.07493290002457798,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 1.0,
+          "selected_zero": 4
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.003739601957558766,
+            "ci": [
+              -0.00668592751197414,
+              -0.0014776750223136756
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.004821367182824332,
+            "ci": [
+              -0.008276738885397705,
+              -0.0017524637032340085
+            ],
+            "wins": 9,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.002717220573998388,
+            "ci": [
+              -0.004775946348499866,
+              0.0005253930751032716
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0012009317607130088,
+            "ci": [
+              -0.006058575408728157,
+              0.000712783507494319
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.0025722094946692663,
+            "ci": [
+              0.00012060170652949086,
+              0.0032447597326734886
+            ],
+            "wins": 2,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.002624401754173389,
+            "ci": [
+              -0.0012476344629777092,
+              0.005489160884126432
+            ],
+            "wins": 4,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.08370078974755749,
+            "ci": [
+              -0.19379512738191731,
+              -0.06603270241153081
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.08603144118121464,
+            "ci": [
+              -0.18482381947171211,
+              -0.060162394560856036
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.08963475288819356,
+            "ci": [
+              -0.19379512738191731,
+              -0.06675348795902096
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.09361022014619258,
+            "ci": [
+              -0.18482381947171211,
+              -0.06964377965816004
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": 0.00018404768952489,
+            "ci": [
+              -0.008157825968804964,
+              0.0011691542792428514
+            ],
+            "wins": 3,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.0,
+            "ci": [
+              -0.012670666469225766,
+              0.0022018790371188257
+            ],
+            "wins": 4,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": -0.001004591551597986,
+            "ci": [
+              -0.00156790245111634,
+              -0.00032867950920720864
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0008162548059008068,
+            "ci": [
+              -0.0027152159030516265,
+              0.0003768336194658328
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 10
+          },
+          "balanced_kl": 0.00898094412094248,
+          "final_hits": 0,
+          "online_s": 0.578755799215287
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 4,
+            "latent_ode.pretrained_full": 6
+          },
+          "balanced_kl": 0.009553153290320568,
+          "final_hits": 0,
+          "online_s": 0.9079806497320533
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 7,
+            "latent_ode.pretrained_code": 1,
+            "latent_ode.pretrained_full": 2
+          },
+          "balanced_kl": 0.00939313060637736,
+          "final_hits": 0,
+          "online_s": 1.47808719961904
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.44466714933514595,
+          "tasks_full_fit": 92
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7805040508974344,
+          "tasks_full_fit": 78
+        }
+      }
+    },
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.006179773150196484,
+          "fresh": 0.006819583843672237,
+          "aged": 0.00567471091785576,
+          "pulse": 0.005618248358882678,
+          "pulse_effect_rmse": 0.022089586344837167,
+          "observed_nll": 0.7815564738699776,
+          "zero_shot_per_system": [
+            0.09990691174383166
+          ],
+          "fit_s": 0.5587292495183647,
+          "hits": 1,
+          "hit_s": 0.5752259995788336,
+          "final_hits": 1,
+          "selected_iteration": 120.0,
+          "selected_zero": 0,
+          "mean_rms": 0.034932317101852656,
+          "shape_rms": 0.15723982018962462
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.005705278756234288,
+          "fresh": 0.006009361530602818,
+          "aged": 0.006026924895555207,
+          "pulse": 0.00496470359368866,
+          "pulse_effect_rmse": 0.020940090988670192,
+          "observed_nll": 0.7800627255691026,
+          "zero_shot_per_system": [
+            0.06054535839921505
+          ],
+          "fit_s": 0.5358015003148466,
+          "hits": 2,
+          "hit_s": 0.3192237997427583,
+          "final_hits": 2,
+          "selected_iteration": 80.0,
+          "selected_zero": 0,
+          "mean_rms": 0.03426360590365121,
+          "shape_rms": 0.14734130298381198
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.009950268289388567,
+          "fresh": 0.009150256038401892,
+          "aged": 0.011666482406330423,
+          "pulse": 0.008941001335282528,
+          "pulse_effect_rmse": 0.027375134129427076,
+          "observed_nll": 0.786334551719989,
+          "zero_shot_per_system": [
+            0.06054535839921505
+          ],
+          "fit_s": 0.06715184985660017,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0,
+          "mean_rms": 0.05134651786705938,
+          "shape_rms": 0.07183873051985776
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.06721355643523838,
+          "fresh": 0.015132755670602167,
+          "aged": 0.09375837094353971,
+          "pulse": 0.09398823303748362,
+          "pulse_effect_rmse": 0.099797908918663,
+          "observed_nll": 0.8403760410993006,
+          "zero_shot_per_system": [
+            0.21129037104142198
+          ],
+          "fit_s": 0.866634149570018,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 120.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.020461579687388338,
+          "fresh": 0.012118076690268837,
+          "aged": 0.024340754669532734,
+          "pulse": 0.024288843696954908,
+          "pulse_effect_rmse": 0.03912966767307874,
+          "observed_nll": 0.7978798929465793,
+          "zero_shot_per_system": [
+            0.011061481056908915
+          ],
+          "fit_s": 0.8626086006406695,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 24.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.009078770978982539,
+          "fresh": 0.009188308603648361,
+          "aged": 0.009022821229831158,
+          "pulse": 0.008965618650551305,
+          "pulse_effect_rmse": 0.0317128672131234,
+          "observed_nll": 0.78506375924858,
+          "zero_shot_per_system": [
+            0.011061481056908915
+          ],
+          "fit_s": 0.07327855005860329,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 3.0,
+          "selected_zero": 1
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0004934725531442943,
+            "ci": [
+              -0.0015188155486046927,
+              0.0003904115261611947
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0005866479319849849,
+            "ci": [
+              -0.003048274875371071,
+              0.0006997146897304574
+            ],
+            "wins": 5,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": 0.0037667837211651685,
+            "ci": [
+              0.0026096883659174354,
+              0.0043324056286656734
+            ],
+            "wins": 1,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.004512751076634458,
+            "ci": [
+              0.003073003416682818,
+              0.005251873424235387
+            ],
+            "wins": 1,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.004231995254612412,
+            "ci": [
+              0.003699175299481101,
+              0.004768013020054079
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.004904770313133133,
+            "ci": [
+              0.0035400386169688325,
+              0.006784361607219069
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.0425356237881607,
+            "ci": [
+              -0.0641283746187682,
+              -0.014683570018454151
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.04627072490236944,
+            "ci": [
+              -0.05685976319685737,
+              -0.003582202642949728
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.05802388608378785,
+            "ci": [
+              -0.07400091363332507,
+              -0.047740049779502164
+            ],
+            "wins": 10,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.05228567396811401,
+            "ci": [
+              -0.062098403199502994,
+              -0.04873476967456658
+            ],
+            "wins": 10,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": -0.01015605676467438,
+            "ci": [
+              -0.052019102895021596,
+              0.0006930703132395945
+            ],
+            "wins": 7,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.006511337453324939,
+            "ci": [
+              -0.043893402697545436,
+              0.0008313864026469053
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": -0.0006568574638220956,
+            "ci": [
+              -0.0009784178142161568,
+              -0.00021484891059376024
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0012707924714090435,
+            "ci": [
+              -0.0025350188739693413,
+              0.0009040517072415599
+            ],
+            "wins": 7,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 10
+          },
+          "balanced_kl": 0.005705278756234288,
+          "final_hits": 2,
+          "online_s": 0.5986545500345528
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 1,
+            "latent_ode.pretrained_full": 9
+          },
+          "balanced_kl": 0.020461579687388338,
+          "final_hits": 0,
+          "online_s": 0.9319062002468854
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 10,
+            "latent_ode.pretrained_code": 0,
+            "latent_ode.pretrained_full": 0
+          },
+          "balanced_kl": 0.005705278756234288,
+          "final_hits": 2,
+          "online_s": 1.5261828501243144
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4894524996634573,
+          "tasks_full_fit": 84
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7982187995221466,
+          "tasks_full_fit": 76
+        }
+      }
+    },
+    "cross_budget": {
+      "neural_phase400": {
+        "median": 0.007470930860142364,
+        "ci": [
+          0.005122961084037059,
+          0.014547561397292469
+        ],
+        "wins": 0,
+        "n": 10
+      },
+      "neural_phase2000": {
+        "median": 0.004321195075272426,
+        "ci": [
+          0.0033410880969455253,
+          0.00610901310398223
+        ],
+        "wins": 1,
+        "n": 10
+      },
+      "latent_ode400": {
+        "median": -0.05671034980068667,
+        "ci": [
+          -0.07192435526323618,
+          -0.04671094684334694
+        ],
+        "wins": 10,
+        "n": 10
+      },
+      "latent_ode2000": {
+        "median": -0.05684483296532161,
+        "ci": [
+          -0.07296356245124375,
+          -0.04771283647675384
+        ],
+        "wins": 10,
+        "n": 10
+      }
+    }
+  },
+  "resampled": {
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.0029279045285744627,
+          "fresh": 0.002456284603295466,
+          "aged": 0.003626761450680106,
+          "pulse": 0.003030176188717034,
+          "pulse_effect_rmse": 0.018721883909319885,
+          "observed_nll": 0.8790744571786734,
+          "zero_shot_per_system": [
+            0.05682034699452751
+          ],
+          "fit_s": 0.4610670998226851,
+          "hits": 8,
+          "hit_s": 0.07662664982490242,
+          "final_hits": 8,
+          "selected_iteration": 24.0,
+          "selected_zero": 0,
+          "mean_rms": 0.0434243612975041,
+          "shape_rms": 0.08660096035792456
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.004191019255179913,
+          "fresh": 0.002556102317400456,
+          "aged": 0.00507335376014109,
+          "pulse": 0.004822947026198238,
+          "pulse_effect_rmse": 0.019268511993106637,
+          "observed_nll": 0.878547859750191,
+          "zero_shot_per_system": [
+            0.1614116440982942
+          ],
+          "fit_s": 0.4632626501843333,
+          "hits": 10,
+          "hit_s": 0.13511174987070262,
+          "final_hits": 10,
+          "selected_iteration": 48.0,
+          "selected_zero": 0,
+          "mean_rms": 0.046084708144776027,
+          "shape_rms": 0.1335643474023318
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.022368181382745825,
+          "fresh": 0.012301855154965666,
+          "aged": 0.029705242700216954,
+          "pulse": 0.02493922130671817,
+          "pulse_effect_rmse": 0.02792175027325405,
+          "observed_nll": 0.8978951307289769,
+          "zero_shot_per_system": [
+            0.1614116440982942
+          ],
+          "fit_s": 0.054924649419263005,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 13.0,
+          "selected_zero": 0,
+          "mean_rms": 0.11701039190770274,
+          "shape_rms": 0.22418864878323633
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.03336867911337952,
+          "fresh": 0.009134134296081097,
+          "aged": 0.04269655814305777,
+          "pulse": 0.04380012422430135,
+          "pulse_effect_rmse": 0.05283679142335082,
+          "observed_nll": 0.9048199093640455,
+          "zero_shot_per_system": [
+            0.08897130540659315
+          ],
+          "fit_s": 0.8476128005422652,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 48.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.02243997050344264,
+          "fresh": 0.004859862465780601,
+          "aged": 0.035943808988008134,
+          "pulse": 0.027148470178892915,
+          "pulse_effect_rmse": 0.030824306732280794,
+          "observed_nll": 0.9006774358464003,
+          "zero_shot_per_system": [
+            0.1047464057847215
+          ],
+          "fit_s": 0.8317596002016217,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 12.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.06197606702323879,
+          "fresh": 0.031478646308301994,
+          "aged": 0.07628154567621451,
+          "pulse": 0.0784726358718926,
+          "pulse_effect_rmse": 0.03802652090573552,
+          "observed_nll": 0.9344802687860486,
+          "zero_shot_per_system": [
+            0.1047464057847215
+          ],
+          "fit_s": 0.09531040000729263,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 13.0,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": 0.0007441968648671045,
+            "ci": [
+              -0.00021959832788850378,
+              0.0013508791948404005
+            ],
+            "wins": 3,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.00029567248682910163,
+            "ci": [
+              -0.0005265974284823782,
+              0.0016938387004401534
+            ],
+            "wins": 4,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": 0.01880778176873837,
+            "ci": [
+              0.01655901429179203,
+              0.020909533367472623
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.019233125425221376,
+            "ci": [
+              0.015116663180474776,
+              0.02578523564355467
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.018364909506384704,
+            "ci": [
+              0.01632890176607498,
+              0.02074351623320536
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.019917659361207596,
+            "ci": [
+              0.013779153622409335,
+              0.02505406382326708
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.005114542935466747,
+            "ci": [
+              -0.02180634107641308,
+              0.005550638638880177
+            ],
+            "wins": 6,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.007546024917147343,
+            "ci": [
+              -0.016869250796944013,
+              0.0041402322147002235
+            ],
+            "wins": 6,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": 0.029340278373641438,
+            "ci": [
+              0.021236421896809826,
+              0.04719315480019447
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.02252657698403887,
+            "ci": [
+              0.014777610759188098,
+              0.048111090103852616
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": 0.03882947792841762,
+            "ci": [
+              0.03410855197931646,
+              0.043065599549672394
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.033269544631728654,
+            "ci": [
+              0.029586672591457974,
+              0.04496989679182778
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.04034045042238606,
+            "ci": [
+              0.03806868509723793,
+              0.04135524029225514
+            ],
+            "wins": 0,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.03702388245635546,
+            "ci": [
+              0.03238949679542252,
+              0.041205445988680034
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 10
+          },
+          "balanced_kl": 0.004191019255179913,
+          "final_hits": 10,
+          "online_s": 0.5125688000116497
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 0,
+            "latent_ode.pretrained_full": 10
+          },
+          "balanced_kl": 0.02243997050344264,
+          "final_hits": 0,
+          "online_s": 0.9315161504782736
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 9,
+            "latent_ode.pretrained_code": 0,
+            "latent_ode.pretrained_full": 1
+          },
+          "balanced_kl": 0.004191019255179913,
+          "final_hits": 9,
+          "online_s": 1.4450527501758188
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.4056771497707814,
+          "tasks_full_fit": 101
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.7408004510216415,
+          "tasks_full_fit": 82
+        }
+      }
+    }
+  },
+  "persistent": {
+    "8000": {
+      "arms": {
+        "neural_phase.scratch": {
+          "n": 10,
+          "balanced_kl": 0.03295026723794824,
+          "fresh": 0.009280627219817341,
+          "aged": 0.04635505383457031,
+          "pulse": 0.04266151615379106,
+          "pulse_effect_rmse": 0.035266370795581856,
+          "observed_nll": 0.8807981851459064,
+          "zero_shot_per_system": [
+            0.0718458214878221
+          ],
+          "fit_s": 0.44552850048057735,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 100.0,
+          "selected_zero": 0,
+          "mean_rms": 0.12519869561579172,
+          "shape_rms": 0.17375982198198847
+        },
+        "neural_phase.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.03227715975437781,
+          "fresh": 0.00913862171431633,
+          "aged": 0.043795835838171863,
+          "pulse": 0.04254979083773039,
+          "pulse_effect_rmse": 0.03465369044282766,
+          "observed_nll": 0.8788841502212297,
+          "zero_shot_per_system": [
+            0.26368599566665235
+          ],
+          "fit_s": 0.45562419947236776,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 80.0,
+          "selected_zero": 0,
+          "mean_rms": 0.12783847052466793,
+          "shape_rms": 0.1753036076178334
+        },
+        "neural_phase.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.06830802017305984,
+          "fresh": 0.02234824099571653,
+          "aged": 0.086764435627539,
+          "pulse": 0.09529973664147495,
+          "pulse_effect_rmse": 0.04847641533642205,
+          "observed_nll": 0.9075051714794886,
+          "zero_shot_per_system": [
+            0.26368599566665235
+          ],
+          "fit_s": 0.08164410060271621,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 23.0,
+          "selected_zero": 0,
+          "mean_rms": 0.3292602242723933,
+          "shape_rms": 0.6051173469134541
+        },
+        "latent_ode.scratch": {
+          "n": 10,
+          "balanced_kl": 0.08206949595519533,
+          "fresh": 0.017577396546685917,
+          "aged": 0.10624512541457146,
+          "pulse": 0.12390086181171521,
+          "pulse_effect_rmse": 0.08297575287154732,
+          "observed_nll": 0.9300521315904045,
+          "zero_shot_per_system": [
+            0.12024053019960551
+          ],
+          "fit_s": 0.8575948504731059,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 80.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_full": {
+          "n": 10,
+          "balanced_kl": 0.0613037911770323,
+          "fresh": 0.013276245554155054,
+          "aged": 0.07963225157005337,
+          "pulse": 0.0903809628461045,
+          "pulse_effect_rmse": 0.06239521770971315,
+          "observed_nll": 0.9071285164187638,
+          "zero_shot_per_system": [
+            0.16898134174051016
+          ],
+          "fit_s": 0.8347149502951652,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 64.0,
+          "selected_zero": 0
+        },
+        "latent_ode.pretrained_code": {
+          "n": 10,
+          "balanced_kl": 0.07138873920918455,
+          "fresh": 0.050570665829081596,
+          "aged": 0.07613821176961147,
+          "pulse": 0.08777206546440357,
+          "pulse_effect_rmse": 0.05085241539490372,
+          "observed_nll": 0.9180765410451681,
+          "zero_shot_per_system": [
+            0.16898134174051016
+          ],
+          "fit_s": 0.15101554989814758,
+          "hits": 0,
+          "hit_s": null,
+          "final_hits": 0,
+          "selected_iteration": 23.5,
+          "selected_zero": 0
+        }
+      },
+      "comparisons": {
+        "neural_phase.pretrained_full minus neural_phase.scratch": {
+          "kl": {
+            "median": -0.0017869528405545614,
+            "ci": [
+              -0.0029854827037181023,
+              -0.0001802207086738436
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.0009465101669534071,
+            "ci": [
+              -0.002556478836012288,
+              0.00030258325401716357
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.scratch": {
+          "kl": {
+            "median": 0.03507788098500529,
+            "ci": [
+              0.03347945373646449,
+              0.03564656113258833
+            ],
+            "wins": 1,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.03450363418054375,
+            "ci": [
+              0.026765264765710395,
+              0.03999406538980521
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "neural_phase.pretrained_code minus neural_phase.pretrained_full": {
+          "kl": {
+            "median": 0.03604621912645044,
+            "ci": [
+              0.03356402687021021,
+              0.03832801402203043
+            ],
+            "wins": 1,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.03523282122445087,
+            "ci": [
+              0.027572254842914035,
+              0.04081275373138765
+            ],
+            "wins": 0,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_full minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.019956106019762082,
+            "ci": [
+              -0.02420948260229519,
+              -0.006269419301742213
+            ],
+            "wins": 8,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.02103208479225882,
+            "ci": [
+              -0.03596267853509205,
+              -0.011752489108254383
+            ],
+            "wins": 9,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.scratch": {
+          "kl": {
+            "median": -0.010003762866842375,
+            "ci": [
+              -0.013317858544952751,
+              -0.005915315489254155
+            ],
+            "wins": 9,
+            "n": 10
+          },
+          "observed": {
+            "median": -0.010784682513235389,
+            "ci": [
+              -0.023998751425742648,
+              -0.0025485130803341582
+            ],
+            "wins": 8,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus latent_ode.pretrained_full": {
+          "kl": {
+            "median": 0.009029532129568658,
+            "ci": [
+              -0.004662882558714575,
+              0.013847052699663739
+            ],
+            "wins": 2,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.010947459109928448,
+            "ci": [
+              -0.005512515986663635,
+              0.019411402600062244
+            ],
+            "wins": 2,
+            "n": 10
+          }
+        },
+        "latent_ode.pretrained_code minus neural_phase.pretrained_code": {
+          "kl": {
+            "median": 0.003363461953028987,
+            "ci": [
+              0.0007028239173111003,
+              0.006024455002162206
+            ],
+            "wins": 2,
+            "n": 10
+          },
+          "observed": {
+            "median": 0.012218039074229414,
+            "ci": [
+              0.004822481042473625,
+              0.015711386277878825
+            ],
+            "wins": 1,
+            "n": 10
+          }
+        }
+      },
+      "validation_choice": {
+        "neural_phase": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 10
+          },
+          "balanced_kl": 0.03227715975437781,
+          "final_hits": 0,
+          "online_s": 0.5335691997315735
+        },
+        "latent_ode": {
+          "chosen": {
+            "latent_ode.pretrained_code": 0,
+            "latent_ode.pretrained_full": 10
+          },
+          "balanced_kl": 0.0613037911770323,
+          "final_hits": 0,
+          "online_s": 0.984534451039508
+        },
+        "either": {
+          "chosen": {
+            "neural_phase.pretrained_code": 0,
+            "neural_phase.pretrained_full": 7,
+            "latent_ode.pretrained_code": 0,
+            "latent_ode.pretrained_full": 3
+          },
+          "balanced_kl": 0.033552269612414726,
+          "final_hits": 0,
+          "online_s": 1.5391731499694288
+        }
+      },
+      "amortization": {
+        "neural_phase": {
+          "offline_s": 40.755267600528896,
+          "paired_warm_s_saved": 0.3705868993420154,
+          "tasks_full_fit": 110
+        },
+        "latent_ode": {
+          "offline_s": 60.58379750000313,
+          "paired_warm_s_saved": 0.6964793007355183,
+          "tasks_full_fit": 87
+        }
+      }
+    }
+  },
+  "matched_pair": {
+    "max_probability_gap": 0.2049263761822534,
+    "common_forecast_min_average_balanced_kl": 0.006706496358090494,
+    "persistent_mixture_check": 9.43689570931383e-16
+  },
+  "prediction_ms": {
+    "neural_phase.scratch": 0.8001499809324741,
+    "neural_phase.pretrained_code": 0.8121996652334929,
+    "latent_ode.scratch": 0.9549499955028296,
+    "latent_ode.pretrained_code": 0.9435501415282488
+  }
+}

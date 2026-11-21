@@ -1,0 +1,40 @@
+{
+  "status": "PASSED",
+  "verified_archive_files": 17,
+  "erlang16_replay": {
+    "nominal_max_error": 1.2434497875801753e-14,
+    "rate_sensitivity_defect": 0.26196690222597196
+  },
+  "stem_cell_replay": {
+    "replayed_rmse": 0.01545409801651842,
+    "archived_rmse": 0.015454098022209463,
+    "abs_drift": 5.6910431228685e-12
+  },
+  "headline_claims": {
+    "cyclic_primary_joint_hits_of_280": {
+      "full48": 238,
+      "sym33": 161,
+      "sp33": 239,
+      "sp18": 164
+    },
+    "fisher_shape_median_pct": {
+      "ph": 4.52,
+      "nomass": 7.69
+    },
+    "fisher_cold_speedup_median": 19.32,
+    "trait_datasets": 10,
+    "neural_clock_balanced_kl": {
+      "neural_clock": 0.00197,
+      "moment_ph": 0.01095,
+      "latent_ode": 0.08315
+    },
+    "persistent_carry_targets": [
+      "resampled",
+      "persistent"
+    ],
+    "real_visit_gains_nats": {
+      "sleep_n2": 0.01201,
+      "ecoli_si": 0.01293
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "data_sha256": "a72a58b22f7f1c9d4ae1b2b451c19eb83b9d95349c5f64a9006dc96665ebb1b9",
+  "cell_line": "R1",
+  "fixed_shapes": [
+    21,
+    47
+  ],
+  "observation_times": [
+    0.0,
+    24.0,
+    48.0,
+    72.0,
+    96.0,
+    120.0,
+    168.0
+  ],
+  "data_mean_proportions": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.8401874159227098,
+      0.15981258407728996,
+      0.0
+    ],
+    [
+      0.01689684885937745,
+      0.9567082815304502,
+      0.02639486961017224
+    ],
+    [
+      0.0,
+      0.99,
+      0.01
+    ],
+    [
+      0.0,
+      0.32109091260600836,
+      0.6789090873939917
+    ],
+    [
+      0.0,
+      0.05894906967186001,
+      0.9410509303281399
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "initial_rates": [
+    0.0328,
+    0.016700000000000007
+  ],
+  "fitted_rates": [
+    0.03264440525795766,
+    0.01644382727084678
+  ],
+  "optimizer_success": true,
+  "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+  "iterations": 6,
+  "initial_mean_species_rmse": 0.019254312049518996,
+  "fitted_mean_species_rmse": 0.01660453514456783,
+  "compile_and_first_seconds": 1.8236075998283923,
+  "warmed_loss_gradient_seconds_median": 0.000602399930357933,
+  "fitting_seconds": 0.00799940014258027,
+  "prediction_matrix_exponential_max_error": 7.542660940274004e-10,
+  "initial_gradient_fd_relative_error": 1.309902256540578e-07,
+  "note": "Two-rate in-sample feasibility pilot. Fixed integer shapes, no shape gradients, no uncertainty intervals; not a reproduction of four-parameter Gamma inference."
+}
