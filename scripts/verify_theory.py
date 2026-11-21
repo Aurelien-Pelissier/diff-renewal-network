@@ -1,15 +1,19 @@
 """Independent symbolic and numerical verification of all theoretical results.
 
 Verifies:
-- Proposition 1: Exact marked-race compilation (degree, normalization, minimal order,
-  and JAX/Diffrax compact vs. K**d tensor forward + gradient agreement).
+- Proposition 1: Exact mixed-Erlang marked-race compilation (degree, normalization,
+  minimal order, and JAX/Diffrax compact vs. K**d tensor forward + gradient agreement).
+- Proposition 2: Exact Hyper-Erlang marked-race decomposition (CV > 1 burstiness).
+- Proposition 3: Single-visit indistinguishability with lag-l return covariance.
+- Proposition 4: Nonlinear MeanFieldDRN simplex invariance & mass conservation.
 - Theorems 1 & 2: Occupation dimension via balanced invisible fluxes and common
   survival-zero GCD formula (exact rational block-Hankel rank across topologies).
-- Theorem 3: Node-specific sensitivity restores canceled poles (symbolic Laplace
-  residues, square-free 33-vs-48 separation on the three-node Erlang-16 cycle,
-  Fréchet vs. Duhamel defect integral, and Baur et al. two-sided interpolation).
-- Proposition 2 & Theorem 4: Single-visit indistinguishability with lag-l covariance
-  and constructive two-preparation exponential-snapshot Laplace inversion.
+- Theorem 3: Multiplicity-sharp sensitivity dimension (symbolic Laplace residues,
+  double-root principal coefficients, 33-vs-48 separation on the three-node Erlang-16
+  cycle, Fréchet vs. Duhamel defect integral, and Baur et al. two-sided interpolation).
+- Theorems 4 & 5: Positivity-preserving Fisher bias bound (Pos-Sens) and sharp
+  Aldous-Shepp Markov-positivity W2 cone lower bound.
+- Theorem 6: Constructive two-preparation exponential-snapshot Laplace inversion.
 """
 
 import json
@@ -185,8 +189,8 @@ def _verify_marked_race_diffrax() -> dict:
 
 
 def _verify_hyper_race_and_universal_pos_sens() -> dict:
-    """Verify Proposition 3 (Hyper-Erlang Marked-Race Compiler) and Universal Graph Pos-Sens."""
-    # 1. Proposition 3: d=3 competing M=2 Hyper-Erlang clocks (CV > 1 bursty + refractory)
+    """Verify Proposition 2 (Hyper-Erlang Marked-Race Compiler) and Universal Graph Pos-Sens."""
+    # 1. Proposition 2: d=3 competing M=2 Hyper-Erlang clocks (CV > 1 bursty + refractory)
     d, m_br, k_st = 3, 2, 6
     naive_dim = (m_br * k_st) ** d  # 12^3 = 1,728
     comp_dim = hyper_race_state_size(d, m_br, k_st)  # 8 * 16 = 128
@@ -617,7 +621,7 @@ def main() -> None:
         stacked.append(mat)
     assert sp.Matrix.vstack(*stacked).rank() == 2
 
-    # Proposition 2: Single-visit indistinguishability & lag covariance
+    # Proposition 3: Single-visit indistinguishability & lag covariance
     delta_val, rho_val, m1, m2 = 0.45, 0.8, 1.8, 2.2
     p_trans = rho_val * np.eye(2) + (1.0 - rho_val) * np.ones((2, 2)) / 2.0
     signs = np.array([-1.0, 1.0])

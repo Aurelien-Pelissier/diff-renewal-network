@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 26 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 31 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -103,8 +103,13 @@ def verify_headline_numbers() -> dict:
     ems = json.loads((ARCH / "edge_memory_sleep_summary.json").read_text(encoding="utf-8"))
     hem = json.loads((ARCH / "hematopoiesis_branching_summary.json").read_text(encoding="utf-8"))
     hdk = json.loads((ARCH / "helpdesk_systems_summary.json").read_text(encoding="utf-8"))
+    hdk_ext = json.loads((ARCH / "helpdesk_extended_baselines.json").read_text(encoding="utf-8"))
+    slp_ext = json.loads((ARCH / "sleep_extended_baselines.json").read_text(encoding="utf-8"))
+    hem_d = json.loads((ARCH / "hematopoiesis_donor_extrap.json").read_text(encoding="utf-8"))
     mfe = json.loads((ARCH / "mean_field_epidemic_summary.json").read_text(encoding="utf-8"))
     spg = json.loads((ARCH / "sparse_large_graph_scaling.json").read_text(encoding="utf-8"))
+    sp_rss = json.loads((ARCH / "sparse_e2e_and_memory.json").read_text(encoding="utf-8"))
+    zs_ctrl = json.loads((ARCH / "zeroshot_age0_control.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -166,11 +171,24 @@ def verify_headline_numbers() -> dict:
     ecoli_si = round(float(rvm["datasets"]["nomass"]["models"]["adjusted"]["previous"]["all"]["gain"]), 5)
     assert (n2_gain, ecoli_si) == (0.01201, 0.01293)
 
-    # New Systems ML (IT Helpdesk), Nonlinear MeanFieldDRN (Influenza), & SparseDRN (V=1024) checks
+    # New Systems ML (IT Helpdesk), Extended Real Baselines (LTC/S4D/Chrono/Donor), MeanFieldDRN, & SparseDRN checks
     hdk_em_zs = round(float(hdk["cv_5fold_summary"]["edge_memory_drn_fresh_only"]["aged_kl_mean"]), 4)
     hdk_lo_zs = round(float(hdk["cv_5fold_summary"]["latent_ode_fresh_only"]["aged_kl_mean"]), 4)
     hdk_cme_zs = round(float(hdk["cv_5fold_summary"]["neural_cme_fresh_only"]["aged_kl_mean"]), 4)
-    assert hdk_em_zs < 0.04 and hdk_lo_zs > 0.20 and hdk_cme_zs > 0.25
+    hdk_ltc_zs = round(float(hdk_ext["cv_5fold_extended"]["ltc_ode_fresh_only"]["aged_kl_mean"]), 4)
+    hdk_s4d_zs = round(float(hdk_ext["cv_5fold_extended"]["s4d_ode_fresh_only"]["aged_kl_mean"]), 4)
+    hdk_ups_zs = round(float(hdk_ext["cv_5fold_extended"]["universal_pos_sens_fresh_only"]["aged_kl_mean"]), 4)
+    hdk_ch = hdk_ext["chronological_split"]["models"]
+    assert hdk_em_zs < 0.04 and hdk_lo_zs > 0.20 and hdk_cme_zs > 0.25 and hdk_ltc_zs > 0.20 and hdk_s4d_zs > 0.20
+    assert hdk_ups_zs < 0.14
+    assert hdk_ch["edge_memory_drn_fresh_only"]["aged_kl"] < 0.16
+    assert min(hdk_ch[k]["aged_kl"] for k in ("ltc_ode_fresh_only", "s4d_ode_fresh_only", "neural_cme_fresh_only", "latent_ode_fresh_only")) > 0.50
+    slp_ltc_zs = round(float(slp_ext["models_5fold_mean"]["ltc_ode_fresh_only"]["aged_kl_mean"]), 4)
+    slp_s4d_zs = round(float(slp_ext["models_5fold_mean"]["s4d_ode_fresh_only"]["aged_kl_mean"]), 4)
+    assert slp_ltc_zs > 0.085 and slp_s4d_zs > 0.085 and em_zs < slp_s4d_zs
+    hem_d7_drn = round(float(hem_d["unseen_donor_day7"]["compiled_drn"]["kl_mean"]), 4)
+    hem_d7_ctmc = round(float(hem_d["unseen_donor_day7"]["ctmc"]["kl_mean"]), 4)
+    assert hem_d7_drn < hem_d7_ctmc
     mfe_drn_ex8 = round(float(mfe["extrapolation_splits"]["days_1to8_to_9to14"]["mean_field_drn"]["test"]["mean_kl_nats"]), 4)
     mfe_mkv_ex8 = round(float(mfe["extrapolation_splits"]["days_1to8_to_9to14"]["markov_seicr"]["test"]["mean_kl_nats"]), 4)
     mfe_slope = round(float(mfe["kurtz_propagation_of_chaos"]["empirical_slope"]), 3)
@@ -178,6 +196,12 @@ def verify_headline_numbers() -> dict:
     sp_1024 = [r for r in spg["scaling_rows"] if r["nodes"] == 1024][0]
     assert sp_1024["compiled_states"] == 31744 and sp_1024["sparse_operator_mb"] < 1.0
     assert spg["dense_vs_sparse_v16_check"]["gradient_relative_l2_error"] < 1e-10
+    rss_1024 = [r for r in sp_rss["peak_rss_scaling"] if r["nodes"] == 1024][0]
+    e2e_v64 = sp_rss["e2e_v64_256param_optimization"]
+    assert rss_1024["peak_total_rss_mb"] < 700.0 and e2e_v64["heldout_kl_sparse_drn_nats"] < 0.001 and e2e_v64["kl_reduction_vs_ctmc"] > 500.0
+    assert zs_ctrl["helpdesk_5fold"]["empirical_fresh_oracle_aged_kl_mean"] > 0.24
+    assert zs_ctrl["helpdesk_chrono"]["empirical_fresh_oracle_aged_kl"] > 0.55
+    assert zs_ctrl["sleep_5fold"]["empirical_fresh_oracle_aged_kl_mean"] > 0.085
 
     return {
         "cyclic_primary_joint_hits_of_280": {
@@ -210,8 +234,21 @@ def verify_headline_numbers() -> dict:
         "real_visit_gains_nats": {"sleep_n2": n2_gain, "ecoli_si": ecoli_si},
         "helpdesk_zeroshot_aged_kl": {
             "edge_memory_drn": hdk_em_zs,
+            "universal_pos_sens": hdk_ups_zs,
+            "ltc_ode": hdk_ltc_zs,
+            "s4d_ode": hdk_s4d_zs,
             "latent_ode": hdk_lo_zs,
             "neural_cme": hdk_cme_zs,
+            "chrono_edge_memory_drn": round(float(hdk_ch["edge_memory_drn_fresh_only"]["aged_kl"]), 4),
+            "chrono_ltc_ode": round(float(hdk_ch["ltc_ode_fresh_only"]["aged_kl"]), 4),
+        },
+        "sleep_extended_zeroshot_aged_kl": {
+            "ltc_ode": slp_ltc_zs,
+            "s4d_ode": slp_s4d_zs,
+        },
+        "hematopoiesis_donor_heldout_day7_kl": {
+            "compiled_drn": hem_d7_drn,
+            "ctmc": hem_d7_ctmc,
         },
         "mean_field_influenza_day9to14_kl": {
             "mean_field_drn": mfe_drn_ex8,
@@ -221,7 +258,9 @@ def verify_headline_numbers() -> dict:
         "sparse_drn_v1024": {
             "compiled_states": sp_1024["compiled_states"],
             "sparse_operator_mb": round(sp_1024["sparse_operator_mb"], 3),
+            "peak_total_rss_mb": rss_1024["peak_total_rss_mb"],
             "grad_warm_ms": round(sp_1024["grad_warm_ms"], 1),
+            "e2e_v64_kl_reduction_vs_ctmc": e2e_v64["kl_reduction_vs_ctmc"],
         },
     }
 

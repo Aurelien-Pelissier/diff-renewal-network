@@ -1,0 +1,78 @@
+{
+  "protocol": "Strict 5-fold donor-held-out temporal extrapolation: train on Days 1-5 of 8 donors, evaluate on unseen Days 6-7 and Day 7 of 2 held-out donors",
+  "donors_total": 10,
+  "unseen_donor_day7": {
+    "compiled_drn": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.14802957864866545,
+      "kl_sd": 0.13098551462506308,
+      "rmse_mean": 0.1009700123643644,
+      "rmse_sd": 0.05498693143906938
+    },
+    "universal_pos_sens": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.154813335506503,
+      "kl_sd": 0.15922994175853947,
+      "rmse_mean": 0.09788066258202158,
+      "rmse_sd": 0.06128910574597722
+    },
+    "ctmc": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.19231614898955868,
+      "kl_sd": 0.10460941051209369,
+      "rmse_mean": 0.12477209207276954,
+      "rmse_sd": 0.05178072827603615
+    },
+    "neural_cme": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.22009400728960177,
+      "kl_sd": 0.2609293468478262,
+      "rmse_mean": 0.093785987290417,
+      "rmse_sd": 0.08429723358339612
+    },
+    "latent_ode": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.1434350005811254,
+      "kl_sd": 0.22391083525211497,
+      "rmse_mean": 0.08106403754617997,
+      "rmse_sd": 0.07915940959869941
+    }
+  },
+  "unseen_donor_days6to7": {
+    "compiled_drn": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.159857546943554,
+      "kl_sd": 0.12046488033259932,
+      "rmse_mean": 0.11239157896359435,
+      "rmse_sd": 0.04588062714884595
+    },
+    "universal_pos_sens": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.16357295702213198,
+      "kl_sd": 0.14403532375251069,
+      "rmse_mean": 0.10791815440775596,
+      "rmse_sd": 0.053561363598649575
+    },
+    "ctmc": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.20850923703636584,
+      "kl_sd": 0.08163312161948003,
+      "rmse_mean": 0.13988278892562633,
+      "rmse_sd": 0.028114205461146704
+    },
+    "neural_cme": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.1949470511988006,
+      "kl_sd": 0.22250152923635277,
+      "rmse_mean": 0.09765895327227123,
+      "rmse_sd": 0.07703826926623936
+    },
+    "latent_ode": {
+      "n_folds_with_target": 5,
+      "kl_mean": 0.14795645478203254,
+      "kl_sd": 0.20038897858665852,
+      "rmse_mean": 0.09282143793621665,
+      "rmse_sd": 0.0703486783414546
+    }
+  }
+}

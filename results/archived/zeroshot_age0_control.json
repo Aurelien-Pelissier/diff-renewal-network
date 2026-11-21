@@ -1,0 +1,40 @@
+{
+  "purpose": "Clean zero-masked (age=0) neural ODE zero-shot controls and empirical fresh-rollout oracle floors eliminating any untrained-age-weight confounder.",
+  "helpdesk_5fold": {
+    "empirical_fresh_oracle_aged_kl_mean": 0.25265,
+    "empirical_fresh_oracle_aged_kl_sd": 0.01555,
+    "latent_ode_clean_age0_mean": 0.25565,
+    "latent_ode_clean_age0_sd": 0.02563,
+    "neural_cme_clean_age0_mean": 0.28275,
+    "neural_cme_clean_age0_sd": 0.01747
+  },
+  "helpdesk_chrono": {
+    "empirical_fresh_oracle_aged_kl": 0.56542,
+    "models": {
+      "ltc_ode": {
+        "fresh_kl": 0.10825,
+        "aged_kl_clean_age0": 0.58381,
+        "aged_kl_raw_flag1": 0.58511
+      },
+      "s4d_ode": {
+        "fresh_kl": 0.11211,
+        "aged_kl_clean_age0": 0.56981,
+        "aged_kl_raw_flag1": 0.55408
+      },
+      "neural_cme": {
+        "fresh_kl": 0.12825,
+        "aged_kl_clean_age0": 0.63296,
+        "aged_kl_raw_flag1": 0.5253
+      },
+      "latent_ode": {
+        "fresh_kl": 0.10793,
+        "aged_kl_clean_age0": 0.53853,
+        "aged_kl_raw_flag1": 0.50407
+      }
+    }
+  },
+  "sleep_5fold": {
+    "empirical_fresh_oracle_aged_kl_mean": 0.08768,
+    "empirical_fresh_oracle_aged_kl_sd": 0.01331
+  }
+}

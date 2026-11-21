@@ -1,0 +1,65 @@
+{
+  "peak_rss_scaling": [
+    {
+      "nodes": 16,
+      "compiled_states": 496,
+      "static_operator_mb": 0.015,
+      "baseline_jax_rss_mb": 311.7,
+      "peak_total_rss_mb": 553.84,
+      "peak_autodiff_rss_delta_mb": 242.14,
+      "grad_warm_ms": 38.5
+    },
+    {
+      "nodes": 64,
+      "compiled_states": 1984,
+      "static_operator_mb": 0.061,
+      "baseline_jax_rss_mb": 311.29,
+      "peak_total_rss_mb": 556.12,
+      "peak_autodiff_rss_delta_mb": 244.84,
+      "grad_warm_ms": 23.86
+    },
+    {
+      "nodes": 256,
+      "compiled_states": 7936,
+      "static_operator_mb": 0.242,
+      "baseline_jax_rss_mb": 311.58,
+      "peak_total_rss_mb": 583.71,
+      "peak_autodiff_rss_delta_mb": 272.13,
+      "grad_warm_ms": 85.83
+    },
+    {
+      "nodes": 512,
+      "compiled_states": 15872,
+      "static_operator_mb": 0.484,
+      "baseline_jax_rss_mb": 311.5,
+      "peak_total_rss_mb": 596.67,
+      "peak_autodiff_rss_delta_mb": 285.18,
+      "grad_warm_ms": 201.68
+    },
+    {
+      "nodes": 1024,
+      "compiled_states": 31744,
+      "static_operator_mb": 0.969,
+      "baseline_jax_rss_mb": 311.27,
+      "peak_total_rss_mb": 644.36,
+      "peak_autodiff_rss_delta_mb": 333.09,
+      "grad_warm_ms": 394.77
+    }
+  ],
+  "e2e_v64_256param_optimization": {
+    "nodes": 64,
+    "edges": 128,
+    "parameters": 256,
+    "naive_tensor_states": 16384,
+    "compiled_sparse_states": 1984,
+    "lbfgs_iterations": 80,
+    "optimization_wall_seconds": 43.0,
+    "heldout_kl_sparse_drn_nats": 0.00024,
+    "heldout_kl_ctmc_nats": 0.225776,
+    "kl_reduction_vs_ctmc": 942.6,
+    "initial_mean_rms_pct": 17.15,
+    "recovered_mean_rms_pct": 8.01,
+    "initial_shape_rms_pct": 18.96,
+    "recovered_shape_rms_pct": 16.83
+  }
+}

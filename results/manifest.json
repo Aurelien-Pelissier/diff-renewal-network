@@ -1,109 +1,130 @@
 {
+  "description": "SHA-256 provenance manifest for all archived Differentiable Renewal Network benchmark summaries.",
+  "count": 31,
   "files": {
     "results/archived/edge_memory_sleep_summary.json": {
-      "sha256": "16ea62f21bcc0845b27cb29cfcd326cfa9efa37d41584bd08e7c1d493dc5b329",
-      "bytes": 913
+      "bytes": 913,
+      "sha256": "16ea62f21bcc0845b27cb29cfcd326cfa9efa37d41584bd08e7c1d493dc5b329"
     },
     "results/archived/evidence.json": {
-      "sha256": "d8624ff29c190f2bf665fac6a9dd3cf657bd89d8c78b777a37f5052a8457dfe1",
-      "bytes": 402330
+      "bytes": 402330,
+      "sha256": "d8624ff29c190f2bf665fac6a9dd3cf657bd89d8c78b777a37f5052a8457dfe1"
     },
     "results/archived/fisher_full_cohort_analysis.json": {
-      "sha256": "ad0b933012450c562a628f99221bf5481c452b25d1cebb772717038c61e758f9",
-      "bytes": 2473341
+      "bytes": 2473341,
+      "sha256": "ad0b933012450c562a628f99221bf5481c452b25d1cebb772717038c61e758f9"
     },
     "results/archived/graph_scaling_summary.json": {
-      "sha256": "f4dac7f5afd5c930fb5674673123e64911f4016af3732c2221f9a70f8731c963",
-      "bytes": 7472
+      "bytes": 7472,
+      "sha256": "f4dac7f5afd5c930fb5674673123e64911f4016af3732c2221f9a70f8731c963"
     },
-    "results/archived/hematopoiesis_branching_summary.json": {
-      "sha256": "dbbf9063b5bb70f6ff6618db31ccb3d289f4067a03468028b6deb9f9afe394ae",
-      "bytes": 8507
-    },
-    "results/archived/modern_neural_baselines.json": {
-      "sha256": "f6020fb04c60bbf3cee7aed10012865ec370bca5fec83e7ba38509a556ba4f32",
-      "bytes": 29931
-    },
-    "results/archived/n2_fisher_recordings_compact.json": {
-      "sha256": "50218f31da642cb91aded9d4b454adf9966683a47c4d750692223435d8226ffe",
-      "bytes": 719879
-    },
-    "results/archived/n2_scorer_pooling.json": {
-      "sha256": "9d9fd9e9ab9726db47c0a86e8f663423d1cca30505f750741cc5b520cafd0d6e",
-      "bytes": 594390
-    },
-    "results/archived/neural_memory_pulse.json": {
-      "sha256": "be007f2a27ad1ee83ac3f74fd6d5dc2cbc9a4fb13749c34227ef0393076f2b0d",
-      "bytes": 132057
-    },
-    "results/archived/neural_memory_summary.json": {
-      "sha256": "f5a8e73521903535f80f3dea6bce5797552239ebe3ee9db42c4f0f9b2eca0bc2",
-      "bytes": 50049
-    },
-    "results/archived/positive_sensitivity_summary.json": {
-      "sha256": "cba078cf3f51cf3355c7e1d5c0640ef4ab60a014debbe3d13edbe65ba2150966",
-      "bytes": 23717
-    },
-    "results/archived/real_continuous_benchmarks.json": {
-      "sha256": "25375c936ab52041a54835cf57a04ccb8591c007f8d467bf9d9cac905e484ed6",
-      "bytes": 2850
-    },
-    "results/archived/real_visit_carry.json": {
-      "sha256": "23cc60595dd664f1b4b393a652087250e083bf9cf8ad0c204c915ac7bdff9e1c",
-      "bytes": 34288
-    },
-    "results/archived/real_visit_memory.json": {
-      "sha256": "7cb04a4c63740d713170ee1593b1f4cd42705014e65b048d0e798a697ab6ace2",
-      "bytes": 2291390
-    },
-    "results/archived/renewal_transfer_restarts.json": {
-      "sha256": "47ac38bac52fc5b3434d0af7a18869d0ac0e66826a26bd49f99cc77e28b15724",
-      "bytes": 84386
-    },
-    "results/archived/renewal_transfer_six_parameter.json": {
-      "sha256": "85fc1f026e7243a13ae1f8960919e1509774d1c8cef2382937e1858827a30361",
-      "bytes": 73759
-    },
-    "results/archived/renewal_transfer_summary.json": {
-      "sha256": "93508cec2d3415ebeaf47893a55148bfbc5f346ee718b01d0cc8f3d2b9cc1220",
-      "bytes": 157020
-    },
-    "results/archived/sensitivity_evidence.json": {
-      "sha256": "4338a957cac42cad1c68279d13735681ea15de9e0c5d85e67319bf665b8a506f",
-      "bytes": 188768
-    },
-    "results/archived/stem_cells_pilot.json": {
-      "sha256": "b0ed83102805433bf9c01d30b3498b9c1f9519a9ad396754da6d93c083ce3162",
-      "bytes": 1567
-    },
-    "results/archived/trainable_ph_stem_cells.json": {
-      "sha256": "cfadbb0375bbca9ad649ff103fad75a608216fdbdb7abbcfaeb93ace8e00c022",
-      "bytes": 25730
-    },
-    "results/archived/trait_fisher_information.json": {
-      "sha256": "86ce253f676a6eaed90d1a492b2a9ddb1b2814138c10b057f4ec94d05c9bb1e1",
-      "bytes": 1324165
-    },
-    "results/archived/trait_fisher_summary.json": {
-      "sha256": "b03afa7727ae0f9dacb7b6bb71ce987753c2e75d3ec0b950ea76799f2f8cc78b",
-      "bytes": 17098
-    },
-    "results/archived/two_preparation_inverse.json": {
-      "sha256": "c37fd3b65bfecd6ee039c85f0c4d3528309405ee8256d4a40bc864c847884312",
-      "bytes": 14633
+    "results/archived/helpdesk_extended_baselines.json": {
+      "bytes": 5292,
+      "sha256": "7016016b465a4920cd9836963000be9287c644de398af51995ae97e80017960e"
     },
     "results/archived/helpdesk_systems_summary.json": {
-      "sha256": "4dc26bd358d7e2509f86099aca7d08a44303eb07ce81b8f7b0aa9b9efbd7a657",
-      "bytes": 10557
+      "bytes": 10557,
+      "sha256": "4dc26bd358d7e2509f86099aca7d08a44303eb07ce81b8f7b0aa9b9efbd7a657"
+    },
+    "results/archived/hematopoiesis_branching_summary.json": {
+      "bytes": 8507,
+      "sha256": "dbbf9063b5bb70f6ff6618db31ccb3d289f4067a03468028b6deb9f9afe394ae"
+    },
+    "results/archived/hematopoiesis_donor_extrap.json": {
+      "bytes": 2346,
+      "sha256": "ae840e8d7de453ec83439252289ad4e0acb0640512dcd4898139aa8df3255303"
     },
     "results/archived/mean_field_epidemic_summary.json": {
-      "sha256": "7ec5640b076f17d2f6ce83168ed655ff852183e60832c8d415a429a0bf83da35",
-      "bytes": 13709
+      "bytes": 13709,
+      "sha256": "7ec5640b076f17d2f6ce83168ed655ff852183e60832c8d415a429a0bf83da35"
+    },
+    "results/archived/modern_neural_baselines.json": {
+      "bytes": 29931,
+      "sha256": "f6020fb04c60bbf3cee7aed10012865ec370bca5fec83e7ba38509a556ba4f32"
+    },
+    "results/archived/n2_fisher_recordings_compact.json": {
+      "bytes": 719879,
+      "sha256": "50218f31da642cb91aded9d4b454adf9966683a47c4d750692223435d8226ffe"
+    },
+    "results/archived/n2_scorer_pooling.json": {
+      "bytes": 594390,
+      "sha256": "9d9fd9e9ab9726db47c0a86e8f663423d1cca30505f750741cc5b520cafd0d6e"
+    },
+    "results/archived/neural_memory_pulse.json": {
+      "bytes": 132057,
+      "sha256": "be007f2a27ad1ee83ac3f74fd6d5dc2cbc9a4fb13749c34227ef0393076f2b0d"
+    },
+    "results/archived/neural_memory_summary.json": {
+      "bytes": 50049,
+      "sha256": "f5a8e73521903535f80f3dea6bce5797552239ebe3ee9db42c4f0f9b2eca0bc2"
+    },
+    "results/archived/positive_sensitivity_summary.json": {
+      "bytes": 23717,
+      "sha256": "cba078cf3f51cf3355c7e1d5c0640ef4ab60a014debbe3d13edbe65ba2150966"
+    },
+    "results/archived/real_continuous_benchmarks.json": {
+      "bytes": 2850,
+      "sha256": "25375c936ab52041a54835cf57a04ccb8591c007f8d467bf9d9cac905e484ed6"
+    },
+    "results/archived/real_visit_carry.json": {
+      "bytes": 34288,
+      "sha256": "23cc60595dd664f1b4b393a652087250e083bf9cf8ad0c204c915ac7bdff9e1c"
+    },
+    "results/archived/real_visit_memory.json": {
+      "bytes": 2291390,
+      "sha256": "7cb04a4c63740d713170ee1593b1f4cd42705014e65b048d0e798a697ab6ace2"
+    },
+    "results/archived/renewal_transfer_restarts.json": {
+      "bytes": 84386,
+      "sha256": "47ac38bac52fc5b3434d0af7a18869d0ac0e66826a26bd49f99cc77e28b15724"
+    },
+    "results/archived/renewal_transfer_six_parameter.json": {
+      "bytes": 73759,
+      "sha256": "85fc1f026e7243a13ae1f8960919e1509774d1c8cef2382937e1858827a30361"
+    },
+    "results/archived/renewal_transfer_summary.json": {
+      "bytes": 157020,
+      "sha256": "93508cec2d3415ebeaf47893a55148bfbc5f346ee718b01d0cc8f3d2b9cc1220"
+    },
+    "results/archived/sensitivity_evidence.json": {
+      "bytes": 188768,
+      "sha256": "4338a957cac42cad1c68279d13735681ea15de9e0c5d85e67319bf665b8a506f"
+    },
+    "results/archived/sleep_extended_baselines.json": {
+      "bytes": 3803,
+      "sha256": "d5633f95365374cdbb47dee641319a5026f17367529aea249ab4ecd2c6d7310c"
+    },
+    "results/archived/sparse_e2e_and_memory.json": {
+      "bytes": 1742,
+      "sha256": "f44b1c445b059101b023424babbd537d038c86d6cedc6d5a5e23b5b7efc6fcf6"
     },
     "results/archived/sparse_large_graph_scaling.json": {
-      "sha256": "b0f8338da68e5921e94cde21b595d1167d0d3f13f863125d59968aeaf5462322",
-      "bytes": 2670
+      "bytes": 2670,
+      "sha256": "b0f8338da68e5921e94cde21b595d1167d0d3f13f863125d59968aeaf5462322"
+    },
+    "results/archived/stem_cells_pilot.json": {
+      "bytes": 1567,
+      "sha256": "b0ed83102805433bf9c01d30b3498b9c1f9519a9ad396754da6d93c083ce3162"
+    },
+    "results/archived/trainable_ph_stem_cells.json": {
+      "bytes": 25730,
+      "sha256": "cfadbb0375bbca9ad649ff103fad75a608216fdbdb7abbcfaeb93ace8e00c022"
+    },
+    "results/archived/trait_fisher_information.json": {
+      "bytes": 1324165,
+      "sha256": "86ce253f676a6eaed90d1a492b2a9ddb1b2814138c10b057f4ec94d05c9bb1e1"
+    },
+    "results/archived/trait_fisher_summary.json": {
+      "bytes": 17098,
+      "sha256": "b03afa7727ae0f9dacb7b6bb71ce987753c2e75d3ec0b950ea76799f2f8cc78b"
+    },
+    "results/archived/two_preparation_inverse.json": {
+      "bytes": 14633,
+      "sha256": "c37fd3b65bfecd6ee039c85f0c4d3528309405ee8256d4a40bc864c847884312"
+    },
+    "results/archived/zeroshot_age0_control.json": {
+      "bytes": 1220,
+      "sha256": "66b9dd2c9f303a3cca0541e441dcf0d2937b92ee4fcd479b6bc7d579d177969f"
     }
-  },
-  "archive_count": 26
+  }
 }

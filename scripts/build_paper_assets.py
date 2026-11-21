@@ -980,9 +980,13 @@ def build_tables() -> None:
     rcb = load_archived("real_continuous_benchmarks.json")
     ems = load_archived("edge_memory_sleep_summary.json")
     hem = load_archived("hematopoiesis_branching_summary.json")
+    hem_d = load_archived("hematopoiesis_donor_extrap.json")
     hdk = load_archived("helpdesk_systems_summary.json")
+    hdk_ext = load_archived("helpdesk_extended_baselines.json")
+    slp_ext = load_archived("sleep_extended_baselines.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     spg = load_archived("sparse_large_graph_scaling.json")
+    sp_rss = load_archived("sparse_e2e_and_memory.json")
     tf = load_archived("trait_fisher_summary.json")
     nm = load_archived("neural_memory_summary.json")
     nmp = load_archived("neural_memory_pulse.json")
@@ -997,7 +1001,7 @@ def build_tables() -> None:
     p_ov = sens["overall"]["primary"]
     t1_rows = [
         [
-            "\\textbf{Full PH}",
+            "\\textbf{Full 48}",
             "48",
             f"{p_cases['primary/symmetric_PH']['full48']['median_shape_percent']:.2f}\\%",
             f"{p_cases['primary/mixed_150_PH']['full48']['median_shape_percent']:.2f}\\% / {p_cases['primary/mixed_150_Gamma']['full48']['median_shape_percent']:.2f}\\%",
@@ -1217,66 +1221,20 @@ def build_tables() -> None:
         t3_rows,
     )
 
-    # Table 4: Real-world biological, operations-queueing, nonlinear mean-field, & persistence benchmarks
+    # Prepare real-world summary dictionaries used in Appendix Tables A8-A9
     ec_m = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]
     sl_b = rcb["sleep_5node_branching_network"]
     sl_m = sl_b["models_5fold_mean"]
     hdk_cv = hdk["cv_5fold_summary"]
     mfe_ex8 = mfe["extrapolation_splits"]["days_1to8_to_9to14"]
-    s_n2 = rvm["sleep"]["models"]["adjusted"]["previous"]["2"]
-    s_ec1 = rvm["nomass"]["models"]["adjusted"]["previous"]["all"]
-    s_ec2 = rvm["tanouchi"]["models"]["adjusted"]["previous"]["all"]
-    t4_rows = [
-        [
-            "\\textbf{IT Helpdesk (Edge-Mem)}",
-            "4,576 tkt.",
-            f"0-sh.\\ \\textbf{{{hdk_cv['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}} (vs.\\ {hdk_cv['ctmc']['aged_kl_mean']:.4f} CTMC)",
-            "7d 0-sh.: $0.038$ vs.\\ $0.209$",
-        ],
-        [
-            "\\textbf{Influenza (Mean-Field)}",
-            "763 boys",
-            f"D9--14 \\textbf{{{mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.4f}}} (vs.\\ {mfe_ex8['markov_seicr']['test']['mean_kl_nats']:.4f})",
-            f"Kurtz slope ${mfe['kurtz_propagation_of_chaos']['empirical_slope']:.3f}$",
-        ],
-        [
-            "Human hematopoiesis",
-            "78 FACS",
-            f"D7 \\textbf{{{hem['day1to5_to_day7_extrapolation']['compiled_drn']['day7_kl']:.4f}}} (vs.\\ {hem['day1to5_to_day7_extrapolation']['ctmc']['day7_kl']:.4f} CTMC)",
-            "Univ.\\ Pos-Sens $49$ st.",
-        ],
-        [
-            "\\emph{E.\\ coli} 3-phase ring",
-            "18,972 cyc.",
-            f"0-sh.\\ \\textbf{{{ec_m['drn_fresh_only']['aged_kl']:.4f}}} (vs.\\ {ec_m['ctmc']['aged_kl']:.4f} CTMC)",
-            "$37^\\circ$C $k{=}25.8$ ($27.1$)",
-        ],
-        [
-            "Sleep 5-node (Edge-Mem)",
-            "75 adults",
-            f"0-sh.\\ \\textbf{{{ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}} (vs.\\ {sl_m['ctmc']['aged_kl_mean']:.4f} CTMC)",
-            f"jt.\\ {ems['edge_memory_drn_joint']['aged_kl_mean']:.4f} (LODE $0.0208$)",
-        ],
-        "\\midrule",
-        [
-            "Sleep / \\emph{E.\\ coli} pers.",
-            "29,039 tr.",
-            f"N2 \\textbf{{{100*s_n2['gain']:+.2f}}} / Si \\textbf{{{100*s_ec1['gain']:+.2f}}}",
-            f"Tan.\\ ${100*s_ec2['gain']:+.2f}$ nats/100",
-        ],
-    ]
     assert "resampled" in rt6["targets"] and "persistent" in rt6["targets"]
-    write_tex_table(
-        "tab4_persistence_and_trajectories.tex",
-        "llll",
-        [
-            "System / Cohort",
-            "Scale",
-            "0-Shot KL / Gain",
-            "Law / Control",
-        ],
-        t4_rows,
-    )
+    assert rvm["sleep"]["models"]["adjusted"]["previous"]["2"]["gain"] > 0
+
+    def fmt_pm(mean: float, sd: float, bold: bool = False) -> str:
+        s_sd = f"{sd:.3f}"[1:]
+        if bold:
+            return f"\\textbf{{{mean:.4f}}}$\\,\\pm\\,{s_sd}$"
+        return f"${mean:.4f}\\pm{s_sd}$"
 
     # Appendix Table A1: Proof audit Hankel orders
     write_tex_table(
@@ -1441,18 +1399,20 @@ def build_tables() -> None:
             ]
         )
     rows_g7.append("\\midrule")
+    rss_by_v = {r["nodes"]: r for r in sp_rss["peak_rss_scaling"]}
     for r in spg["scaling_rows"]:
         if r["nodes"] not in (64, 256, 512, 1024):
             continue
+        rr = rss_by_v[r["nodes"]]
         rows_g7.append(
             [
                 f"Sparse $V{{=}}{r['nodes']}$",
                 f"{r['parameters']:,}",
                 f"{r['tensor_states']:,}",
                 f"{r['compiled_states']:,}",
-                f"{r['sparse_operator_mb']:.2f}\\,MB",
+                f"{r['sparse_operator_mb']:.2f} / {rr['peak_total_rss_mb']:.0f}\\,MB",
                 f"{r['grad_warm_ms']:.1f}",
-                f"{r['memory_compression_vs_dense']:,.0f}$\\times$ mem",
+                f"{r['memory_compression_vs_dense']:,.0f}$\\times$ op",
             ]
         )
     write_tex_table(
@@ -1463,7 +1423,7 @@ def build_tables() -> None:
             "Params",
             "Tensor",
             "Race",
-            "Comp. / Mem",
+            "Comp. / Op. (RSS)",
             "Grad (ms)",
             "Gain",
         ],
@@ -1473,6 +1433,8 @@ def build_tables() -> None:
     # Appendix Table A8: Complete 7-Node Human Hematopoiesis & 5-Node Sleep-EDF Architecture Breakdown
     h_cv = hem["donor_5fold_cv_mean"]
     h_ex = hem["day1to5_to_day7_extrapolation"]
+    hd_d7 = hem_d["unseen_donor_day7"]
+    sl_x = slp_ext["models_5fold_mean"]
     write_tex_table(
         "tab_a8_hematopoiesis_and_sleep.tex",
         "llrrrr",
@@ -1490,23 +1452,23 @@ def build_tables() -> None:
                 "\\textbf{Compiled DRN}",
                 "127 (16)",
                 f"{h_cv['compiled_drn']['kl']:.4f}",
-                f"\\textbf{{{h_ex['compiled_drn']['day7_kl']:.4f}}}",
+                f"\\textbf{{{h_ex['compiled_drn']['day7_kl']:.4f}}} (${hd_d7['compiled_drn']['kl_mean']:.3f}\\pm.13$)",
                 f"{h_cv['compiled_drn']['prob_rmse']:.4f}",
             ],
             [
-                "(7-node tree)",
+                "(7-node tree,",
                 "\\textbf{Univ. Pos-Sens}",
                 "49 (14)",
                 f"{h_cv['universal_pos_sens']['kl']:.4f}",
-                f"{h_ex['universal_pos_sens']['day7_kl']:.4f}",
+                f"{h_ex['universal_pos_sens']['day7_kl']:.4f} (${hd_d7['universal_pos_sens']['kl_mean']:.3f}\\pm.16$)",
                 f"\\textbf{{{h_cv['universal_pos_sens']['prob_rmse']:.4f}}}",
             ],
             [
-                "",
+                "10 donors)",
                 "Memoryless CTMC",
                 "7 (8)",
                 f"{h_cv['ctmc']['kl']:.4f}",
-                f"{h_ex['ctmc']['day7_kl']:.4f}",
+                f"{h_ex['ctmc']['day7_kl']:.4f} (${hd_d7['ctmc']['kl_mean']:.3f}\\pm.10$)",
                 f"{h_cv['ctmc']['prob_rmse']:.4f}",
             ],
             [
@@ -1514,7 +1476,7 @@ def build_tables() -> None:
                 "Neural-CME$(t)$",
                 "7 (128)",
                 f"{h_cv['neural_cme']['kl']:.4f}",
-                f"{h_ex['neural_cme']['day7_kl']:.4f}",
+                f"{h_ex['neural_cme']['day7_kl']:.4f} (${hd_d7['neural_cme']['kl_mean']:.3f}\\pm.26$)",
                 f"{h_cv['neural_cme']['prob_rmse']:.4f}",
             ],
             [
@@ -1522,7 +1484,7 @@ def build_tables() -> None:
                 "Latent ODE",
                 "12 (273)",
                 f"\\textbf{{{h_cv['latent_ode']['kl']:.4f}}}",
-                f"{h_ex['latent_ode']['day7_kl']:.4f}",
+                f"{h_ex['latent_ode']['day7_kl']:.4f} (\\textbf{{{hd_d7['latent_ode']['kl_mean']:.3f}}}$\\,\\pm\\,.22$)",
                 f"{h_cv['latent_ode']['prob_rmse']:.4f}",
             ],
             "\\midrule",
@@ -1530,139 +1492,189 @@ def build_tables() -> None:
                 "Sleep-EDF",
                 "\\textbf{Edge-Mem DRN}",
                 "246 (254)",
-                f"${ems['edge_memory_drn_joint']['aged_kl_mean']:.4f}\\pm.003$",
-                f"\\textbf{{${ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}\\pm.013$}}",
+                fmt_pm(ems["edge_memory_drn_joint"]["aged_kl_mean"], ems["edge_memory_drn_joint"]["aged_kl_sd"]),
+                fmt_pm(ems["edge_memory_drn_fresh_only"]["aged_kl_mean"], ems["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
                 f"{ems['edge_memory_drn_joint']['fresh_kl_mean']:.4f}",
             ],
             [
-                "(5-node net)",
+                "(5-node net,",
                 "Renewal DRN",
                 "117 (144)",
-                f"${sl_m['drn_joint']['aged_kl_mean']:.4f}\\pm.008$",
-                f"${sl_m['drn_fresh_only']['aged_kl_mean']:.4f}\\pm.011$",
+                fmt_pm(sl_m["drn_joint"]["aged_kl_mean"], sl_m["drn_joint"]["aged_kl_sd"]),
+                fmt_pm(sl_m["drn_fresh_only"]["aged_kl_mean"], sl_m["drn_fresh_only"]["aged_kl_sd"]),
                 f"{sl_m['drn_joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "75 adults)",
+                "Univ. Pos-Sens",
+                f"{slp_ext['universal_pos_sens_states']} ({slp_ext['universal_pos_sens_params']})",
+                fmt_pm(sl_x["universal_pos_sens_joint"]["aged_kl_mean"], sl_x["universal_pos_sens_joint"]["aged_kl_sd"]),
+                fmt_pm(sl_x["universal_pos_sens_fresh_only"]["aged_kl_mean"], sl_x["universal_pos_sens_fresh_only"]["aged_kl_sd"]),
+                f"{sl_x['universal_pos_sens_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Memoryless CTMC",
                 "5 (16)",
-                f"${sl_m['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
-                f"${sl_m['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
+                fmt_pm(sl_m["ctmc"]["aged_kl_mean"], sl_m["ctmc"]["aged_kl_sd"]),
+                fmt_pm(sl_m["ctmc"]["aged_kl_mean"], sl_m["ctmc"]["aged_kl_sd"]),
                 f"{sl_m['ctmc']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
+                "LTC ODE",
+                f"11 ({slp_ext['ltc_ode_params']})",
+                fmt_pm(sl_x["ltc_ode_joint"]["aged_kl_mean"], sl_x["ltc_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(sl_x["ltc_ode_fresh_only"]["aged_kl_mean"], sl_x["ltc_ode_fresh_only"]["aged_kl_sd"]),
+                f"{sl_x['ltc_ode_joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
+                "S4D ODE",
+                f"15 ({slp_ext['s4d_ode_params']})",
+                fmt_pm(sl_x["s4d_ode_joint"]["aged_kl_mean"], sl_x["s4d_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(sl_x["s4d_ode_fresh_only"]["aged_kl_mean"], sl_x["s4d_ode_fresh_only"]["aged_kl_sd"]),
+                f"{sl_x['s4d_ode_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Neural-CME$(t)$",
                 "5 (394)",
-                f"${ems['neural_cme_joint']['aged_kl_mean']:.4f}\\pm.005$",
-                f"${ems['neural_cme_fresh_only']['aged_kl_mean']:.4f}\\pm.011$",
+                fmt_pm(ems["neural_cme_joint"]["aged_kl_mean"], ems["neural_cme_joint"]["aged_kl_sd"]),
+                fmt_pm(ems["neural_cme_fresh_only"]["aged_kl_mean"], ems["neural_cme_fresh_only"]["aged_kl_sd"]),
                 f"{ems['neural_cme_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Latent ODE",
                 "11 (540)",
-                f"\\textbf{{${sl_m['latent_ode_joint']['aged_kl_mean']:.4f}\\pm.001$}}",
-                f"${sl_m['latent_ode_fresh_only']['aged_kl_mean']:.4f}\\pm.014$",
+                fmt_pm(sl_m["latent_ode_joint"]["aged_kl_mean"], sl_m["latent_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(sl_m["latent_ode_fresh_only"]["aged_kl_mean"], sl_m["latent_ode_fresh_only"]["aged_kl_sd"]),
                 f"\\textbf{{{sl_m['latent_ode_joint']['fresh_kl_mean']:.4f}}}",
             ],
             "\\midrule",
             [
                 "\\emph{E.\\ coli} ring",
                 "\\textbf{Renewal DRN}",
-                "24 (18)",
-                f"${ec_m['drn_joint']['aged_kl']:.4f}\\pm.002$",
-                f"\\textbf{{${ec_m['drn_fresh_only']['aged_kl']:.4f}\\pm.003$}}",
+                "48 (153)",
+                fmt_pm(ec_m["drn_joint"]["aged_kl"], ec_m["drn_joint"]["aged_kl_sd"]),
+                fmt_pm(ec_m["drn_fresh_only"]["aged_kl"], ec_m["drn_fresh_only"]["aged_kl_sd"], bold=True),
                 f"{ec_m['drn_joint']['fresh_kl']:.4f}",
             ],
             [
                 "(18,972 cyc.)",
                 "Memoryless CTMC",
-                "3 (9)",
-                f"${ec_m['ctmc']['aged_kl']:.4f}\\pm.003$",
-                f"${ec_m['ctmc']['aged_kl']:.4f}\\pm.003$",
+                "3 (6)",
+                fmt_pm(ec_m["ctmc"]["aged_kl"], ec_m["ctmc"]["aged_kl_sd"]),
+                fmt_pm(ec_m["ctmc"]["aged_kl"], ec_m["ctmc"]["aged_kl_sd"]),
                 f"{ec_m['ctmc']['fresh_kl']:.4f}",
             ],
             [
                 "",
                 "Latent ODE",
-                "9 (---)",
-                f"\\textbf{{${ec_m['latent_ode_joint']['aged_kl']:.4f}\\pm.002$}}",
-                f"${ec_m['latent_ode_fresh_only']['aged_kl']:.4f}\\pm.015$",
+                "9 (285)",
+                fmt_pm(ec_m["latent_ode_joint"]["aged_kl"], ec_m["latent_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(ec_m["latent_ode_fresh_only"]["aged_kl"], ec_m["latent_ode_fresh_only"]["aged_kl_sd"]),
                 f"\\textbf{{{ec_m['latent_ode_joint']['fresh_kl']:.4f}}}",
             ],
         ],
     )
 
-    # Appendix Table A9: IT Helpdesk Systems ML (5-Fold CV & Coarsening) + Nonlinear MeanFieldDRN Influenza
+    # Appendix Table A9: IT Helpdesk Systems ML (5-Fold CV, Chronological Split, & Coarsening) + Nonlinear MeanFieldDRN Influenza
     mfe_full = mfe["full_fit_days_1to14"]
     mfe_ex9 = mfe["extrapolation_splits"]["days_1to9_to_10to14"]
     mfe_reg = mfe["regularized_latent_ode_sensitivity"]
     c7 = hdk["coarsening_panel_sweep"][2]
     c14 = hdk["coarsening_panel_sweep"][3]
+    hx = hdk_ext["cv_5fold_extended"]
+    hch = hdk_ext["chronological_split"]["models"]
     write_tex_table(
         "tab_a9_systems_and_meanfield.tex",
         "llrrrr",
         [
-            "Benchmark",
+            "System",
             "Architecture",
-            "States (Params)",
+            "States (P)",
             "Primary KL $\\downarrow$",
             "0-Shot / Extrap. $\\downarrow$",
-            "7d / 14d (RMSE) $\\downarrow$",
+            "Chrono (7d/14d) $\\downarrow$",
         ],
         [
             [
-                "IT Helpdesk",
+                "Helpdesk",
                 "\\textbf{Edge-Mem DRN}",
                 f"{hdk['state_counts']['edge_memory_drn_states_K6']} ({hdk['state_counts']['edge_memory_drn_params_K6']})",
-                f"${hdk_cv['edge_memory_drn_joint']['aged_kl_mean']:.4f}\\pm.001$",
-                f"\\textbf{{${hdk_cv['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}\\pm.002$}}",
-                f"\\textbf{{{c7['edge_memory_drn_multihop_aged_kl']:.3f}}} / \\textbf{{{c14['edge_memory_drn_multihop_aged_kl']:.3f}}}",
+                fmt_pm(hdk_cv["edge_memory_drn_joint"]["aged_kl_mean"], hdk_cv["edge_memory_drn_joint"]["aged_kl_sd"]),
+                fmt_pm(hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_mean"], hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
+                f"\\textbf{{{hch['edge_memory_drn_fresh_only']['aged_kl']:.3f}}} (\\textbf{{.{int(round(1000*c7['edge_memory_drn_multihop_aged_kl'])):03d}}}/\\textbf{{.{int(round(1000*c14['edge_memory_drn_multihop_aged_kl'])):03d}}})",
             ],
             [
-                "(4,576 tkt.)",
+                "(4,576)",
                 "Renewal DRN",
                 f"{hdk['state_counts']['renewal_drn_race_states_K6']} ({hdk['state_counts']['renewal_drn_params_K6']})",
-                f"${hdk_cv['renewal_drn_joint']['aged_kl_mean']:.4f}\\pm.002$",
-                f"${hdk_cv['renewal_drn_fresh_only']['aged_kl_mean']:.4f}\\pm.008$",
-                f"{c7['drn_multihop_aged_kl']:.3f} / {c14['drn_multihop_aged_kl']:.3f}",
+                fmt_pm(hdk_cv["renewal_drn_joint"]["aged_kl_mean"], hdk_cv["renewal_drn_joint"]["aged_kl_sd"]),
+                fmt_pm(hdk_cv["renewal_drn_fresh_only"]["aged_kl_mean"], hdk_cv["renewal_drn_fresh_only"]["aged_kl_sd"]),
+                f"{hch['renewal_drn_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7['drn_multihop_aged_kl'])):03d}/.{int(round(1000*c14['drn_multihop_aged_kl'])):03d})",
             ],
             [
                 "",
-                "Memoryless CTMC",
+                "Univ. Pos-Sens",
+                f"{hdk_ext['universal_pos_sens_states']} ({hdk_ext['universal_pos_sens_params']})",
+                fmt_pm(hx["universal_pos_sens_joint"]["aged_kl_mean"], hx["universal_pos_sens_joint"]["aged_kl_sd"]),
+                fmt_pm(hx["universal_pos_sens_fresh_only"]["aged_kl_mean"], hx["universal_pos_sens_fresh_only"]["aged_kl_sd"]),
+                f"{hch['universal_pos_sens_fresh_only']['aged_kl']:.3f} (---)",
+            ],
+            [
+                "",
+                "CTMC",
                 "5 (9)",
-                f"${hdk_cv['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
-                f"${hdk_cv['ctmc']['aged_kl_mean']:.4f}\\pm.009$",
-                f"{c7['ctmc_panel_kl']:.3f} / {c14['ctmc_panel_kl']:.3f}",
+                fmt_pm(hdk_cv["ctmc"]["aged_kl_mean"], hdk_cv["ctmc"]["aged_kl_sd"]),
+                fmt_pm(hdk_cv["ctmc"]["aged_kl_mean"], hdk_cv["ctmc"]["aged_kl_sd"]),
+                f"{hch['ctmc']['aged_kl']:.3f} (.{int(round(1000*c7['ctmc_panel_kl'])):03d}/.{int(round(1000*c14['ctmc_panel_kl'])):03d})",
             ],
             [
                 "",
-                "Neural-CR (Omi/DH)",
+                "Neural-CR",
                 f"--- ({hdk['state_counts']['neural_competing_risks_params']})",
                 "---",
                 "---",
-                f"{c7['neural_competing_risks_best_kl']:.3f} / {c14['neural_competing_risks_best_kl']:.3f}",
+                f"--- (.{int(round(1000*c7['neural_competing_risks_best_kl'])):03d}/{c14['neural_competing_risks_best_kl']:.3f})",
+            ],
+            [
+                "",
+                "LTC ODE",
+                f"11 ({hdk_ext['ltc_ode_params']})",
+                fmt_pm(hx["ltc_ode_joint"]["aged_kl_mean"], hx["ltc_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(hx["ltc_ode_fresh_only"]["aged_kl_mean"], hx["ltc_ode_fresh_only"]["aged_kl_sd"]),
+                f"{hch['ltc_ode_fresh_only']['aged_kl']:.3f} (---)",
+            ],
+            [
+                "",
+                "S4D ODE",
+                f"15 ({hdk_ext['s4d_ode_params']})",
+                fmt_pm(hx["s4d_ode_joint"]["aged_kl_mean"], hx["s4d_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(hx["s4d_ode_fresh_only"]["aged_kl_mean"], hx["s4d_ode_fresh_only"]["aged_kl_sd"]),
+                f"{hch['s4d_ode_fresh_only']['aged_kl']:.3f} (---)",
             ],
             [
                 "",
                 "Neural-CME$(t)$",
                 f"5 ({hdk['state_counts']['neural_cme_params']})",
-                f"\\textbf{{${hdk_cv['neural_cme_joint']['aged_kl_mean']:.4f}\\pm.003$}}",
-                f"${hdk_cv['neural_cme_fresh_only']['aged_kl_mean']:.4f}\\pm.063$",
-                f"{c7['neural_cme_multihop_aged_kl']:.3f} / {c14['neural_cme_multihop_aged_kl']:.3f}",
+                fmt_pm(hdk_cv["neural_cme_joint"]["aged_kl_mean"], hdk_cv["neural_cme_joint"]["aged_kl_sd"]),
+                fmt_pm(hdk_cv["neural_cme_fresh_only"]["aged_kl_mean"], hdk_cv["neural_cme_fresh_only"]["aged_kl_sd"]),
+                f"{hch['neural_cme_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7['neural_cme_multihop_aged_kl'])):03d}/.{int(round(1000*c14['neural_cme_multihop_aged_kl'])):03d})",
             ],
             [
                 "",
                 "Latent ODE",
                 f"11 ({hdk['state_counts']['latent_ode_params']})",
-                f"${hdk_cv['latent_ode_joint']['aged_kl_mean']:.4f}\\pm.002$",
-                f"${hdk_cv['latent_ode_fresh_only']['aged_kl_mean']:.4f}\\pm.026$",
-                f"{c7['latent_ode_multihop_aged_kl']:.3f} / {c14['latent_ode_multihop_aged_kl']:.3f}",
+                fmt_pm(hdk_cv["latent_ode_joint"]["aged_kl_mean"], hdk_cv["latent_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(hdk_cv["latent_ode_fresh_only"]["aged_kl_mean"], hdk_cv["latent_ode_fresh_only"]["aged_kl_sd"]),
+                f"{hch['latent_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7['latent_ode_multihop_aged_kl'])):03d}/.{int(round(1000*c14['latent_ode_multihop_aged_kl'])):03d})",
             ],
             "\\midrule",
             [
-                "1978 Influenza",
+                "Influenza",
                 "\\textbf{MeanFieldDRN}",
                 f"{mfe_full['mean_field_drn']['states']} ({mfe_full['mean_field_drn']['params_count']})",
                 f"{mfe_full['mean_field_drn']['mean_kl_nats']:.4f}",
@@ -1679,7 +1691,7 @@ def build_tables() -> None:
             ],
             [
                 "",
-                "Latent ODE (best $L_2$)",
+                "Latent ODE ($L_2$)",
                 f"{mfe_full['latent_ode']['states']} ({mfe_full['latent_ode']['params_count']})",
                 f"\\textbf{{{mfe_full['latent_ode']['mean_kl_nats']:.4f}}}",
                 f"{mfe_reg['days_1to8_to_9to14']['test']['mean_kl_nats']:.4f} / {mfe_reg['days_1to9_to_10to14']['test']['mean_kl_nats']:.4f}",
@@ -1696,7 +1708,7 @@ def main() -> None:
     build_fig4()
     build_fig5()
     build_tables()
-    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 13 LaTeX tables.")
+    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 12 LaTeX tables.")
 
 
 if __name__ == "__main__":

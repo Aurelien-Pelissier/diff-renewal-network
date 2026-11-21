@@ -1,6 +1,6 @@
 {
   "status": "PASSED",
-  "verified_archive_files": 26,
+  "verified_archive_files": 31,
   "erlang16_replay": {
     "nominal_max_error": 1.2656542480726785e-14,
     "rate_sensitivity_defect": 0.2619669022259721
@@ -53,8 +53,21 @@
     },
     "helpdesk_zeroshot_aged_kl": {
       "edge_memory_drn": 0.0348,
+      "universal_pos_sens": 0.1261,
+      "ltc_ode": 0.2355,
+      "s4d_ode": 0.2462,
       "latent_ode": 0.2542,
-      "neural_cme": 0.3316
+      "neural_cme": 0.3316,
+      "chrono_edge_memory_drn": 0.1423,
+      "chrono_ltc_ode": 0.5851
+    },
+    "sleep_extended_zeroshot_aged_kl": {
+      "ltc_ode": 0.0892,
+      "s4d_ode": 0.088
+    },
+    "hematopoiesis_donor_heldout_day7_kl": {
+      "compiled_drn": 0.148,
+      "ctmc": 0.1923
     },
     "mean_field_influenza_day9to14_kl": {
       "mean_field_drn": 0.0168,
@@ -64,7 +77,9 @@
     "sparse_drn_v1024": {
       "compiled_states": 31744,
       "sparse_operator_mb": 0.969,
-      "grad_warm_ms": 451.9
+      "peak_total_rss_mb": 644.36,
+      "grad_warm_ms": 451.9,
+      "e2e_v64_kl_reduction_vs_ctmc": 942.6
     }
   }
 }

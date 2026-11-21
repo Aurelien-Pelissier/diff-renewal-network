@@ -67,7 +67,7 @@
       "cone_max_shape": 9.5,
       "sup_survival_abs_error": 0.003978968260087479,
       "sup_shape_sens_abs_error": 0.018592262532105386,
-      "calibration_seconds": 9.399147809948772
+      "calibration_seconds": 9.146842980058864
     },
     "edge_memory_hyper_metzler_col_sum_err": 1.3322676295501878e-15
   },

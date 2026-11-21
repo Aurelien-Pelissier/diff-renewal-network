@@ -57,11 +57,20 @@ def ensure_sleep_cache() -> None:
         dst = CACHE / rel
         if dst.exists() and sha256(dst.read_bytes()).hexdigest() == csum:
             return
-        data = urllib.request.urlopen(BASE_URL + rel, timeout=30).read()
-        assert sha256(data).hexdigest() == csum
-        dst.write_bytes(data)
+        last_err = None
+        for attempt in range(5):
+            try:
+                data = urllib.request.urlopen(BASE_URL + rel, timeout=30).read()
+                assert sha256(data).hexdigest() == csum
+                dst.write_bytes(data)
+                return
+            except Exception as exc:
+                last_err = exc
+                import time
+                time.sleep(0.5 * (2**attempt))
+        raise last_err
 
-    with ThreadPoolExecutor(max_workers=12) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(fetch_one, needed))
 
 

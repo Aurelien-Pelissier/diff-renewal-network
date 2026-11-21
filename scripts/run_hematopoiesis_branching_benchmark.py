@@ -2,7 +2,7 @@
 
 Evaluates Differentiable Renewal Networks, Zero-Shot Universal Topology-Agnostic Pos-Sens,
 Memoryless CTMC, Time-Inhomogeneous Neural-CME(t), and Population Latent ODE on 78 destructive
-FACS snapshots across 12 healthy human bone-marrow donor cultures (Days 1-7) over the 7-node
+FACS snapshots across 10 healthy human bone-marrow donor cultures (Days 1-7) over the 7-node
 branching lineage hierarchy:
     HSC -> MPP -> {MLP, CMP},  CMP -> {GMP, MEP},  {MLP, GMP, MEP} -> Mature.
 
