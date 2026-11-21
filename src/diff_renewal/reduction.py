@@ -287,3 +287,153 @@ def make_positive_33_engine(psi):
         return np.asarray(vals), np.asarray(deriv)
 
     return evaluate
+
+
+def universal_pos_clock(mean, shape, psi_univ, *, stages_red: int = 8):
+    """Scale-equivariant topology-agnostic positive Coxian clock compressor.
+
+    Maps any (mean, shape) pair to a K_r-stage positive Coxian chain (stage_rates, entry)
+    with exact mean and strictly Metzler mass-conserving dynamics, usable on ANY graph (V, E).
+    """
+    s_norm = (jnp.log(shape) - jnp.log(6.0)) / 0.75
+    feats = jnp.array([1.0, s_norm, s_norm**2, s_norm**3, s_norm**4])
+    w_logits = psi_univ[: 5 * stages_red].reshape(5, stages_red)
+    w_rates = psi_univ[5 * stages_red : 10 * stages_red].reshape(5, stages_red)
+    entry = jax.nn.softmax(feats @ w_logits)
+    rel_rates = jnp.exp(0.75 * jnp.tanh(feats @ w_rates))
+    rem_mean_unit = jnp.cumsum((1.0 / rel_rates)[::-1])[::-1]
+    unit_mean = jnp.dot(entry, rem_mean_unit)
+    stage_rates = (unit_mean / mean) * rel_rates
+    return stage_rates, entry
+
+
+def calibrate_universal_pos_clock(
+    *, stages_red: int = 8, stages_full: int = 16, maxiter: int = 250
+):
+    """Data-free 1D survival + shape-sensitivity calibration for arbitrary graph topologies."""
+    t0 = time.perf_counter()
+    du = 0.05
+    n_u = 64
+    k_anchors = jnp.exp(jnp.linspace(jnp.log(3.0), jnp.log(float(stages_red)), 21))
+
+    def _scan_surv(blk, ent):
+        trans = jl.expm(du * blk)
+
+        def step(st, _):
+            st = trans @ st
+            return st, jnp.sum(st)
+
+        return jax.lax.scan(step, ent, None, length=n_u)[1]
+
+    def full_surv_and_sens(k_val):
+        def surv_fn(lk):
+            logits = moment_matched_logits(jnp.atleast_1d(jnp.exp(lk)))[0]
+            rate, entry = mixed_erlang_components(1.0, logits)
+            blk = rate * (jnp.eye(stages_full, k=-1) - jnp.eye(stages_full))
+            s_u = _scan_surv(blk, entry)
+            return s_u, s_u
+
+        ds_dlk, s_u = jax.jacfwd(surv_fn, has_aux=True)(jnp.log(k_val))
+        return s_u, ds_dlk
+
+    s_ref, ds_ref = jax.vmap(full_surv_and_sens)(k_anchors)
+
+    def red_surv_and_sens(k_val, psi):
+        def surv_fn(lk):
+            r_vec, ent = universal_pos_clock(1.0, jnp.exp(lk), psi, stages_red=stages_red)
+            blk = -jnp.diag(r_vec) + jnp.diag(r_vec[:-1], k=-1)
+            s_u = _scan_surv(blk, ent)
+            return s_u, s_u
+
+        ds_dlk, s_u = jax.jacfwd(surv_fn, has_aux=True)(jnp.log(k_val))
+        return s_u, ds_dlk
+
+    @jax.jit
+    def loss_fn(psi):
+        s_hat, ds_hat = jax.vmap(lambda kv: red_surv_and_sens(kv, psi))(k_anchors)
+        w = 1.0 / jnp.maximum(s_ref * (1.0 - s_ref), 0.02)
+        return (
+            jnp.mean(w * (s_hat - s_ref) ** 2)
+            + 0.35 * jnp.mean(w * (ds_hat - ds_ref) ** 2)
+            + 1e-6 * jnp.mean(psi**2)
+        )
+
+    vg = jax.jit(jax.value_and_grad(loss_fn))
+    # Break stage-symmetry saddle at psi=0: index 0 has stages_red remaining stages (narrow shape),
+    # index stages_red-1 has 1 remaining stage (broad shape).
+    w_log_init = np.zeros((5, stages_red), dtype=float)
+    w_log_init[0] = np.linspace(0.5, -0.5, stages_red)
+    w_log_init[1] = np.linspace(2.5, -2.5, stages_red)
+    w_rat_init = np.zeros((5, stages_red), dtype=float)
+    w_rat_init[0] = np.linspace(-0.15, 0.15, stages_red)
+    psi0 = np.r_[w_log_init.ravel(), w_rat_init.ravel()]
+
+    fit = minimize(
+        lambda z: (float(vg(z)[0]), np.asarray(vg(z)[1], dtype=float)),
+        psi0,
+        jac=True,
+        method="L-BFGS-B",
+        options={"maxiter": maxiter, "ftol": 1e-13},
+    )
+    psi_univ = np.asarray(fit.x, dtype=float)
+
+    # Compute uniform global certificate on the representable positive PH cone k in [3, stages_red - 0.5]
+    k_dense = jnp.linspace(3.0, float(stages_red) - 0.5, 50)
+    s_f_d, ds_f_d = jax.vmap(full_surv_and_sens)(k_dense)
+    s_r_d, ds_r_d = jax.vmap(lambda kv: red_surv_and_sens(kv, jnp.asarray(psi_univ)))(k_dense)
+    cert = dict(
+        stages_red=stages_red,
+        stages_full=stages_full,
+        cone_max_shape=float(stages_red) - 0.5,
+        sup_survival_abs_error=float(jnp.max(jnp.abs(s_r_d - s_f_d))),
+        sup_shape_sens_abs_error=float(jnp.max(jnp.abs(ds_r_d - ds_f_d))),
+        calibration_seconds=time.perf_counter() - t0,
+    )
+    return psi_univ, cert
+
+
+def build_universal_pos_network_generator(
+    means, shapes, routing_weights, edges, n_nodes: int, psi_univ, *, stages_red: int = 8
+):
+    """Assemble exact positive Metzler generator on ANY graph (V, E) using universal Pos-Sens clocks.
+
+    For nodes with multiple outgoing edges sharing node sojourn clock (or per-edge split weights
+    routing_weights[e] summing to 1 per source node), compiles V*stages_red global positive states.
+    """
+    means = jnp.asarray(means)
+    shapes = jnp.asarray(shapes)
+    psi_jax = jnp.asarray(psi_univ)
+    stage_rates, entries = jax.vmap(
+        lambda m, k: universal_pos_clock(m, k, psi_jax, stages_red=stages_red)
+    )(means, shapes)
+    blocks = []
+    for i in range(n_nodes):
+        has_out = any(u == i for u, _ in edges)
+        if has_out:
+            r_v = stage_rates[i]
+            blocks.append(-jnp.diag(r_v) + jnp.diag(r_v[:-1], k=-1))
+        else:
+            blocks.append(jnp.zeros((1, 1), dtype=means.dtype))
+
+    offsets = []
+    cur = 0
+    for blk in blocks:
+        offsets.append((cur, cur + blk.shape[0]))
+        cur += blk.shape[0]
+
+    gen = jl.block_diag(*blocks)
+    rw = jnp.asarray(routing_weights)
+    for e_id, (u, v) in enumerate(edges):
+        u0, u1 = offsets[u]
+        v0, v1 = offsets[v]
+        exit_rate_u = stage_rates[u, -1] * rw[e_id]
+        ent_v = entries[v] if (v1 - v0) == stages_red else jnp.ones(1, dtype=means.dtype)
+        gen = gen.at[v0:v1, u1 - 1].add(exit_rate_u * ent_v)
+
+    fresh_cols = [
+        entries[i] if (offsets[i][1] - offsets[i][0]) == stages_red else jnp.ones(1, dtype=means.dtype)
+        for i in range(n_nodes)
+    ]
+    fresh = jl.block_diag(*(c[:, None] for c in fresh_cols))
+    read = jl.block_diag(*(jnp.ones((1, e - s), dtype=means.dtype) for s, e in offsets))
+    return gen, fresh, read

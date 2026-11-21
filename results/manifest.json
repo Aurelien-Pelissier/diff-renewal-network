@@ -1,5 +1,9 @@
 {
   "files": {
+    "results/archived/edge_memory_sleep_summary.json": {
+      "sha256": "16ea62f21bcc0845b27cb29cfcd326cfa9efa37d41584bd08e7c1d493dc5b329",
+      "bytes": 913
+    },
     "results/archived/evidence.json": {
       "sha256": "d8624ff29c190f2bf665fac6a9dd3cf657bd89d8c78b777a37f5052a8457dfe1",
       "bytes": 402330
@@ -12,9 +16,13 @@
       "sha256": "f4dac7f5afd5c930fb5674673123e64911f4016af3732c2221f9a70f8731c963",
       "bytes": 7472
     },
+    "results/archived/hematopoiesis_branching_summary.json": {
+      "sha256": "dbbf9063b5bb70f6ff6618db31ccb3d289f4067a03468028b6deb9f9afe394ae",
+      "bytes": 8507
+    },
     "results/archived/modern_neural_baselines.json": {
-      "sha256": "44c633a0eace6eaa0bffaca87fbf827d6f7e0a1e6d4af05acc435144b7e91fae",
-      "bytes": 27570
+      "sha256": "f6020fb04c60bbf3cee7aed10012865ec370bca5fec83e7ba38509a556ba4f32",
+      "bytes": 29931
     },
     "results/archived/n2_fisher_recordings_compact.json": {
       "sha256": "50218f31da642cb91aded9d4b454adf9966683a47c4d750692223435d8226ffe",

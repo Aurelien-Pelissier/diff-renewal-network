@@ -5,6 +5,7 @@ against Conditional Neural Clocks:
 1. Tuned Population Latent ODE (Rubanova et al., 2019)
 2. Liquid Time-Constant Population ODE (LTC / CfC; Hasani et al., 2021, 2022)
 3. Diagonal Structured State-Space Population ODE (S4D; Gu et al., 2022)
+4. Time-Inhomogeneous Neural Master Equation (Neural-CME; clock-time generator A(t, x, u))
 """
 
 import jax
@@ -55,6 +56,16 @@ def init_population_baseline(kind: str, seed: int = 17):
             jnp.zeros(12),
             jax.random.normal(keys[4], (12, 3)) * 0.18,
             jnp.zeros(3),
+        )
+    if kind == "neural_cme":
+        # Time-Inhomogeneous Neural Master Equation: dp/dt = A_phi(t, trait, base, u) p(t)
+        # Isolates clock-time inhomogeneity A(t) from true semi-Markov residence-age memory!
+        width = 24  # 7*24 + 24 + 24*6 + 6 = 342 parameters
+        return (
+            jax.random.normal(keys[0], (7, width)) * 0.35,
+            jnp.zeros(width),
+            jax.random.normal(keys[1], (width, 6)) * 0.20,  # 6 directed off-diagonal rates on 3-node graph
+            jnp.zeros(6),
         )
     raise ValueError(f"Unknown baseline kind: {kind}")
 
@@ -144,6 +155,56 @@ def predict_population_baseline(kind: str, params, plan, *, period: float = 0.25
             return jnp.concatenate((dp, dz), axis=-1)
 
         return _rk4_scan(field, state, schedule, plan.sample, lambda y: y[..., :3], period, substeps)
+
+    if kind == "neural_cme":
+        w1, b1, w2, b2 = params
+        dt = period / substeps
+        n_intervals = schedule.shape[0]
+
+        def interval(carry, step_in):
+            p, t_cur = carry
+            u = step_in
+
+            def substep(i_sub, p_st):
+                t_now = t_cur + (i_sub + 0.5) * dt
+                t_norm = t_now / 4.5
+                t_feats = jnp.stack(
+                    [
+                        jnp.broadcast_to(t_norm, traits.shape),
+                        jnp.broadcast_to(jnp.sin(2.0 * jnp.pi * t_norm), traits.shape),
+                        jnp.broadcast_to(jnp.cos(2.0 * jnp.pi * t_norm), traits.shape),
+                        traits,
+                        base,
+                        age,
+                        u,
+                    ],
+                    axis=-1,
+                )  # (n_plans, 7)
+                h = jax.nn.gelu(t_feats @ w1 + b1)
+                rates = 0.005 + 5.0 * jax.nn.sigmoid(h @ w2 + b2 - 1.5)  # (n_plans, 6)
+
+                def eval_field(p_cur):
+                    # 3 forward cycle edges (0->1, 1->2, 2->0) + 3 reverse/skip edges
+                    f_fwd = p_cur * rates[:, None, :3]
+                    f_rev = p_cur * rates[:, None, 3:]
+                    return (
+                        jnp.roll(f_fwd, 1, axis=-1)
+                        - f_fwd
+                        + jnp.roll(f_rev, -1, axis=-1)
+                        - f_rev
+                    )
+
+                k1 = eval_field(p_st)
+                k2 = eval_field(p_st + 0.5 * dt * k1)
+                k3 = eval_field(p_st + 0.5 * dt * k2)
+                k4 = eval_field(p_st + dt * k3)
+                return p_st + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+            p_next = jax.lax.fori_loop(0, substeps, substep, p)
+            return (p_next, t_cur + period), p_next
+
+        obs = jax.lax.scan(interval, (prep, jnp.array(0.0, dtype=prep.dtype)), schedule)[1]
+        return obs[plan.sample].transpose(1, 0, 2, 3)
 
     raise ValueError(kind)
 

@@ -33,11 +33,18 @@ from diff_renewal import (  # noqa: E402
     ANCHORS_DEFAULT,
     READ_POS33,
     SHIFTS_DEFAULT,
+    build_edge_memory_hyper_generator,
     build_interpolatory_basis,
+    build_universal_pos_network_generator,
+    calibrate_universal_pos_clock,
     compact_network_state_size,
+    edge_memory_param_size,
+    hyper_erlang_race,
+    hyper_race_state_size,
     make_cycle_engine,
     make_interpolatory_engine,
     make_positive_33_engine,
+    mixed_erlang_components,
     moment_matched_logits,
     network_state_size,
     pos33_cycle_matrices,
@@ -173,6 +180,119 @@ def _verify_marked_race_diffrax() -> dict:
         "compact_race_states": 64,
         "trajectory_max_abs_error": traj_err,
         "gradient_relative_l2_error": grad_rel_err,
+    }
+
+
+def _verify_hyper_race_and_universal_pos_sens() -> dict:
+    """Verify Proposition 3 (Hyper-Erlang Marked-Race Compiler) and Universal Graph Pos-Sens."""
+    # 1. Proposition 3: d=3 competing M=2 Hyper-Erlang clocks (CV > 1 bursty + refractory)
+    d, m_br, k_st = 3, 2, 6
+    naive_dim = (m_br * k_st) ** d  # 12^3 = 1,728
+    comp_dim = hyper_race_state_size(d, m_br, k_st)  # 8 * 16 = 128
+    assert (naive_dim, comp_dim) == (1728, 128)
+
+    mix_logits = jnp.array([[0.4, -0.4], [-0.2, 0.5], [0.0, 0.3]])
+    br_means = jnp.array([[0.25, 2.4], [0.35, 1.9], [0.30, 2.8]])  # bimodal CV > 1!
+    rng = np.random.default_rng(314)
+    br_stage_logits = jnp.asarray(rng.normal(0.0, 0.7, size=(d, m_br, k_st)))
+
+    def compiled_win_probs_and_mean(means_in):
+        ent, rates, cont, causes = hyper_erlang_race(mix_logits, means_in, br_stage_logits)
+        l_tot = ent.size
+        blk = -jnp.diag(rates) + jnp.diag(rates[:-1] * cont, k=-1)
+        # Solve -blk @ occ = ent -> occ = (-blk)^{-1} ent
+        occ = jnp.linalg.solve(-blk, ent)
+        win_p = causes @ (rates * occ)
+        mean_exit = jnp.sum(occ)
+        return win_p, mean_exit
+
+    win_c, mean_c = compiled_win_probs_and_mean(br_means)
+    assert abs(float(jnp.sum(win_c)) - 1.0) < 1e-13
+
+    # Compare against direct numerical quadrature of k_e(t) = f_e(t) prod_{r != e} S_r(t)
+    def exact_hyper_surv_dens(t_val, e_id, means_in):
+        alphas = jax.nn.softmax(mix_logits[e_id])
+        s_tot, f_tot = 0.0, 0.0
+        for m_i in range(m_br):
+            r_m, ent_m = mixed_erlang_components(means_in[e_id, m_i], br_stage_logits[e_id, m_i])
+            blk_m = r_m * (jnp.eye(k_st, k=-1) - jnp.eye(k_st))
+            st_t = expm(float(t_val) * np.asarray(blk_m)) @ np.asarray(ent_m)
+            s_tot += float(alphas[m_i]) * float(st_t.sum())
+            f_tot += float(alphas[m_i]) * float(r_m) * float(st_t[-1])
+        return s_tot, f_tot
+
+    win_quad = []
+    for e_id in range(d):
+        val_q = quad_vec(
+            lambda t: exact_hyper_surv_dens(t, e_id, np.asarray(br_means))[1]
+            * np.prod([exact_hyper_surv_dens(t, r_id, np.asarray(br_means))[0] for r_id in range(d) if r_id != e_id]),
+            0.0,
+            25.0,
+            epsabs=1e-11,
+            epsrel=1e-11,
+        )[0]
+        win_quad.append(float(val_q))
+    win_err = float(np.max(np.abs(np.asarray(win_c) - np.asarray(win_quad))))
+    assert win_err < 1e-9
+
+    # Check autodiff gradient vs central finite difference on compiled Hyper-Erlang race
+    grad_ad = np.asarray(jax.grad(lambda ms: jnp.sum(compiled_win_probs_and_mean(ms)[0] * jnp.array([0.3, 0.7, 1.1])) + 0.2 * compiled_win_probs_and_mean(ms)[1])(br_means))
+    eps_fd = 1e-6
+    grad_fd = np.zeros_like(grad_ad)
+    base_bm = np.asarray(br_means)
+    for i in range(d):
+        for j in range(m_br):
+            bm_p, bm_m = base_bm.copy(), base_bm.copy()
+            bm_p[i, j] += eps_fd
+            bm_m[i, j] -= eps_fd
+            wp, mp = compiled_win_probs_and_mean(jnp.asarray(bm_p))
+            wm, mm = compiled_win_probs_and_mean(jnp.asarray(bm_m))
+            fp = float(jnp.sum(wp * jnp.array([0.3, 0.7, 1.1])) + 0.2 * mp)
+            fm = float(jnp.sum(wm * jnp.array([0.3, 0.7, 1.1])) + 0.2 * mm)
+            grad_fd[i, j] = (fp - fm) / (2.0 * eps_fd)
+    hyper_grad_err = float(np.max(np.abs(grad_ad - grad_fd)))
+    assert hyper_grad_err < 1e-8
+
+    # 2. Universal Topology-Agnostic Pos-Sens on a 4-node branching diamond + EdgeMemoryHyperDRN Metzler check
+    psi_u, cert = calibrate_universal_pos_clock(stages_red=10, stages_full=16, maxiter=250)
+    assert cert["sup_survival_abs_error"] < 0.015
+    diamond_edges = ((0, 1), (0, 2), (1, 3), (2, 3))
+    gen_d, fresh_d, read_d = map(
+        np.asarray,
+        build_universal_pos_network_generator(
+            [1.6, 2.1, 1.8, 1.0],
+            [5.0, 8.0, 6.5, 4.0],
+            [0.6, 0.4, 1.0, 1.0],
+            diamond_edges,
+            4,
+            psi_u,
+            stages_red=10,
+        ),
+    )
+    assert float((gen_d - np.diag(np.diag(gen_d))).min()) >= 0.0
+    assert float(np.max(np.abs(gen_d.sum(axis=0)))) < 1e-13
+    p_diam = read_d @ expm(1.2 * gen_d) @ fresh_d
+    assert float(p_diam.min()) >= 0.0 and float(np.max(np.abs(p_diam.sum(axis=0) - 1.0))) < 1e-13
+
+    # Check EdgeMemoryHyperDRN Metzler & simplex conservation
+    em_edges = ((0, 1), (1, 2), (2, 0), (0, 2))
+    n_em = edge_memory_param_size(3, 4, stages=5)
+    p_em = jnp.asarray(rng.normal(0.0, 0.25, size=n_em))
+    gen_em, fr_em, ag_em, rd_em = map(
+        np.asarray, build_edge_memory_hyper_generator(p_em, em_edges, 3, stages=5)
+    )
+    assert float((gen_em - np.diag(np.diag(gen_em))).min()) >= 0.0
+    assert float(np.max(np.abs(gen_em.sum(axis=0)))) < 1e-13
+    p_ag = rd_em @ expm(0.7 * gen_em) @ ag_em
+    assert float(p_ag.min()) > 0.0 and float(np.max(np.abs(p_ag.sum(axis=0) - 1.0))) < 1e-13
+
+    return {
+        "proposition_3_naive_states": naive_dim,
+        "proposition_3_compiled_states": comp_dim,
+        "proposition_3_win_prob_quad_error": win_err,
+        "proposition_3_autodiff_grad_error": hyper_grad_err,
+        "universal_pos_sens_certificate": cert,
+        "edge_memory_hyper_metzler_col_sum_err": float(np.max(np.abs(gen_em.sum(axis=0)))),
     }
 
 
@@ -386,6 +506,7 @@ def main() -> None:
         "duhamel_gradient_defect": _verify_duhamel_gradient_defect(),
         "interpolatory_projection_baur2011": _verify_interpolatory_projection(),
         "theorem_4_positive_sensitivity_reduction": _verify_positivity_and_fisher_bias_bound(),
+        "proposition_3_and_universal_pos_sens": _verify_hyper_race_and_universal_pos_sens(),
         "theorem_5_two_preparation_rank": 2,
         "proposition_2_lag2_covariance": cov_lag2,
     }

@@ -17,6 +17,6 @@ def test_reproduce_all_script():
     )
     summary = json.loads(proc.stdout)
     assert summary["status"] == "PASSED"
-    assert summary["verified_archive_files"] == 21
+    assert summary["verified_archive_files"] == 23
     assert summary["erlang16_replay"]["nominal_max_error"] < 1e-12
     assert summary["stem_cell_replay"]["abs_drift"] < 1e-8

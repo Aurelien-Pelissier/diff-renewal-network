@@ -1,6 +1,6 @@
 {
   "status": "PASSED",
-  "verified_archive_files": 21,
+  "verified_archive_files": 23,
   "erlang16_replay": {
     "nominal_max_error": 1.2656542480726785e-14,
     "rate_sensitivity_defect": 0.2619669022259721
@@ -32,12 +32,16 @@
       "moment_ph": 0.01095,
       "ltc_3start": 0.05644,
       "s4d_3start": 0.06793,
-      "latent_ode": 0.08315
+      "latent_ode": 0.08315,
+      "neural_cme_3start": 0.12854
     },
     "real_continuous_zeroshot_aged_kl": {
       "ecoli_drn": 0.05691,
-      "ecoli_lode": 0.42433
+      "ecoli_lode": 0.42433,
+      "sleep_edge_memory_drn": 0.0622
     },
+    "sleep_edge_memory_joint_aged_kl": 0.02206,
+    "hematopoiesis_day7_extrapolation_kl": 0.00816,
     "sleep_5node_state_compression": 52.51,
     "persistent_carry_targets": [
       "resampled",

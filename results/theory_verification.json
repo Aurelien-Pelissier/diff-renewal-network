@@ -54,6 +54,21 @@
     "linearized_fisher_bias": 0.017691310447873265,
     "fisher_whitened_residual_bound": 0.028540974319557225
   },
+  "proposition_3_and_universal_pos_sens": {
+    "proposition_3_naive_states": 1728,
+    "proposition_3_compiled_states": 128,
+    "proposition_3_win_prob_quad_error": 1.1102230246251565e-16,
+    "proposition_3_autodiff_grad_error": 1.30942047135707e-10,
+    "universal_pos_sens_certificate": {
+      "stages_red": 10,
+      "stages_full": 16,
+      "cone_max_shape": 9.5,
+      "sup_survival_abs_error": 0.003978968260087479,
+      "sup_shape_sens_abs_error": 0.018592262532105386,
+      "calibration_seconds": 9.203023580950685
+    },
+    "edge_memory_hyper_metzler_col_sum_err": 1.3322676295501878e-15
+  },
   "theorem_5_two_preparation_rank": 2,
   "proposition_2_lag2_covariance": 0.5132160000000001
 }

@@ -4,6 +4,7 @@ import diffrax
 import jax
 import jax.numpy as jnp
 from jax.scipy.special import gammaln, logsumexp
+import numpy as np
 
 from .network import network_layout
 from .phase_type import mixed_erlang_components
@@ -66,6 +67,65 @@ def mixed_erlang_race(means, logits):
     cause_probabilities = cause_probabilities / normalization[None, :]
     continuations = continuations / normalization[:-1]
     return total_rate, continuations, cause_probabilities
+
+
+def hyper_race_state_size(n_edges: int, branches: int, stages: int) -> int:
+    """Exact state dimension M**d * (1 + d*(K-1)) of d competing M-branch Hyper-Erlang clocks."""
+    if min(n_edges, branches, stages) < 1:
+        raise ValueError("n_edges, branches, and stages must be positive integers")
+    return (branches**n_edges) * (1 + n_edges * (stages - 1))
+
+
+def hyper_erlang_race(branch_logits_mix, branch_means, branch_stage_logits):
+    """Compile d competing M-branch Hyper-Erlang clocks (Proposition 3).
+
+    Eliminates the K**d Cartesian phase explosion for multi-rate (CV > 1, heavy-tailed,
+    or bimodal) Hyper-Erlang clocks: reduces (M*K)**d joint tensor states to
+    M**d * (1 + d*(K-1)) positive Coxian states while preserving exact cause-specific
+    exit sub-densities k_e(t) and all parameter derivatives.
+
+    Args:
+        branch_logits_mix: (d, M) mixture logits over M rate branches per edge.
+        branch_means: (d, M) positive branch mean durations per edge.
+        branch_stage_logits: (d, M, K) stage-count logits per edge and branch.
+
+    Returns:
+        entry: (L_hyper,) non-negative initial state probabilities summing to 1.
+        rates: (L_hyper,) positive stage exit rates.
+        continuations: (L_hyper - 1,) stage continuation probabilities (0 across blocks).
+        causes: (d, L_hyper) cause-specific exit probabilities per stage.
+    """
+    mix_l = jnp.asarray(branch_logits_mix)
+    means = jnp.asarray(branch_means)
+    stage_l = jnp.asarray(branch_stage_logits)
+    if (
+        mix_l.ndim != 2
+        or means.shape != mix_l.shape
+        or stage_l.ndim != 3
+        or stage_l.shape[:2] != mix_l.shape
+    ):
+        raise ValueError("require shapes (d, M), (d, M), and (d, M, K)")
+    d, m_branches, k_stages = stage_l.shape
+    log_alpha = jax.nn.log_softmax(mix_l, axis=1)
+    combos = jnp.asarray(np.indices((m_branches,) * d).reshape(d, -1).T, dtype=jnp.int32)
+    edge_idx = jnp.arange(d, dtype=jnp.int32)
+
+    def _compile_combo(m_vec):
+        w_c = jnp.exp(jnp.sum(log_alpha[edge_idx, m_vec]))
+        r_c, cont_c, cause_c = mixed_erlang_race(
+            means[edge_idx, m_vec], stage_l[edge_idx, m_vec]
+        )
+        return w_c, r_c, cont_c, cause_c
+
+    w_all, r_all, cont_all, cause_all = jax.vmap(_compile_combo)(combos)
+    n_combos = combos.shape[0]
+    l_sub = 1 + d * (k_stages - 1)
+
+    entry = jnp.zeros((n_combos, l_sub), dtype=stage_l.dtype).at[:, 0].set(w_all).ravel()
+    rates = jnp.repeat(r_all, l_sub)
+    cont_padded = jnp.pad(cont_all, ((0, 0), (0, 1))).ravel()[:-1]
+    causes = jnp.transpose(cause_all, (1, 0, 2)).reshape(d, n_combos * l_sub)
+    return entry, rates, cont_padded, causes
 
 
 def compact_network_state_size(edges, n_nodes: int, stages: int) -> int:

@@ -1,0 +1,38 @@
+{
+  "architecture": "EdgeMemoryHyperDRN",
+  "stages_per_edge": 4,
+  "compiled_states": 246,
+  "parameters": 254,
+  "neural_cme_parameters": 394,
+  "median_fit_seconds": 74.75,
+  "edge_memory_drn_joint": {
+    "fresh_kl_mean": 0.01237,
+    "aged_kl_mean": 0.02206,
+    "fresh_kl_sd": 0.00443,
+    "aged_kl_sd": 0.00188
+  },
+  "edge_memory_drn_fresh_only": {
+    "fresh_kl_mean": 0.01163,
+    "aged_kl_mean": 0.0622,
+    "fresh_kl_sd": 0.00479,
+    "aged_kl_sd": 0.01311
+  },
+  "neural_cme_joint": {
+    "fresh_kl_mean": 0.01621,
+    "aged_kl_mean": 0.02452,
+    "fresh_kl_sd": 0.00424,
+    "aged_kl_sd": 0.0035
+  },
+  "neural_cme_fresh_only": {
+    "fresh_kl_mean": 0.0165,
+    "aged_kl_mean": 0.0844,
+    "fresh_kl_sd": 0.00458,
+    "aged_kl_sd": 0.01268
+  },
+  "reference_latent_ode_joint": {
+    "fresh_kl_mean": 0.01207,
+    "aged_kl_mean": 0.02082,
+    "fresh_kl_sd": 0.00448,
+    "aged_kl_sd": 0.00147
+  }
+}

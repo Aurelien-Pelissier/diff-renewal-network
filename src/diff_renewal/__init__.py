@@ -57,6 +57,8 @@ from .phase_type import (
 )
 from .race import (
     compact_network_state_size,
+    hyper_erlang_race,
+    hyper_race_state_size,
     mixed_erlang_race,
     solve_compact_renewal_network,
 )
@@ -66,15 +68,22 @@ from .reduction import (
     READ_POS33,
     SHIFTS_DEFAULT,
     build_interpolatory_basis,
+    build_universal_pos_network_generator,
     calibrate_positive_33_surrogate,
+    calibrate_universal_pos_clock,
     cycle_symmetry_matrices,
     make_cycle_engine,
     make_interpolatory_engine,
     make_positive_33_engine,
     pos33_cycle_matrices,
     resolvent_sensitivity_diagnostic,
+    universal_pos_clock,
 )
 from .renewal import solve_erlang_chain
+from .semi_markov import (
+    build_edge_memory_hyper_generator,
+    edge_memory_param_size,
+)
 from .traits import (
     endpoint_coefficients,
     moment_matched_logits,
@@ -92,8 +101,11 @@ __all__ = [
     "a_optimal_value_gradient",
     "adjoint_residual_estimate",
     "adjoint_sensitivity_residual",
+    "build_edge_memory_hyper_generator",
     "build_interpolatory_basis",
+    "build_universal_pos_network_generator",
     "calibrate_positive_33_surrogate",
+    "calibrate_universal_pos_clock",
     "cap_mixed_erlang",
     "capped_clock_bank_gradient_bound",
     "capped_network_tv_bound",
@@ -101,11 +113,14 @@ __all__ = [
     "compact_network_state_size",
     "coxian_generator",
     "cycle_symmetry_matrices",
+    "edge_memory_param_size",
     "efficient_fisher",
     "endpoint_coefficients",
     "erlang_generator",
     "fit_positive_soe",
     "fixed_partition_cutoff",
+    "hyper_erlang_race",
+    "hyper_race_state_size",
     "init_clock_network",
     "init_population_baseline",
     "largest_remainder",
@@ -136,4 +151,5 @@ __all__ = [
     "survivor_phases",
     "trait_mean_shape",
     "trait_network_probabilities",
+    "universal_pos_clock",
 ]

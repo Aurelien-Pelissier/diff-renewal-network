@@ -13,7 +13,13 @@ import numpy as np
 
 from diff_renewal import (
     READ_POS33,
+    build_edge_memory_hyper_generator,
+    build_universal_pos_network_generator,
+    calibrate_universal_pos_clock,
     compact_network_state_size,
+    edge_memory_param_size,
+    hyper_erlang_race,
+    hyper_race_state_size,
     init_population_baseline,
     make_baseline_engine,
     make_positive_33_engine,
@@ -102,7 +108,7 @@ def test_modern_population_baselines_mass_and_gradients():
         sample=np.array([1, 3, 5, 7]),
     )
     counts = jnp.ones((2, 4, 3, 3)) * 10.0
-    expected_params = {"latent_ode": 387, "ltc_ode": 378, "s4d_ode": 435}
+    expected_params = {"latent_ode": 387, "ltc_ode": 378, "s4d_ode": 435, "neural_cme": 342}
 
     for kind, n_exp in expected_params.items():
         params = init_population_baseline(kind, seed=17)
@@ -117,3 +123,32 @@ def test_modern_population_baselines_mass_and_gradients():
         assert np.isfinite(float(loss_val))
         assert np.all(np.isfinite(np.asarray(grad_val)))
         assert fc(jnp.asarray(w0)).shape == (2, 4, 3, 3)
+
+
+def test_hyper_erlang_race_and_edge_memory_drn():
+    assert hyper_race_state_size(4, 2, 16) == 976  # vs (32)^4 = 1,048,576!
+    mix = jnp.zeros((2, 2))
+    means = jnp.array([[0.3, 2.1], [0.4, 1.8]])
+    logits = jnp.zeros((2, 2, 5))
+    ent, rates, cont, causes = hyper_erlang_race(mix, means, logits)
+    assert ent.size == hyper_race_state_size(2, 2, 5)
+    assert abs(float(jnp.sum(ent)) - 1.0) < 1e-13
+    assert float(jnp.min(causes)) >= 0.0
+
+    psi_u, cert = calibrate_universal_pos_clock(stages_red=6, stages_full=16, maxiter=120)
+    assert cert["sup_survival_abs_error"] < 0.03
+    edges = ((0, 1), (0, 2), (1, 3), (2, 3))
+    gen, fr, rd = build_universal_pos_network_generator(
+        [1.5, 2.0, 1.7, 1.0], [4.5, 7.5, 6.0, 4.0], [0.5, 0.5, 1.0, 1.0], edges, 4, psi_u, stages_red=6
+    )
+    assert float(jnp.max(jnp.abs(jnp.sum(gen, axis=0)))) < 1e-13
+    p_out = rd @ jl.expm(1.0 * gen) @ fr
+    assert float(jnp.min(p_out)) >= 0.0
+
+    em_edges = ((0, 1), (1, 2), (2, 0))
+    n_p = edge_memory_param_size(3, 3, stages=4)
+    gen_e, fr_e, ag_e, rd_e = build_edge_memory_hyper_generator(jnp.zeros(n_p), em_edges, 3, stages=4)
+    assert float(jnp.max(jnp.abs(jnp.sum(gen_e, axis=0)))) < 1e-13
+    p_ag = rd_e @ jl.expm(0.5 * gen_e) @ ag_e
+    assert float(jnp.min(p_ag)) > 0.0
+    assert float(jnp.max(jnp.abs(jnp.sum(p_ag, axis=0) - 1.0))) < 1e-13

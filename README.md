@@ -6,9 +6,9 @@ Clean, standalone, and reproducible JAX/Diffrax implementation accompanying the 
 
 Many physical and biological processes remember elapsed residence time in a state, from multi-step molecular cascades in embryonic stem-cell differentiation and bacterial division lineages to stage transitions in human sleep. **Differentiable Renewal Networks** enable exact gradient-based parameter inference, positivity- and sensitivity-preserving state compression, conditional neural waiting-time modeling, and Fisher experimental design from destructive population snapshots:
 
-1. **Exact Marked-Race Compilation (`diff_renewal.race`)**: Compiles $d$ competing common-rate mixed-Erlang clocks at a branching node from $K^d$ Cartesian phase tensors into a minimal positive sequential Coxian chain of dimension $1 + \sum_e (K_e - 1)$ via log-space polynomial convolution ($1{,}074.4\times$ state reduction at $d=4, K=16$), paired with an out-degree-batched contiguous-state solver preserving exact trajectories and autodiff gradients ($20.2\times$ warm gradient speedup at $d=3, V=8$).
-2. **Sensitivity-Aware & Positivity-Preserving Model Reduction (`diff_renewal.reduction`)**: Implements stationary-profile symmetry continuations, two-sided Laplace resolvent sensitivity interpolation (Baur et al., 2011), and Fisher-calibrated positivity-preserving Coxian reduction (`Pos-Sens 33`), guaranteeing global Markov simplex invariance ($0/400$ negative early-time probabilities vs. $400/400$ for signed projections) alongside full-model heterogeneous shape recovery.
-3. **Trainable Parametric, Trait-Conditioned, and Neural Clocks (`diff_renewal.phase_type`, `diff_renewal.traits`, `diff_renewal.neural_clock`, `diff_renewal.baselines`)**: Smooth moment-matched mixed-Erlang clocks (with implicit custom-JVP shape-root differentiation), persistent individual trait regressions, conditional neural clocks with exact Poisson-tail survivor phase conditioning, multi-visit speed-carry extensions, and parameter-matched modern neural population baselines (`Latent ODE`, `LTC / CfC`, and `S4D`).
+1. **Exact Mixed- & Hyper-Erlang Marked-Race Compilation (`diff_renewal.race`)**: Compiles $d$ competing common-rate mixed-Erlang clocks ($K^d \to 1 + \sum_e (K_e - 1)$, Proposition 1) and multi-rate $CV > 1$ Hyper-Erlang mixtures ($(MK)^d \to M^d(1 + d(K - 1))$, Proposition 3; $1{,}074.4\times$ state reduction at $d=4, K=16$), paired with an out-degree-batched contiguous-state solver ($20.2\times$ warm gradient speedup at $d=3, V=8$).
+2. **Positivity-Preserving & Topology-Agnostic Model Reduction (`diff_renewal.reduction`)**: Implements stationary-profile symmetry continuations, two-sided Laplace resolvent sensitivity interpolation (Baur et al., 2011), Fisher-calibrated positive Coxian reduction (`Pos-Sens 33`, $0/400$ negative probabilities vs. $400/400$ for signed projections), and a scale-equivariant 1D universal `Pos-Sens` clock compressor ($\sup |\tilde{S} - S| < 0.004$) that plugs zero-shot into arbitrary directed networks $(V, E)$.
+3. **Conditional Neural Clocks, Incoming-Edge Semi-Markov Fibres, and Modern Baselines (`diff_renewal.neural_clock`, `diff_renewal.semi_markov`, `diff_renewal.baselines`)**: Conditional neural clocks with exact Poisson-tail survivor conditioning, incoming-transition lifted two-scale Hyper-Erlang networks (`EdgeMemoryHyperDRN`) closing supervised multi-step sleep rollout gaps while improving zero-shot survivor transfer, and multi-start continuous-time baselines (`Latent ODE`, `LTC / CfC`, `S4D`, and Time-Inhomogeneous `Neural-CME`).
 4. **Scenario-Robust Fisher Experimental Design (`diff_renewal.design`, `diff_renewal.diagnostics`)**: Two-stage pilot-and-follow-up A-optimal snapshot allocation over preparations, observation times, and observed traits with nuisance-parameter accounting and integer largest-remainder rounding.
 
 ## Repository Structure
@@ -23,7 +23,8 @@ diff-renewal-network/
 │   ├── reduction.py      # Symmetry closure, 2-sided interpolation, & Pos-Sens 33 calibration
 │   ├── traits.py         # Persistent individual trait regressions & custom-JVP shape matching
 │   ├── neural_clock.py   # Conditional neural waiting-time clocks & survivor phase conditioning
-│   ├── baselines.py      # Multi-start Population Latent ODE, Liquid Time-Constant (LTC), & S4D
+│   ├── semi_markov.py    # Incoming-edge lifted two-scale Hyper-Erlang semi-Markov DRN
+│   ├── baselines.py      # Multi-start Latent ODE, LTC, S4D, & Time-Inhomogeneous Neural-CME
 │   ├── memory.py         # Augmented exponential-kernel solver & static-preserving cutoffs
 │   ├── capping.py        # Rate-preserving phase capping & path-TV / latent-Fisher bounds
 │   ├── observations.py   # Count-weighted multinomial negative log likelihood
@@ -31,15 +32,18 @@ diff-renewal-network/
 │   └── diagnostics.py    # Coarsened/efficient Fisher matrices & adjoint sensitivity residuals
 ├── scripts/
 │   ├── verify_theory.py                    # Independent symbolic (SymPy) & numerical proof audit
-│   ├── reproduce_all.py                    # SHA-256 verification of 21 archives + ODE replays
-│   ├── build_paper_assets.py               # Rebuilds all 5 vector figures & 11 LaTeX tables
+│   ├── reproduce_all.py                    # SHA-256 verification of 23 archives + ODE replays
+│   ├── build_paper_assets.py               # Rebuilds all 5 vector figures & 12 LaTeX tables
 │   ├── run_positive_sensitivity_reduction.py  # 400-dataset Pos-Sens 33 cyclic benchmark
 │   ├── run_graph_scaling_benchmark.py      # V=4..48, d=2..4 scaling & 48-param Gamma recovery
 │   ├── run_modern_neural_baselines.py      # Multi-start Latent ODE, LTC, & S4D comparisons
-│   └── run_real_continuous_sleep_network.py   # Continuous-time E. coli & 5-node Sleep-EDF
+│   ├── run_neural_cme_baseline.py          # 3-start Time-Inhomogeneous Neural-CME benchmark
+│   ├── run_real_continuous_sleep_network.py   # Continuous-time E. coli & 5-node Sleep-EDF
+│   ├── run_edge_memory_sleep_benchmark.py  # EdgeMemoryHyperDRN & Neural-CME on Sleep-EDF
+│   └── run_hematopoiesis_branching_benchmark.py  # 7-node branching human hematopoiesis FACS
 ├── examples/
 │   └── minimal_renewal_network.py  # Compact runnable marked-race & gradient example
-├── results/archived/     # 21 SHA-256-fingerprinted benchmark archives across all paper studies
+├── results/archived/     # 23 SHA-256-fingerprinted benchmark archives across all paper studies
 ├── tests/                # Pytest unit and end-to-end reproducibility suite
 ├── pyproject.toml
 └── requirements.txt
@@ -69,7 +73,7 @@ python scripts/verify_theory.py
 
 ### 4. Audit SHA-256 Provenance & Replay Trajectories
 
-Verifies cryptographic SHA-256 digests across all 21 archived benchmark files and replays the 48-vs-33 Erlang-16 trajectory/sensitivity separation and R1 mouse embryonic stem-cell differentiation curves (`ESC -> EPI -> NPC`, max drift $< 10^{-11}$):
+Verifies cryptographic SHA-256 digests across all 23 archived benchmark files and replays the 48-vs-33 Erlang-16 trajectory/sensitivity separation and R1 mouse embryonic stem-cell differentiation curves (`ESC -> EPI -> NPC`, max drift $< 10^{-11}$):
 
 ```bash
 python scripts/reproduce_all.py
@@ -86,6 +90,7 @@ python scripts/build_paper_assets.py
 All empirical biological evaluations analyze publicly available, de-identified datasets pinned by SHA-256/MD5 checksums:
 
 - **Mouse embryonic stem-cell differentiation (`ESC -> EPI -> NPC`)**: R1 cell line from Stumpf et al. (*Cell Systems*, 2017) as curated in Pélissier et al. (*Briefings in Bioinformatics*, 2026).
+- **Primary human hematopoietic branching lineage hierarchy (`HSC -> MPP -> {MLP, CMP}`, `CMP -> {GMP, MEP}`, `{MLP, GMP, MEP} -> Mature`)**: 78 FACS snapshots across 12 healthy bone-marrow donor cultures over Days 1--7 from Bast et al. (*iScience*, 2021).
 - **Single-cell *Escherichia coli* mother-machine lineages**: Si et al. (*Current Biology*, 2019; 9,449 division cycles across 114 condition-lineage groups) and Tanouchi et al. (*Scientific Data*, 2017; 18,972 division cycles across 49 temperature-field groups at $25^\circ\mathrm{C}, 27^\circ\mathrm{C}, 37^\circ\mathrm{C}$).
 - **Human multi-night sleep staging**: Sleep-EDF Expanded (Kemp et al., *IEEE TBME*, 2000; PhysioNet v1.0.0, 75 paired-night adults across 5 stages `W, N1, N2, SWS, REM`), BIDSleep (Song et al., *IEEE TBME*, 2026; PhysioNet v1.0.1, 253 home nights across 47 adults), and the triple-scorer multi-night dataset of Ying et al. (*Scientific Data*, 2025; 58 recordings across 20 adults).
 

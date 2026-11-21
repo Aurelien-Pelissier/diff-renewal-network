@@ -222,14 +222,14 @@ def build_fig1() -> None:
         red_d.append(float((cr @ dr @ w @ b @ np.ones(3) / 3.0)[0]))
     curves_arr = np.asarray(curves)
 
-    fig = plt.figure(figsize=(TEXTWIDTH_IN, 3.50))
+    fig = plt.figure(figsize=(TEXTWIDTH_IN, 3.46))
     gs = fig.add_gridspec(
         2,
         3,
-        height_ratios=[0.96, 1.16],
+        height_ratios=[0.92, 1.16],
         left=0.095,
         right=0.985,
-        top=0.94,
+        top=0.945,
         bottom=0.115,
         hspace=0.46,
         wspace=0.48,
@@ -243,14 +243,14 @@ def build_fig1() -> None:
 
     boxes = [
         (0.02, 0.25, 2.96, 2.00, PALETTE["light_blue"], PALETTE["navy"],
-         "Marked-race compiler",
-         "Competing clocks\n$K^d \\to 1 + d(K-1)$\nUp to $1{,}074\\times$ smaller"),
+         "Marked & hyper-race",
+         "Mixed & Hyper-Erlang\n$(MK)^d \\to M^d(1 + d(K-1))$\nUp to $1{,}074\\times$ smaller"),
         (3.48, 0.25, 3.04, 2.00, PALETTE["light_teal"], PALETTE["teal"],
-         "Forward & Fisher AD",
-         "Parametric / neural PH\n$P_\\theta(t),\\, \\partial P_\\theta / \\partial\\theta$\nSnapshot NLL & $I(\\theta)$"),
+         "Neural & edge clocks",
+         "Age & $(u{\\to}v)$ fibres\n$P_\\theta(t),\\, \\partial P_\\theta / \\partial\\theta$\nSnapshot NLL & $I(\\theta)$"),
         (7.02, 0.25, 2.96, 2.00, PALETTE["light_amber"], PALETTE["amber"],
-         "Sensitivity reduction",
-         "$15$ modes cancel in $P$\n$P$: $33$  |  $\\partial P / \\partial\\theta$: $48$\nPos-Sens & 2-sided MOR"),
+         "Positive reduction",
+         "$15$ modes cancel in $P$\n$P$: $33$  |  $\\partial P / \\partial\\theta$: $48$\nUniversal Pos-Sens"),
     ]
     for x0, y0, bw, bh, fc, ec, title, body in boxes:
         patch = FancyBboxPatch(
@@ -318,7 +318,7 @@ def build_fig1() -> None:
     ax_c.set_xlabel("Time $t$")
     ax_c.set_ylabel(r"$\partial P_A / \partial \log\lambda_A$")
     ax_c.set_xlim(0.0, 7.0)
-    ax_c.set_ylim(-0.58, 0.22)
+    ax_c.set_ylim(-0.66, 0.22)
     ax_c.set_xticks([0, 2, 4, 6])
     ax_c.legend(loc="lower right", handlelength=1.5, borderpad=0.1, labelspacing=0.2)
     add_panel_tag(ax_c, "c", x_pt=-24.0, y_pt=4.0)
@@ -368,8 +368,8 @@ def build_fig2() -> None:
     sens = load_archived("sensitivity_evidence.json")
     pos = load_archived("positive_sensitivity_summary.json")
 
-    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.42))
-    fig.subplots_adjust(left=0.095, right=0.975, top=0.75, bottom=0.19, wspace=0.46)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.38))
+    fig.subplots_adjust(left=0.098, right=0.98, top=0.735, bottom=0.195, wspace=0.47)
 
     bounds = ev["gradient_bounds"]["families"]["trainable_PH"]
     xs_b = np.array([r["epsilon"] for r in bounds])
@@ -422,7 +422,7 @@ def build_fig2() -> None:
         handletextpad=0.3,
         borderpad=0.05,
     )
-    add_panel_tag(axes[0], "a", x_pt=-22.0, y_pt=3.0)
+    add_panel_tag(axes[0], "a", x_pt=-25.0, y_pt=6.0)
 
     names = ["symmetric", "mixed_025", "mixed_075", "mixed_150", "mixed_250"]
     xs = [0.0, 0.025, 0.075, 0.15, 0.25]
@@ -452,7 +452,7 @@ def build_fig2() -> None:
         ax.set_xlim(-0.008, 0.26)
         ax.set_ylim(0.0, 24.5)
         ax.set_xticks([0.0, 0.075, 0.15, 0.25], ["0", ".075", ".15", ".25"])
-        add_panel_tag(ax, tag, x_pt=-22.0, y_pt=3.0)
+        add_panel_tag(ax, tag, x_pt=-25.0, y_pt=6.0)
 
     handles, labels = axes[1].get_legend_handles_labels()
     fig.legend(
@@ -475,24 +475,14 @@ def build_fig2() -> None:
 # Figure 3: Graph Scaling, Stem-Cell Cascade, 60-Dataset Fisher, & 48-Param Recovery
 # ---------------------------------------------------------------------------
 def build_fig3() -> None:
-    pilot = load_archived("stem_cells_pilot.json")
-    ph_sc = load_archived("trainable_ph_stem_cells.json")
+    hem = load_archived("hematopoiesis_branching_summary.json")
     ev = load_archived("evidence.json")
     gsc = load_archived("graph_scaling_summary.json")
     records = ev["benchmark"]
 
-    ts_obs = np.asarray(pilot["observation_times"])
-    obs = np.asarray(pilot["data_mean_proportions"])
-    theta = np.asarray(ph_sc["panels"]["all_times"]["phase"]["best"]["theta"])
-    means = jnp.exp(-jnp.asarray(theta[:2]))
-    centers = 50.0 * jnp.asarray(theta[2:])
-    logits = jax.vmap(lambda c: smooth_erlang_logits(c, stages=64, width=0.5))(centers)
-    ts_dense = jnp.linspace(0.0, 168.0, 240)
-    pred_dense = np.asarray(solve_erlang_chain(means, logits, ts_dense).ys)
-
-    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 4.18))
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.86))
     fig.subplots_adjust(
-        left=0.11, right=0.975, top=0.91, bottom=0.105, hspace=0.56, wspace=0.40
+        left=0.11, right=0.975, top=0.905, bottom=0.11, hspace=0.58, wspace=0.40
     )
 
     # Panel a: Marked-race warm gradient scaling across V in {4..48} and d in {2,3,4}
@@ -509,7 +499,7 @@ def build_fig3() -> None:
             [r["compact_grad_warm_ms"] for r in sub],
             marker=mk,
             color=col,
-            ms=3.4,
+            ms=3.3,
             lw=1.45,
             label=lbl,
         )
@@ -520,7 +510,7 @@ def build_fig3() -> None:
         marker="x",
         ls="--",
         color=PALETTE["crimson"],
-        ms=4.2,
+        ms=4.0,
         lw=1.4,
         label="Tensor $d{=}3$",
     )
@@ -534,7 +524,7 @@ def build_fig3() -> None:
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=1.1,
+        handlelength=1.05,
         columnspacing=0.55,
         handletextpad=0.25,
         labelspacing=0.18,
@@ -542,29 +532,38 @@ def build_fig3() -> None:
     )
     add_panel_tag(ax_a, "a", x_pt=-24.0, y_pt=18.0)
 
-    # Panel b: Stem-cell differentiation trajectories
+    # Panel b: Primary human 7-node branching hematopoiesis FACS trajectories (Bast et al., 2021)
     ax_b = axes[0, 1]
-    for idx_s, (sname, col, mk) in enumerate(
-        [
-            ("ESC", PALETTE["navy"], "o"),
-            ("EPI", PALETTE["amber"], "s"),
-            ("NPC", PALETTE["teal"], "^"),
-        ]
-    ):
-        ax_b.plot(np.asarray(ts_dense), pred_dense[:, idx_s], color=col, lw=1.55, label=sname)
-        ax_b.scatter(ts_obs, obs[:, idx_s], color=col, marker=mk, s=16, zorder=4)
-    ax_b.set_xlabel("Time (h)")
-    ax_b.set_ylabel("Cell state fraction")
-    ax_b.set_xlim(-4.0, 174.0)
-    ax_b.set_ylim(-0.04, 1.06)
-    ax_b.set_xticks([0, 48, 96, 144])
+    tr_h = hem["trajectories_days_1to7"]
+    days_h = np.asarray(tr_h["days"], dtype=float)
+    emp_h = np.asarray(tr_h["empirical_fractions"], dtype=float)
+    drn_h = np.asarray(tr_h["compiled_drn_fractions"], dtype=float)
+    ax_b.axvline(5.5, color=PALETTE["slate"], lw=0.75, ls="--")
+    # Plot HSC (0), MPP+MLP lymphoid/multipotent (1+2), CMP+GMP+MEP myeloid/erythroid (3+4+5), Mature (6)
+    groups_h = [
+        ("HSC", [0], PALETTE["navy"], "o"),
+        ("MPP+MLP", [1, 2], PALETTE["teal"], "s"),
+        ("Myel./Ery.", [3, 4, 5], PALETTE["amber"], "^"),
+        ("Mature", [6], PALETTE["violet"], "d"),
+    ]
+    for gname, idxs, col, mk in groups_h:
+        y_emp = emp_h[:, idxs].sum(axis=1)
+        y_drn = drn_h[:, idxs].sum(axis=1)
+        ax_b.plot(days_h, y_drn, color=col, lw=1.5, label=gname)
+        ax_b.scatter(days_h, y_emp, color=col, marker=mk, s=14, zorder=4)
+    ax_b.set_xlabel("Culture time (days)")
+    ax_b.set_ylabel("FACS fraction")
+    ax_b.set_xlim(0.7, 7.3)
+    ax_b.set_ylim(-0.04, 1.02)
+    ax_b.set_xticks([1, 3, 5, 7])
     ax_b.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
-        ncol=3,
+        ncol=2,
         handlelength=1.0,
-        columnspacing=0.55,
+        columnspacing=0.5,
         handletextpad=0.25,
+        labelspacing=0.18,
         borderpad=0.05,
     )
     add_panel_tag(ax_b, "b", x_pt=-24.0, y_pt=18.0)
@@ -652,19 +651,20 @@ def build_fig4() -> None:
     mnb = load_archived("modern_neural_baselines.json")
     rt = load_archived("renewal_transfer_summary.json")
 
-    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.48))
-    fig.subplots_adjust(left=0.105, right=0.98, top=0.74, bottom=0.19, wspace=0.38)
+    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.46))
+    fig.subplots_adjust(left=0.108, right=0.98, top=0.695, bottom=0.195, wspace=0.39)
 
     studies = [
         ("primary", "PH truth"),
         ("lognormal", "Lognormal"),
     ]
     models = [
-        ("neural_phase", "Neural clock", PALETTE["navy"], -0.28),
-        ("mean_shape", "Moment PH", PALETTE["teal"], -0.14),
-        ("ltc_ode_3start", "LTC (3-st.)", PALETTE["violet"], 0.0),
-        ("s4d_ode_3start", "S4D (3-st.)", PALETTE["amber"], 0.14),
-        ("latent_ode_3start", "Latent ODE", PALETTE["crimson"], 0.28),
+        ("neural_phase", "Neural clock", PALETTE["navy"], -0.275),
+        ("mean_shape", "Moment PH", PALETTE["teal"], -0.165),
+        ("ltc_ode_3start", "LTC", PALETTE["violet"], -0.055),
+        ("s4d_ode_3start", "S4D", PALETTE["amber"], 0.055),
+        ("latent_ode_3start", "Latent ODE", PALETTE["crimson"], 0.165),
+        ("neural_cme_3start", "Neural-CME", PALETTE["slate"], 0.275),
     ]
     x_pos = np.arange(len(studies))
     axes[0].axhline(0.005, color=PALETTE["slate"], ls="--", lw=0.75)
@@ -681,10 +681,10 @@ def build_fig4() -> None:
             x_pos + dx,
             np.asarray(meds) - y_base,
             bottom=y_base,
-            width=0.125,
+            width=0.102,
             color=col,
             edgecolor=PALETTE["ink"],
-            linewidth=0.5,
+            linewidth=0.45,
             label=mlabel,
         )
         axes[0].errorbar(
@@ -693,22 +693,22 @@ def build_fig4() -> None:
             yerr=[lows, highs],
             fmt="none",
             ecolor=PALETTE["ink"],
-            elinewidth=0.75,
-            capsize=1.6,
+            elinewidth=0.7,
+            capsize=1.4,
         )
     axes[0].set_yscale("log")
     axes[0].set_xticks(x_pos, [lbl for _, lbl in studies])
     axes[0].set_xlim(-0.48, 1.48)
-    axes[0].set_ylim(8e-4, 0.22)
+    axes[0].set_ylim(8e-4, 0.24)
     axes[0].set_ylabel("Held-out excess KL (nats)")
     axes[0].legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=0.95,
-        columnspacing=0.5,
-        handletextpad=0.25,
-        labelspacing=0.18,
+        handlelength=0.85,
+        columnspacing=0.45,
+        handletextpad=0.22,
+        labelspacing=0.16,
         borderpad=0.05,
     )
     add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=24.0)
@@ -752,42 +752,42 @@ def build_fig4() -> None:
 # ---------------------------------------------------------------------------
 def build_fig5() -> None:
     rcb = load_archived("real_continuous_benchmarks.json")
+    ems = load_archived("edge_memory_sleep_summary.json")
     rvm = load_archived("real_visit_memory.json")["datasets"]
 
-    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.54))
-    fig.subplots_adjust(left=0.10, right=0.985, top=0.74, bottom=0.19, wspace=0.52)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXTWIDTH_IN, 2.38))
+    fig.subplots_adjust(left=0.115, right=0.985, top=0.73, bottom=0.20, wspace=0.52)
 
-    # Panel a: Held-out aged-survivor KL on continuous E. coli & 5-node Sleep-EDF
-    ec_m = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]
+    # Panel a: 5-Node Sleep-EDF Architecture Comparison (Joint vs Zero-Shot Aged-Survivor KL)
     sl_m = rcb["sleep_5node_branching_network"]["models_5fold_mean"]
-    x_c = np.arange(2)
-    y_floor = 0.025
+    x_c = np.arange(2)  # 0: Joint aged KL, 1: Zero-shot aged KL
+    y_floor = 0.015
     for mlabel, vals, sds, col, dx in [
         (
-            "DRN",
-            [ec_m["drn_joint"]["aged_kl"], sl_m["drn_joint"]["aged_kl_mean"]],
-            [ec_m["drn_joint"]["aged_kl_sd"], sl_m["drn_joint"]["aged_kl_sd"]],
+            "Edge-Mem",
+            [ems["edge_memory_drn_joint"]["aged_kl_mean"], ems["edge_memory_drn_fresh_only"]["aged_kl_mean"]],
+            [ems["edge_memory_drn_joint"]["aged_kl_sd"], ems["edge_memory_drn_fresh_only"]["aged_kl_sd"]],
             PALETTE["navy"],
             -0.27,
         ),
         (
-            "DRN 0-sh.",
-            [ec_m["drn_fresh_only"]["aged_kl"], sl_m["drn_fresh_only"]["aged_kl_mean"]],
-            [ec_m["drn_fresh_only"]["aged_kl_sd"], sl_m["drn_fresh_only"]["aged_kl_sd"]],
-            PALETTE["royal"],
+            "Renew. DRN",
+            [sl_m["drn_joint"]["aged_kl_mean"], sl_m["drn_fresh_only"]["aged_kl_mean"]],
+            [sl_m["drn_joint"]["aged_kl_sd"], sl_m["drn_fresh_only"]["aged_kl_sd"]],
+            PALETTE["teal"],
             -0.09,
         ),
         (
-            "CTMC",
-            [ec_m["ctmc"]["aged_kl"], sl_m["ctmc"]["aged_kl_mean"]],
-            [ec_m["ctmc"]["aged_kl_sd"], sl_m["ctmc"]["aged_kl_sd"]],
-            PALETTE["teal"],
+            "Neural-CME",
+            [ems["neural_cme_joint"]["aged_kl_mean"], ems["neural_cme_fresh_only"]["aged_kl_mean"]],
+            [ems["neural_cme_joint"]["aged_kl_sd"], ems["neural_cme_fresh_only"]["aged_kl_sd"]],
+            PALETTE["amber"],
             0.09,
         ),
         (
-            "LODE 0-sh.",
-            [ec_m["latent_ode_fresh_only"]["aged_kl"], sl_m["latent_ode_fresh_only"]["aged_kl_mean"]],
-            [ec_m["latent_ode_fresh_only"]["aged_kl_sd"], sl_m["latent_ode_fresh_only"]["aged_kl_sd"]],
+            "Latent ODE",
+            [sl_m["latent_ode_joint"]["aged_kl_mean"], sl_m["latent_ode_fresh_only"]["aged_kl_mean"]],
+            [sl_m["latent_ode_joint"]["aged_kl_sd"], sl_m["latent_ode_fresh_only"]["aged_kl_sd"]],
             PALETTE["crimson"],
             0.27,
         ),
@@ -812,21 +812,23 @@ def build_fig5() -> None:
             capsize=1.6,
         )
     axes[0].set_yscale("log")
-    axes[0].set_xticks(x_c, ["E. coli\n(3-phase)", "Sleep-EDF\n(5-node)"])
+    axes[0].set_xticks(x_c, ["Sleep\n(joint)", "Sleep\n(0-shot)"])
     axes[0].set_xlim(-0.52, 1.52)
-    axes[0].set_ylim(y_floor, 0.62)
+    axes[0].set_ylim(y_floor, 0.13)
+    axes[0].set_yticks([0.02, 0.05, 0.10], [".02", ".05", ".10"])
+    axes[0].minorticks_off()
     axes[0].set_ylabel("Aged-survivor KL (nats)")
     axes[0].legend(
         loc="lower center",
         bbox_to_anchor=(0.55, 1.02),
         ncol=2,
-        handlelength=0.85,
-        columnspacing=0.42,
-        handletextpad=0.22,
+        handlelength=0.82,
+        columnspacing=0.38,
+        handletextpad=0.2,
         labelspacing=0.18,
         borderpad=0.05,
     )
-    add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=26.0)
+    add_panel_tag(axes[0], "a", x_pt=-26.0, y_pt=25.0)
 
     # Panel b: Single-cell E. coli division-cycle duration recovery from snapshots alone
     rec_stats = rcb["ecoli_continuous_cycle"]["zero_shot_cycle_law_recovery"]
@@ -861,7 +863,7 @@ def build_fig5() -> None:
         handletextpad=0.25,
         borderpad=0.05,
     )
-    add_panel_tag(axes[1], "b", x_pt=-22.0, y_pt=26.0)
+    add_panel_tag(axes[1], "b", x_pt=-22.0, y_pt=25.0)
 
     # Panel c: Longitudinal cross-visit persistence gain (before vs after covariates)
     cohorts = [
@@ -892,7 +894,7 @@ def build_fig5() -> None:
             )
     axes[2].set_yticks([2, 1, 0], [lbl for _, _, lbl in cohorts])
     axes[2].set_ylim(-0.52, 2.55)
-    axes[2].set_xlim(-0.45, 2.15)
+    axes[2].set_xlim(-0.45, 2.45)
     axes[2].set_xlabel("Gain / 100 visits (nats)")
     axes[2].legend(
         loc="lower center",
@@ -902,7 +904,7 @@ def build_fig5() -> None:
         handletextpad=0.2,
         borderpad=0.05,
     )
-    add_panel_tag(axes[2], "c", x_pt=-38.0, y_pt=26.0)
+    add_panel_tag(axes[2], "c", x_pt=-38.0, y_pt=25.0)
 
     export_figure(fig, "fig5_persistence_and_sleep_calibration")
 
@@ -917,6 +919,8 @@ def build_tables() -> None:
     gsc = load_archived("graph_scaling_summary.json")
     mnb = load_archived("modern_neural_baselines.json")
     rcb = load_archived("real_continuous_benchmarks.json")
+    ems = load_archived("edge_memory_sleep_summary.json")
+    hem = load_archived("hematopoiesis_branching_summary.json")
     tf = load_archived("trait_fisher_summary.json")
     nm = load_archived("neural_memory_summary.json")
     nmp = load_archived("neural_memory_pulse.json")
@@ -1126,6 +1130,15 @@ def build_tables() -> None:
             f"{tr_400['latent_ode.pretrained_code']['balanced_kl']:.5f}",
             f"{tr_8000['latent_ode.pretrained_code']['balanced_kl']:.5f}",
         ],
+        [
+            "Neural-CME (3-start)",
+            "342",
+            f"{mnb['primary']['neural_cme_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{mnb['lognormal']['neural_cme_3start']['metrics']['balanced_kl']['median']:.5f}",
+            f"{100*mnb['primary']['neural_cme_3start']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
+            "---",
+            "---",
+        ],
     ]
     write_tex_table(
         "tab3_neural_and_transfer.tex",
@@ -1151,16 +1164,28 @@ def build_tables() -> None:
     s_ec2 = rvm["tanouchi"]["models"]["adjusted"]["previous"]["all"]
     t4_rows = [
         [
+            "Human hematopoiesis",
+            "78 FACS",
+            f"Day-7 \\textbf{{{hem['day1to5_to_day7_extrapolation']['compiled_drn']['day7_kl']:.4f}}} (vs.\\ {hem['day1to5_to_day7_extrapolation']['neural_cme']['day7_kl']:.4f})",
+            "Univ.\\ Pos-Sens $49$ st.",
+        ],
+        [
             "\\emph{E.\\ coli} 3-phase ring",
             "18,972 cyc.",
-            f"\\textbf{{{ec_m['drn_fresh_only']['aged_kl']:.4f}}} vs.\\ {ec_m['latent_ode_fresh_only']['aged_kl']:.4f}",
+            f"0-sh.\\ \\textbf{{{ec_m['drn_fresh_only']['aged_kl']:.4f}}} (vs.\\ {ec_m['latent_ode_fresh_only']['aged_kl']:.4f})",
             "$37^\\circ$C $k{=}25.8$ ($27.1$)",
         ],
         [
-            "Sleep-EDF 5-node net",
+            "Sleep 5-node (Renew.)",
             "75 adults",
-            f"\\textbf{{{sl_m['drn_fresh_only']['aged_kl_mean']:.4f}}} vs.\\ {sl_m['latent_ode_fresh_only']['aged_kl_mean']:.4f}",
+            f"0-sh.\\ \\textbf{{{sl_m['drn_fresh_only']['aged_kl_mean']:.4f}}} / jt.\\ {sl_m['drn_joint']['aged_kl_mean']:.4f}",
             "$6{,}144{\\to}117$ ($52.5\\times$)",
+        ],
+        [
+            "\\textbf{Sleep (Edge-Mem)}",
+            "75 adults",
+            f"0-sh.\\ \\textbf{{{ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}} / jt.\\ \\textbf{{{ems['edge_memory_drn_joint']['aged_kl_mean']:.4f}}}",
+            "Closes LODE ($0.0208$)",
         ],
         "\\midrule",
         [
@@ -1176,16 +1201,10 @@ def build_tables() -> None:
             "Perm. $+0.0073$ ($p{=}.002$)",
         ],
         [
-            "\\emph{E.\\ coli} (Si et al.)",
-            "7,389 cyc.",
-            f"\\textbf{{{s_ec1['gain']:+.5f}}} nats",
-            "CI $[+0.0087, +0.0171]$",
-        ],
-        [
-            "\\emph{E.\\ coli} (Tanouchi)",
-            "18,693 cyc.",
-            f"${s_ec2['gain']:+.5f}$ nats",
-            "Size absorbs $+0.0132$",
+            "\\emph{E.\\ coli} (Si / Tan.)",
+            "26,082 cyc.",
+            f"\\textbf{{{s_ec1['gain']:+.5f}}} / ${s_ec2['gain']:+.5f}$",
+            "Size absorbs Tanouchi",
         ],
     ]
     assert "resampled" in rt6["targets"] and "persistent" in rt6["targets"]
@@ -1378,6 +1397,105 @@ def build_tables() -> None:
         rows_g7,
     )
 
+    # Appendix Table A8: Complete 7-Node Human Hematopoiesis & 5-Node Sleep-EDF Architecture Breakdown
+    h_cv = hem["donor_5fold_cv_mean"]
+    h_ex = hem["day1to5_to_day7_extrapolation"]
+    write_tex_table(
+        "tab_a8_hematopoiesis_and_sleep.tex",
+        "llrrrr",
+        [
+            "Dataset",
+            "Architecture",
+            "States (Params)",
+            "Primary KL $\\downarrow$",
+            "Extrap. / 0-Shot $\\downarrow$",
+            "RMSE / Fresh $\\downarrow$",
+        ],
+        [
+            [
+                "Hematopoiesis",
+                "\\textbf{Compiled DRN}",
+                "127 (16)",
+                f"{h_cv['compiled_drn']['kl']:.4f}",
+                f"\\textbf{{{h_ex['compiled_drn']['day7_kl']:.4f}}}",
+                f"{h_cv['compiled_drn']['prob_rmse']:.4f}",
+            ],
+            [
+                "(7-node tree)",
+                "\\textbf{Univ. Pos-Sens}",
+                "\\textbf{49 (14)}",
+                f"{h_cv['universal_pos_sens']['kl']:.4f}",
+                f"{h_ex['universal_pos_sens']['day7_kl']:.4f}",
+                f"\\textbf{{{h_cv['universal_pos_sens']['prob_rmse']:.4f}}}",
+            ],
+            [
+                "",
+                "Memoryless CTMC",
+                "7 (8)",
+                f"{h_cv['ctmc']['kl']:.4f}",
+                f"{h_ex['ctmc']['day7_kl']:.4f}",
+                f"{h_cv['ctmc']['prob_rmse']:.4f}",
+            ],
+            [
+                "",
+                "Neural-CME$(t)$",
+                "7 (128)",
+                f"{h_cv['neural_cme']['kl']:.4f}",
+                f"{h_ex['neural_cme']['day7_kl']:.4f}",
+                f"{h_cv['neural_cme']['prob_rmse']:.4f}",
+            ],
+            [
+                "",
+                "Latent ODE",
+                "12 (273)",
+                f"\\textbf{{{h_cv['latent_ode']['kl']:.4f}}}",
+                f"{h_ex['latent_ode']['day7_kl']:.4f}",
+                f"{h_cv['latent_ode']['prob_rmse']:.4f}",
+            ],
+            "\\midrule",
+            [
+                "Sleep-EDF",
+                "\\textbf{Edge-Mem DRN}",
+                "246 (254)",
+                f"{ems['edge_memory_drn_joint']['aged_kl_mean']:.4f}",
+                f"\\textbf{{{ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.4f}}}",
+                f"{ems['edge_memory_drn_joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "(5-node net)",
+                "Renewal DRN",
+                "117 (144)",
+                f"{sl_m['drn_joint']['aged_kl_mean']:.4f}",
+                f"{sl_m['drn_fresh_only']['aged_kl_mean']:.4f}",
+                f"{sl_m['drn_joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
+                "Memoryless CTMC",
+                "5 (16)",
+                f"{sl_m['ctmc']['aged_kl_mean']:.4f}",
+                f"{sl_m['ctmc']['aged_kl_mean']:.4f}",
+                f"{sl_m['ctmc']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
+                "Neural-CME$(t)$",
+                "5 (394)",
+                f"{ems['neural_cme_joint']['aged_kl_mean']:.4f}",
+                f"{ems['neural_cme_fresh_only']['aged_kl_mean']:.4f}",
+                f"{ems['neural_cme_joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
+                "Latent ODE",
+                "11 (540)",
+                f"\\textbf{{{sl_m['latent_ode_joint']['aged_kl_mean']:.4f}}}",
+                f"{sl_m['latent_ode_fresh_only']['aged_kl_mean']:.4f}",
+                f"\\textbf{{{sl_m['latent_ode_joint']['fresh_kl_mean']:.4f}}}",
+            ],
+        ],
+    )
+
 
 def main() -> None:
     build_fig1()
@@ -1386,7 +1504,7 @@ def main() -> None:
     build_fig4()
     build_fig5()
     build_tables()
-    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 11 LaTeX tables.")
+    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 12 LaTeX tables.")
 
 
 if __name__ == "__main__":

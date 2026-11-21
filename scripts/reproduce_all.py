@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 21 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 23 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -100,6 +100,8 @@ def verify_headline_numbers() -> dict:
     gsc = json.loads((ARCH / "graph_scaling_summary.json").read_text(encoding="utf-8"))
     mnb = json.loads((ARCH / "modern_neural_baselines.json").read_text(encoding="utf-8"))
     rcb = json.loads((ARCH / "real_continuous_benchmarks.json").read_text(encoding="utf-8"))
+    ems = json.loads((ARCH / "edge_memory_sleep_summary.json").read_text(encoding="utf-8"))
+    hem = json.loads((ARCH / "hematopoiesis_branching_summary.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -126,19 +128,37 @@ def verify_headline_numbers() -> dict:
     assert [r["ph_joint_hits_of_5"] for r in gsc["highdim_gamma_recovery"]] == [5, 5, 5]
     assert [r["mc_joint_hits_of_5"] for r in gsc["highdim_gamma_recovery"]] == [0, 0, 0]
 
-    # Finding 3: Neural clocks vs 3-start Latent ODE, LTC, and S4D
+    # Finding 3: Neural clocks vs 3-start Latent ODE, LTC, S4D, and Neural-CME
     kl_nc = round(float(nm["primary"]["models"]["neural_phase"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_ms = round(float(nm["primary"]["models"]["mean_shape"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_lo = round(float(nm["primary"]["models"]["latent_ode"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_ltc = round(float(mnb["primary"]["ltc_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
     kl_s4d = round(float(mnb["primary"]["s4d_ode_3start"]["metrics"]["balanced_kl"]["median"]), 5)
-    assert (kl_nc, kl_ms, kl_lo, kl_ltc, kl_s4d) == (0.00197, 0.01095, 0.08315, 0.05644, 0.06793)
+    kl_cme = round(float(mnb["primary"]["neural_cme_3start"]["metrics"]["balanced_kl"]["median"]), 5)
+    assert (kl_nc, kl_ms, kl_lo, kl_ltc, kl_s4d, kl_cme) == (
+        0.00197,
+        0.01095,
+        0.08315,
+        0.05644,
+        0.06793,
+        0.12854,
+    )
 
-    # Finding 4: Real continuous-time networks & cross-visit persistence
+    # Finding 4: Real continuous-time networks, EdgeMemoryHyperDRN, Hematopoiesis, & persistence
     ec_zs_drn = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]["drn_fresh_only"]["aged_kl"]
     ec_zs_lode = rcb["ecoli_continuous_cycle"]["models_5fold_mean"]["latent_ode_fresh_only"]["aged_kl"]
     sl_comp = rcb["sleep_5node_branching_network"]["state_compression_ratio"]
-    assert (ec_zs_drn, ec_zs_lode, sl_comp) == (0.05691, 0.42433, 52.51)
+    em_zs = ems["edge_memory_drn_fresh_only"]["aged_kl_mean"]
+    em_joint_aged = ems["edge_memory_drn_joint"]["aged_kl_mean"]
+    hem_day7_drn = hem["day1to5_to_day7_extrapolation"]["compiled_drn"]["day7_kl"]
+    assert (ec_zs_drn, ec_zs_lode, sl_comp, em_zs, em_joint_aged, hem_day7_drn) == (
+        0.05691,
+        0.42433,
+        52.51,
+        0.0622,
+        0.02206,
+        0.00816,
+    )
     n2_gain = round(float(rvm["datasets"]["sleep"]["models"]["adjusted"]["previous"]["2"]["gain"]), 5)
     ecoli_si = round(float(rvm["datasets"]["nomass"]["models"]["adjusted"]["previous"]["all"]["gain"]), 5)
     assert (n2_gain, ecoli_si) == (0.01201, 0.01293)
@@ -160,8 +180,15 @@ def verify_headline_numbers() -> dict:
             "ltc_3start": kl_ltc,
             "s4d_3start": kl_s4d,
             "latent_ode": kl_lo,
+            "neural_cme_3start": kl_cme,
         },
-        "real_continuous_zeroshot_aged_kl": {"ecoli_drn": ec_zs_drn, "ecoli_lode": ec_zs_lode},
+        "real_continuous_zeroshot_aged_kl": {
+            "ecoli_drn": ec_zs_drn,
+            "ecoli_lode": ec_zs_lode,
+            "sleep_edge_memory_drn": em_zs,
+        },
+        "sleep_edge_memory_joint_aged_kl": em_joint_aged,
+        "hematopoiesis_day7_extrapolation_kl": hem_day7_drn,
         "sleep_5node_state_compression": sl_comp,
         "persistent_carry_targets": list(rt6["targets"].keys()),
         "real_visit_gains_nats": {"sleep_n2": n2_gain, "ecoli_si": ecoli_si},
