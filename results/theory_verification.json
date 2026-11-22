@@ -64,10 +64,11 @@
     "universal_pos_sens_certificate": {
       "stages_red": 10,
       "stages_full": 16,
+      "cone_min_shape": 3.0,
       "cone_max_shape": 9.5,
-      "sup_survival_abs_error": 0.003978968260087479,
-      "sup_shape_sens_abs_error": 0.018592262532105386,
-      "calibration_seconds": 9.146842980058864
+      "sup_survival_abs_error": 0.003702644230308527,
+      "sup_shape_sens_abs_error": 0.016828566234786416,
+      "calibration_seconds": 30.052650280995294
     },
     "edge_memory_hyper_metzler_col_sum_err": 1.3322676295501878e-15
   },
@@ -117,6 +118,24 @@
     ],
     "proposition_4_mean_field_min_phase": -4.561743538262439e-09,
     "proposition_4_mean_field_max_mass_err": 1.7763568394002505e-15
+  },
+  "heterogeneous_theorem3_and_hyper_pos_sens": {
+    "heterogeneous_distinct_2stage_residue": [
+      "-1/12",
+      "1/12"
+    ],
+    "heterogeneous_partial_gcd_double_root_coeff": [
+      "245/1521",
+      "175/4563",
+      "-70/351"
+    ],
+    "heterogeneous_asymmetric_w_equals_e1_coeff": [
+      "1/12",
+      "-1/12",
+      "0"
+    ],
+    "universal_full_cone_1p4_to_7p8_sup_surv_err": 0.00299,
+    "hyper_pos_sens_metzler_col_sum_err": 4.440892098500626e-16
   },
   "theorem_6_two_preparation_rank": 2,
   "proposition_3_lag2_covariance": 0.5132160000000001

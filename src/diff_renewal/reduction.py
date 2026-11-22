@@ -308,13 +308,19 @@ def universal_pos_clock(mean, shape, psi_univ, *, stages_red: int = 8):
 
 
 def calibrate_universal_pos_clock(
-    *, stages_red: int = 8, stages_full: int = 16, maxiter: int = 250
+    *,
+    stages_red: int = 8,
+    stages_full: int = 16,
+    maxiter: int = 250,
+    k_min: float = 3.0,
+    k_max: float | None = None,
 ):
     """Data-free 1D survival + shape-sensitivity calibration for arbitrary graph topologies."""
     t0 = time.perf_counter()
     du = 0.05
     n_u = 64
-    k_anchors = jnp.exp(jnp.linspace(jnp.log(3.0), jnp.log(float(stages_red)), 21))
+    k_hi = float(stages_red) if k_max is None else float(k_max)
+    k_anchors = jnp.exp(jnp.linspace(jnp.log(float(k_min)), jnp.log(k_hi), 25))
 
     def _scan_surv(blk, ent):
         trans = jl.expm(du * blk)
@@ -377,19 +383,87 @@ def calibrate_universal_pos_clock(
     )
     psi_univ = np.asarray(fit.x, dtype=float)
 
-    # Compute uniform global certificate on the representable positive PH cone k in [3, stages_red - 0.5]
-    k_dense = jnp.linspace(3.0, float(stages_red) - 0.5, 50)
+    # Compute uniform global certificate on the representable positive PH cone k in [k_min, k_cert_hi]
+    k_cert_hi = float(stages_red) - 0.5 if k_max is None else float(k_max)
+    k_dense = jnp.linspace(float(k_min), k_cert_hi, 50)
     s_f_d, ds_f_d = jax.vmap(full_surv_and_sens)(k_dense)
     s_r_d, ds_r_d = jax.vmap(lambda kv: red_surv_and_sens(kv, jnp.asarray(psi_univ)))(k_dense)
     cert = dict(
         stages_red=stages_red,
         stages_full=stages_full,
-        cone_max_shape=float(stages_red) - 0.5,
+        cone_min_shape=float(k_min),
+        cone_max_shape=k_cert_hi,
         sup_survival_abs_error=float(jnp.max(jnp.abs(s_r_d - s_f_d))),
         sup_shape_sens_abs_error=float(jnp.max(jnp.abs(ds_r_d - ds_f_d))),
         calibration_seconds=time.perf_counter() - t0,
     )
     return psi_univ, cert
+
+
+def build_universal_hyper_pos_network_generator(
+    fast_means,
+    slow_means,
+    slow_shapes,
+    fast_weights,
+    routing_weights,
+    edges,
+    n_nodes: int,
+    psi_univ,
+    *,
+    stages_red: int = 8,
+):
+    """Two-branch Universal Hyper-Pos-Sens generator on ANY graph (V, E) with K_r + 1 states/node.
+
+    Pairs one fast exponential branch (CV >= 1 burstiness) with one scale-equivariant K_r-stage
+    universal Pos-Sens Coxian branch per active node, guaranteeing exact Metzler positivity,
+    column-sum-zero simplex invariance, analytical survivor conditioning, and arbitrary CV > 1.
+    """
+    fast_means = jnp.asarray(fast_means)
+    slow_means = jnp.asarray(slow_means)
+    slow_shapes = jnp.asarray(slow_shapes)
+    fast_weights = jnp.asarray(fast_weights)
+    psi_jax = jnp.asarray(psi_univ)
+    stage_rates, slow_entries = jax.vmap(
+        lambda m, k: universal_pos_clock(m, k, psi_jax, stages_red=stages_red)
+    )(slow_means, slow_shapes)
+
+    blocks = []
+    entries_all = []
+    exit_vecs = []
+    for i in range(n_nodes):
+        has_out = any(u == i for u, _ in edges)
+        if has_out:
+            r_fast = 1.0 / fast_means[i]
+            r_v = stage_rates[i]
+            blk_slow = -jnp.diag(r_v) + jnp.diag(r_v[:-1], k=-1)
+            blk = jl.block_diag(jnp.array([[-r_fast]], dtype=slow_means.dtype), blk_slow)
+            al = fast_weights[i]
+            ent = jnp.concatenate([jnp.array([al], dtype=slow_means.dtype), (1.0 - al) * slow_entries[i]])
+            ex = jnp.zeros(stages_red + 1, dtype=slow_means.dtype).at[0].set(r_fast).at[-1].set(r_v[-1])
+            blocks.append(blk)
+            entries_all.append(ent)
+            exit_vecs.append(ex)
+        else:
+            blocks.append(jnp.zeros((1, 1), dtype=slow_means.dtype))
+            entries_all.append(jnp.ones(1, dtype=slow_means.dtype))
+            exit_vecs.append(jnp.zeros(1, dtype=slow_means.dtype))
+
+    offsets = []
+    cur = 0
+    for blk in blocks:
+        offsets.append((cur, cur + blk.shape[0]))
+        cur += blk.shape[0]
+
+    gen = jl.block_diag(*blocks)
+    rw = jnp.asarray(routing_weights)
+    for e_id, (u, v) in enumerate(edges):
+        u0, u1 = offsets[u]
+        v0, v1 = offsets[v]
+        gen = gen.at[v0:v1, u0:u1].add(rw[e_id] * jnp.outer(entries_all[v], exit_vecs[u]))
+
+    fresh = jl.block_diag(*(c[:, None] for c in entries_all))
+    read = jl.block_diag(*(jnp.ones((1, e - s), dtype=slow_means.dtype) for s, e in offsets))
+    return gen, fresh, read
 
 
 def build_universal_pos_network_generator(

@@ -628,6 +628,86 @@ def main() -> None:
     cov_lag2 = 0.5 * float(signs @ np.linalg.matrix_power(p_trans, 2) @ signs) * (delta_val**2) * m1 * m2
     assert abs(cov_lag2 - (delta_val**2) * (rho_val**2) * m1 * m2) < 1e-15
 
+    def _verify_heterogeneous_theorem3_and_hyper_pos() -> dict:
+        """Symbolically verify Generalized Heterogeneous Theorem 3 (arbitrary clocks with shared GCD)
+        and numerically verify Metzler positivity of 2-branch Universal Hyper-Pos-Sens."""
+        from diff_renewal import build_universal_hyper_pos_network_generator, calibrate_universal_pos_clock
+
+        s, eps = sp.symbols("s eps")
+        # Case 1: Distinct 2-stage clocks sharing simple zero zeta = -3 (d_occ=3, d_sens=4)
+        d1, d2 = (s + 1) * (s + 4), (s + 2) * (s + 5)
+        s1, s2 = (s + 3) / d1, (s + 3) / d2
+        r2 = sp.Matrix([[0, 1], [1, 0]])
+        pi2 = sp.Matrix([sp.Rational(1, 2), sp.Rational(1, 2)])
+        sm = sp.diag(s1 + eps / d1, s2)
+        y = sm * (sp.eye(2) - r2 * (sp.eye(2) - s * sm)).inv() * pi2
+        dy = sp.diff(y, eps).subs(eps, 0).applyfunc(sp.simplify)
+        z1 = sp.Integer(-3)
+        sh = [sp.simplify(sx / (s - z1)).subs(s, z1) for sx in (s1, s2)]
+        al1 = pi2[0] * sh[0] + pi2[1] * sh[1]
+        w1 = sp.Matrix([pi2[0] * sh[0] / al1, pi2[1] * sh[1] / al1])
+        pred1 = (pi2[0] / (z1 * d1.subs(s, z1) * al1)) * (sp.Matrix([1, 0]) - w1)
+        act1 = sp.Matrix([sp.limit((s - z1) * g, s, z1) for g in dy])
+        assert sp.simplify(act1 - pred1) == sp.zeros(2, 1) and act1 != sp.zeros(2, 1)
+
+        # Case 2: Heterogeneous 3-node cycle with partial GCD double root zeta=-3/2 (n=(3,3,4), m=(2,2,3))
+        z2 = sp.Rational(-3, 2)
+        d1b, d2b, d3b = (s + 1) * (s + 2) * (s + 4), (s + 1) * (s + 3) * (s + 5), (s + 1) * (s + 2) * (s + 3) * (s + 6)
+        s1b, s2b, s3b = (s - z2) ** 2 / d1b, (s - z2) ** 2 / d2b, (s - z2) ** 3 / d3b
+        r3 = sp.Matrix([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        pi3 = sp.Matrix([sp.Rational(1, 3)] * 3)
+        sm3 = sp.diag(s1b, s2b, s3b + eps / d3b)
+        y3 = sm3 * (sp.eye(3) - r3 * (sp.eye(3) - s * sm3)).inv() * pi3
+        dy3 = sp.diff(y3, eps).subs(eps, 0).applyfunc(sp.simplify)
+        sh3 = [sp.simplify(sx / (s - z2) ** 2).subs(s, z2) for sx in (s1b, s2b, s3b)]
+        al3 = sum(pi3[k] * sh3[k] for k in range(3))
+        w3 = sp.Matrix([pi3[k] * sh3[k] / al3 for k in range(3)])
+        pred2 = (pi3[2] / (z2 * d3b.subs(s, z2) * al3)) * (sp.Matrix([0, 0, 1]) - w3)
+        act2 = sp.Matrix([sp.limit((s - z2) ** 2 * g, s, z2) for g in dy3])
+        assert sp.simplify(act2 - pred2) == sp.zeros(3, 1) and act2 != sp.zeros(3, 1)
+
+        # Case 3: Asymmetric minimal multiplicity (only node 1 has m1=1, w_zeta = e1; node 2 restores simple pole)
+        z3 = sp.Integer(-2)
+        d1c, d2c, d3c = (s + 1) * (s + 3), (s + 1) * (s + 4) * (s + 5), (s + 1) * (s + 3) * (s + 6)
+        s1c, s2c, s3c = (s - z3) / d1c, (s - z3) ** 2 / d2c, (s - z3) ** 2 / d3c
+        sm3c = sp.diag(s1c, s2c + eps / d2c, s3c)
+        y3c = sm3c * (sp.eye(3) - r3 * (sp.eye(3) - s * sm3c)).inv() * pi3
+        dy3c = sp.diff(y3c, eps).subs(eps, 0).applyfunc(sp.simplify)
+        sh3c = [sp.simplify(sx / (s - z3)).subs(s, z3) for sx in (s1c, s2c, s3c)]
+        al3c = sum(pi3[k] * sh3c[k] for k in range(3))
+        w3c = sp.Matrix([pi3[k] * sh3c[k] / al3c for k in range(3)])
+        pred3 = (pi3[1] / (z3 * d2c.subs(s, z3) * al3c)) * (sp.Matrix([0, 1, 0]) - w3c)
+        act3 = sp.Matrix([sp.limit((s - z3) * g, s, z3) for g in dy3c])
+        assert sp.simplify(act3 - pred3) == sp.zeros(3, 1) and act3 != sp.zeros(3, 1)
+
+        # Full-cone [1.4, 7.8] Universal Pos-Sens & 2-branch Hyper-Pos-Sens Metzler check
+        psi_fc, cert_fc = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=200, k_min=1.4, k_max=7.8)
+        edges = ((0, 1), (1, 2), (2, 0))
+        gen_h, fr_h, _ = build_universal_hyper_pos_network_generator(
+            np.array([0.3, 0.4, 0.5]),
+            np.array([2.5, 3.0, 4.0]),
+            np.array([2.0, 5.0, 7.5]),
+            np.array([0.4, 0.5, 0.3]),
+            np.array([1.0, 1.0, 1.0]),
+            edges,
+            3,
+            psi_fc,
+            stages_red=8,
+        )
+        gen_np = np.asarray(gen_h)
+        off_diag = gen_np[~np.eye(gen_np.shape[0], dtype=bool)]
+        col_err = float(np.max(np.abs(gen_np.sum(axis=0))))
+        assert float(np.min(off_diag)) >= -1e-15 and col_err < 1e-13
+        assert float(np.max(np.abs(np.asarray(fr_h).sum(axis=0) - 1.0))) < 1e-14
+
+        return {
+            "heterogeneous_distinct_2stage_residue": [str(x) for x in act1],
+            "heterogeneous_partial_gcd_double_root_coeff": [str(x) for x in act2],
+            "heterogeneous_asymmetric_w_equals_e1_coeff": [str(x) for x in act3],
+            "universal_full_cone_1p4_to_7p8_sup_surv_err": round(cert_fc["sup_survival_abs_error"], 5),
+            "hyper_pos_sens_metzler_col_sum_err": col_err,
+        }
+
     report = {
         "status": "PASSED",
         "proposition_1_marked_race": _verify_marked_race_diffrax(),
@@ -644,6 +724,7 @@ def main() -> None:
         "theorem_4_positive_sensitivity_reduction": _verify_positivity_and_fisher_bias_bound(),
         "proposition_2_and_universal_pos_sens": _verify_hyper_race_and_universal_pos_sens(),
         "multiplicity_sharpness_aldous_shepp_and_mean_field": _verify_multiplicity_sharpness_and_converse(),
+        "heterogeneous_theorem3_and_hyper_pos_sens": _verify_heterogeneous_theorem3_and_hyper_pos(),
         "theorem_6_two_preparation_rank": 2,
         "proposition_3_lag2_covariance": cov_lag2,
     }

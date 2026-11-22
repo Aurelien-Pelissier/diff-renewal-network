@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 31 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 34 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -110,6 +110,9 @@ def verify_headline_numbers() -> dict:
     spg = json.loads((ARCH / "sparse_large_graph_scaling.json").read_text(encoding="utf-8"))
     sp_rss = json.loads((ARCH / "sparse_e2e_and_memory.json").read_text(encoding="utf-8"))
     zs_ctrl = json.loads((ARCH / "zeroshot_age0_control.json").read_text(encoding="utf-8"))
+    bio_r5 = json.loads((ARCH / "bio_influenza_r5_complete.json").read_text(encoding="utf-8"))
+    sp_r5 = json.loads((ARCH / "sparse_r5_converged.json").read_text(encoding="utf-8"))
+    hdk_r5 = json.loads((ARCH / "helpdesk_r5_complete.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -202,6 +205,26 @@ def verify_headline_numbers() -> dict:
     assert zs_ctrl["helpdesk_5fold"]["empirical_fresh_oracle_aged_kl_mean"] > 0.24
     assert zs_ctrl["helpdesk_chrono"]["empirical_fresh_oracle_aged_kl"] > 0.55
     assert zs_ctrl["sleep_5fold"]["empirical_fresh_oracle_aged_kl_mean"] > 0.085
+
+    # Round-5 complete baseline, full-cone universal Hyper-Pos-Sens, and converged SparseDRN assertions
+    assert bio_r5["universal_clock_certificate_full_cone"]["sup_survival_abs_error"] < 0.005
+    assert bio_r5["hematopoiesis_r5"]["pooled_day7"]["universal_pos_sens_fullcone"]["day7_kl"] < 0.015
+    assert bio_r5["influenza_r5"]["ltc_ode"]["days_1to8_to_9to14_best_l2"]["test"]["mean_kl_nats"] > 0.40
+    assert bio_r5["influenza_r5"]["s4d_ode"]["days_1to8_to_9to14_best_l2"]["test"]["mean_kl_nats"] > 0.20
+    assert bio_r5["sleep_hyper_pos_sens_r5"]["models_5fold_mean"]["hyper_pos_sens_fresh_only"]["aged_kl_mean"] < 0.095
+    assert sp_r5["v64_converged_256param"]["all_nodes_mean_rms_pct"] < 2.0
+    assert sp_r5["v64_converged_256param"]["all_nodes_shape_rms_pct"] < 10.0
+    assert sp_r5["v64_converged_256param"]["kl_reduction_vs_ctmc"] > 3000.0
+    assert sp_r5["v256_e2e_1024param"]["heldout_kl_sparse_drn_nats"] < 0.001
+    assert hdk_r5["cv_5fold_clean_age0"]["hyper_pos_sens_fresh_only"]["aged_kl_mean"] < 0.05
+    assert min(
+        hdk_r5["cv_5fold_clean_age0"][f"{m}_fresh_only"]["aged_kl_mean"]
+        for m in ("ltc_ode", "s4d_ode", "neural_cme", "latent_ode")
+    ) > 0.23
+    assert min(
+        hdk_r5["chronological_split_3start_clean_age0"]["models"][f"{m}_fresh_only"]["aged_kl"]
+        for m in ("ltc_ode", "s4d_ode", "neural_cme", "latent_ode")
+    ) > 0.50
 
     return {
         "cyclic_primary_joint_hits_of_280": {

@@ -245,7 +245,7 @@ def build_fig1() -> None:
     boxes = [
         (0.02, 0.25, 2.96, 2.00, PALETTE["light_blue"], PALETTE["navy"],
          "Marked & hyper-race",
-         "Mixed & Hyper-Erlang\n$(MK)^d \\to M^d(1 + d(K-1))$\nUp to $1{,}074\\times$ smaller"),
+         "Mixed & Hyper-Erlang\n$(MK)^d \\to M^d(1 + d(K-1))$\nUp to 1,074× smaller"),
         (3.48, 0.25, 3.04, 2.00, PALETTE["light_amber"], PALETTE["amber"],
          "Positive reduction",
          "$15$ modes cancel in $P$\n$P$: $33$  |  $\\partial P / \\partial\\theta$: $48$\nUniversal Pos-Sens"),
@@ -767,6 +767,7 @@ def build_fig5() -> None:
     rcb = load_archived("real_continuous_benchmarks.json")
     ems = load_archived("edge_memory_sleep_summary.json")
     hdk = load_archived("helpdesk_systems_summary.json")
+    hdk_r5 = load_archived("helpdesk_r5_complete.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     rvm = load_archived("real_visit_memory.json")["datasets"]
 
@@ -847,14 +848,14 @@ def build_fig5() -> None:
     # Panel b: IT Helpdesk Coarsening Sweep across ALL 4 intervals {0.5, 2, 7, 14}d (log marker plot!)
     ax_b = axes[0, 1]
     c_rows = hdk["coarsening_panel_sweep"]
+    c_r5 = hdk_r5["coarsening_neural_clean_age0"]
     x_dt = np.arange(len(c_rows))
-    for mlabel, key, col, mk, ls in [
-        ("Edge-Mem 0-sh.", "edge_memory_drn_multihop_aged_kl", PALETTE["navy"], "o", "-"),
-        ("LODE 0-sh.", "latent_ode_multihop_aged_kl", PALETTE["crimson"], "d", "--"),
-        ("CME 0-sh.", "neural_cme_multihop_aged_kl", PALETTE["amber"], "^", ":"),
-        ("Neural-CR", "neural_competing_risks_best_kl", PALETTE["slate"], "s", "-."),
+    for mlabel, ys, col, mk, ls in [
+        ("Edge-Mem 0-sh.", [float(r["edge_memory_drn_multihop_aged_kl"]) for r in c_rows], PALETTE["navy"], "o", "-"),
+        ("LODE 0-sh.", [float(r["latent_ode_aged_kl_clean_age0"]) for r in c_r5], PALETTE["crimson"], "d", "--"),
+        ("CME 0-sh.", [float(r["neural_cme_aged_kl_clean_age0"]) for r in c_r5], PALETTE["amber"], "^", ":"),
+        ("Neural-CR", [float(r["neural_competing_risks_best_kl"]) for r in c_rows], PALETTE["slate"], "s", "-."),
     ]:
-        ys = [float(r[key]) for r in c_rows]
         ax_b.plot(
             x_dt,
             ys,
@@ -981,8 +982,10 @@ def build_tables() -> None:
     ems = load_archived("edge_memory_sleep_summary.json")
     hem = load_archived("hematopoiesis_branching_summary.json")
     hem_d = load_archived("hematopoiesis_donor_extrap.json")
+    bio_r5 = load_archived("bio_influenza_r5_complete.json")
     hdk = load_archived("helpdesk_systems_summary.json")
     hdk_ext = load_archived("helpdesk_extended_baselines.json")
+    hdk_r5 = load_archived("helpdesk_r5_complete.json")
     slp_ext = load_archived("sleep_extended_baselines.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     spg = load_archived("sparse_large_graph_scaling.json")
@@ -1401,7 +1404,7 @@ def build_tables() -> None:
     rows_g7.append("\\midrule")
     rss_by_v = {r["nodes"]: r for r in sp_rss["peak_rss_scaling"]}
     for r in spg["scaling_rows"]:
-        if r["nodes"] not in (64, 256, 512, 1024):
+        if r["nodes"] not in (16, 64, 256, 512, 1024):
             continue
         rr = rss_by_v[r["nodes"]]
         rows_g7.append(
@@ -1434,7 +1437,12 @@ def build_tables() -> None:
     h_cv = hem["donor_5fold_cv_mean"]
     h_ex = hem["day1to5_to_day7_extrapolation"]
     hd_d7 = hem_d["unseen_donor_day7"]
+    h_r5_cv = bio_r5["hematopoiesis_r5"]["donor_5fold_cv"]
+    h_r5_p7 = bio_r5["hematopoiesis_r5"]["pooled_day7"]
+    h_r5_d7 = bio_r5["hematopoiesis_r5"]["donor_heldout_day7"]
     sl_x = slp_ext["models_5fold_mean"]
+    sl_hp = bio_r5["sleep_hyper_pos_sens_r5"]
+    sl_hp_m = sl_hp["models_5fold_mean"]
     write_tex_table(
         "tab_a8_hematopoiesis_and_sleep.tex",
         "llrrrr",
@@ -1459,9 +1467,9 @@ def build_tables() -> None:
                 "(7-node tree,",
                 "\\textbf{Univ. Pos-Sens}",
                 "49 (14)",
-                f"{h_cv['universal_pos_sens']['kl']:.4f}",
-                f"{h_ex['universal_pos_sens']['day7_kl']:.4f} (${hd_d7['universal_pos_sens']['kl_mean']:.3f}\\pm.16$)",
-                f"\\textbf{{{h_cv['universal_pos_sens']['prob_rmse']:.4f}}}",
+                f"{h_r5_cv['universal_pos_sens_fullcone']['kl']:.4f}",
+                f"{h_r5_p7['universal_pos_sens_fullcone']['day7_kl']:.4f} (${h_r5_d7['universal_pos_sens_fullcone']['kl_mean']:.3f}\\pm.{int(round(100*h_r5_d7['universal_pos_sens_fullcone']['kl_sd'])):02d}$)",
+                f"{h_r5_cv['universal_pos_sens_fullcone']['prob_rmse']:.4f}",
             ],
             [
                 "10 donors)",
@@ -1470,6 +1478,22 @@ def build_tables() -> None:
                 f"{h_cv['ctmc']['kl']:.4f}",
                 f"{h_ex['ctmc']['day7_kl']:.4f} (${hd_d7['ctmc']['kl_mean']:.3f}\\pm.10$)",
                 f"{h_cv['ctmc']['prob_rmse']:.4f}",
+            ],
+            [
+                "",
+                "LTC ODE",
+                f"{h_r5_cv['ltc_ode']['states']} ({h_r5_cv['ltc_ode']['params']})",
+                f"\\textbf{{{h_r5_cv['ltc_ode']['kl']:.4f}}}",
+                f"{h_r5_p7['ltc_ode']['day7_kl']:.4f} (${h_r5_d7['ltc_ode']['kl_mean']:.3f}\\pm.{int(round(100*h_r5_d7['ltc_ode']['kl_sd'])):02d}$)",
+                f"{h_r5_cv['ltc_ode']['prob_rmse']:.4f}",
+            ],
+            [
+                "",
+                "S4D ODE",
+                f"{h_r5_cv['s4d_ode']['states']} ({h_r5_cv['s4d_ode']['params']})",
+                f"{h_r5_cv['s4d_ode']['kl']:.4f}",
+                f"{h_r5_p7['s4d_ode']['day7_kl']:.4f} (${h_r5_d7['s4d_ode']['kl_mean']:.3f}\\pm.{int(round(100*h_r5_d7['s4d_ode']['kl_sd'])):02d}$)",
+                f"{h_r5_cv['s4d_ode']['prob_rmse']:.4f}",
             ],
             [
                 "",
@@ -1483,9 +1507,9 @@ def build_tables() -> None:
                 "",
                 "Latent ODE",
                 "12 (273)",
-                f"\\textbf{{{h_cv['latent_ode']['kl']:.4f}}}",
+                f"{h_cv['latent_ode']['kl']:.4f}",
                 f"{h_ex['latent_ode']['day7_kl']:.4f} (\\textbf{{{hd_d7['latent_ode']['kl_mean']:.3f}}}$\\,\\pm\\,.22$)",
-                f"{h_cv['latent_ode']['prob_rmse']:.4f}",
+                f"\\textbf{{{h_cv['latent_ode']['prob_rmse']:.4f}}}",
             ],
             "\\midrule",
             [
@@ -1506,6 +1530,14 @@ def build_tables() -> None:
             ],
             [
                 "75 adults)",
+                "Hyper-Pos-Sens",
+                f"{sl_hp['hyper_pos_sens_states']} ({sl_hp['hyper_pos_sens_params']})",
+                fmt_pm(sl_hp_m["hyper_pos_sens_joint"]["aged_kl_mean"], sl_hp_m["hyper_pos_sens_joint"]["aged_kl_sd"]),
+                fmt_pm(sl_hp_m["hyper_pos_sens_fresh_only"]["aged_kl_mean"], sl_hp_m["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
+                f"{sl_hp_m['hyper_pos_sens_joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
                 "Univ. Pos-Sens",
                 f"{slp_ext['universal_pos_sens_states']} ({slp_ext['universal_pos_sens_params']})",
                 fmt_pm(sl_x["universal_pos_sens_joint"]["aged_kl_mean"], sl_x["universal_pos_sens_joint"]["aged_kl_sd"]),
@@ -1586,8 +1618,12 @@ def build_tables() -> None:
     mfe_reg = mfe["regularized_latent_ode_sensitivity"]
     c7 = hdk["coarsening_panel_sweep"][2]
     c14 = hdk["coarsening_panel_sweep"][3]
+    c7_r5 = hdk_r5["coarsening_neural_clean_age0"][2]
+    c14_r5 = hdk_r5["coarsening_neural_clean_age0"][3]
     hx = hdk_ext["cv_5fold_extended"]
     hch = hdk_ext["chronological_split"]["models"]
+    hr5 = hdk_r5["cv_5fold_clean_age0"]
+    hch_r5 = hdk_r5["chronological_split_3start_clean_age0"]["models"]
     write_tex_table(
         "tab_a9_systems_and_meanfield.tex",
         "llrrrr",
@@ -1610,6 +1646,14 @@ def build_tables() -> None:
             ],
             [
                 "(4,576)",
+                "\\textbf{Hyper-Pos-Sens}",
+                f"{hdk_r5['hyper_pos_sens_states']} ({hdk_r5['hyper_pos_sens_params']})",
+                fmt_pm(hr5["hyper_pos_sens_joint"]["aged_kl_mean"], hr5["hyper_pos_sens_joint"]["aged_kl_sd"]),
+                fmt_pm(hr5["hyper_pos_sens_fresh_only"]["aged_kl_mean"], hr5["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
+                f"{hch_r5['hyper_pos_sens_fresh_only']['aged_kl']:.3f} (---)",
+            ],
+            [
+                "",
                 "Renewal DRN",
                 f"{hdk['state_counts']['renewal_drn_race_states_K6']} ({hdk['state_counts']['renewal_drn_params_K6']})",
                 fmt_pm(hdk_cv["renewal_drn_joint"]["aged_kl_mean"], hdk_cv["renewal_drn_joint"]["aged_kl_sd"]),
@@ -1644,33 +1688,33 @@ def build_tables() -> None:
                 "",
                 "LTC ODE",
                 f"11 ({hdk_ext['ltc_ode_params']})",
-                fmt_pm(hx["ltc_ode_joint"]["aged_kl_mean"], hx["ltc_ode_joint"]["aged_kl_sd"]),
-                fmt_pm(hx["ltc_ode_fresh_only"]["aged_kl_mean"], hx["ltc_ode_fresh_only"]["aged_kl_sd"]),
-                f"{hch['ltc_ode_fresh_only']['aged_kl']:.3f} (---)",
+                fmt_pm(hr5["ltc_ode_joint"]["aged_kl_mean"], hr5["ltc_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(hr5["ltc_ode_fresh_only"]["aged_kl_mean"], hr5["ltc_ode_fresh_only"]["aged_kl_sd"]),
+                f"{hch_r5['ltc_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7_r5['ltc_ode_aged_kl_clean_age0'])):03d}/.{int(round(1000*c14_r5['ltc_ode_aged_kl_clean_age0'])):03d})",
             ],
             [
                 "",
                 "S4D ODE",
                 f"15 ({hdk_ext['s4d_ode_params']})",
-                fmt_pm(hx["s4d_ode_joint"]["aged_kl_mean"], hx["s4d_ode_joint"]["aged_kl_sd"], bold=True),
-                fmt_pm(hx["s4d_ode_fresh_only"]["aged_kl_mean"], hx["s4d_ode_fresh_only"]["aged_kl_sd"]),
-                f"{hch['s4d_ode_fresh_only']['aged_kl']:.3f} (---)",
+                fmt_pm(hr5["s4d_ode_joint"]["aged_kl_mean"], hr5["s4d_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(hr5["s4d_ode_fresh_only"]["aged_kl_mean"], hr5["s4d_ode_fresh_only"]["aged_kl_sd"]),
+                f"{hch_r5['s4d_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7_r5['s4d_ode_aged_kl_clean_age0'])):03d}/.{int(round(1000*c14_r5['s4d_ode_aged_kl_clean_age0'])):03d})",
             ],
             [
                 "",
                 "Neural-CME$(t)$",
                 f"5 ({hdk['state_counts']['neural_cme_params']})",
-                fmt_pm(hdk_cv["neural_cme_joint"]["aged_kl_mean"], hdk_cv["neural_cme_joint"]["aged_kl_sd"]),
-                fmt_pm(hdk_cv["neural_cme_fresh_only"]["aged_kl_mean"], hdk_cv["neural_cme_fresh_only"]["aged_kl_sd"]),
-                f"{hch['neural_cme_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7['neural_cme_multihop_aged_kl'])):03d}/.{int(round(1000*c14['neural_cme_multihop_aged_kl'])):03d})",
+                fmt_pm(hr5["neural_cme_joint"]["aged_kl_mean"], hr5["neural_cme_joint"]["aged_kl_sd"]),
+                fmt_pm(hr5["neural_cme_fresh_only"]["aged_kl_mean"], hr5["neural_cme_fresh_only"]["aged_kl_sd"]),
+                f"{hch_r5['neural_cme_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7_r5['neural_cme_aged_kl_clean_age0'])):03d}/.{int(round(1000*c14_r5['neural_cme_aged_kl_clean_age0'])):03d})",
             ],
             [
                 "",
                 "Latent ODE",
                 f"11 ({hdk['state_counts']['latent_ode_params']})",
-                fmt_pm(hdk_cv["latent_ode_joint"]["aged_kl_mean"], hdk_cv["latent_ode_joint"]["aged_kl_sd"]),
-                fmt_pm(hdk_cv["latent_ode_fresh_only"]["aged_kl_mean"], hdk_cv["latent_ode_fresh_only"]["aged_kl_sd"]),
-                f"{hch['latent_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7['latent_ode_multihop_aged_kl'])):03d}/.{int(round(1000*c14['latent_ode_multihop_aged_kl'])):03d})",
+                fmt_pm(hr5["latent_ode_joint"]["aged_kl_mean"], hr5["latent_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(hr5["latent_ode_fresh_only"]["aged_kl_mean"], hr5["latent_ode_fresh_only"]["aged_kl_sd"]),
+                f"{hch_r5['latent_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7_r5['latent_ode_aged_kl_clean_age0'])):03d}/.{int(round(1000*c14_r5['latent_ode_aged_kl_clean_age0'])):03d})",
             ],
             "\\midrule",
             [
@@ -1688,6 +1732,22 @@ def build_tables() -> None:
                 f"{mfe_full['markov_seicr']['mean_kl_nats']:.4f}",
                 f"{mfe_ex8['markov_seicr']['test']['mean_kl_nats']:.4f} / {mfe_ex9['markov_seicr']['test']['mean_kl_nats']:.4f}",
                 f"{mfe_ex8['markov_seicr']['test']['count_rmse_boys']:.1f} boys",
+            ],
+            [
+                "",
+                "LTC ODE ($L_2$)",
+                f"{bio_r5['influenza_r5']['ltc_ode']['states']} ({bio_r5['influenza_r5']['ltc_ode']['params']})",
+                f"{bio_r5['influenza_r5']['ltc_ode']['full_fit']['mean_kl_nats']:.4f}",
+                f"{bio_r5['influenza_r5']['ltc_ode']['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']:.4f} / {bio_r5['influenza_r5']['ltc_ode']['days_1to9_to_10to14_best_l2']['test']['mean_kl_nats']:.4f}",
+                f"{bio_r5['influenza_r5']['ltc_ode']['days_1to8_to_9to14_best_l2']['test']['count_rmse_boys']:.1f} boys",
+            ],
+            [
+                "",
+                "S4D ODE ($L_2$)",
+                f"{bio_r5['influenza_r5']['s4d_ode']['states']} ({bio_r5['influenza_r5']['s4d_ode']['params']})",
+                f"{bio_r5['influenza_r5']['s4d_ode']['full_fit']['mean_kl_nats']:.4f}",
+                f"{bio_r5['influenza_r5']['s4d_ode']['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']:.4f} / {bio_r5['influenza_r5']['s4d_ode']['days_1to9_to_10to14_best_l2']['test']['mean_kl_nats']:.4f}",
+                f"{bio_r5['influenza_r5']['s4d_ode']['days_1to8_to_9to14_best_l2']['test']['count_rmse_boys']:.1f} boys",
             ],
             [
                 "",

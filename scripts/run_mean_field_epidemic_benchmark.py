@@ -175,7 +175,7 @@ def fit_seicr_multistart(obs_train: np.ndarray, ts_train: np.ndarray, *, markov_
     return best_x
 
 
-def fit_latent_ode_multistart(obs_train: np.ndarray, ts_train: np.ndarray, n_starts: int = 5):
+def fit_latent_ode_multistart(obs_train: np.ndarray, ts_train: np.ndarray, n_starts: int = 5, reg: float = 5e-4):
     ts_jax = jnp.asarray(ts_train, dtype=jnp.float64)
     obs_jax = jnp.asarray(obs_train, dtype=jnp.float64)
     n_tot = float(obs_train.sum())
@@ -185,7 +185,7 @@ def fit_latent_ode_multistart(obs_train: np.ndarray, ts_train: np.ndarray, n_sta
         def loss_fn(ww):
             p = predict_epidemic_latent_ode(ww, ts_jax)
             nll = -jnp.sum(obs_jax * jnp.log(jnp.clip(p, 1e-12, 1.0))) / n_tot
-            return nll + 5e-4 * jnp.mean(ww**2)
+            return nll + reg * jnp.mean(ww**2)
 
         return jax.value_and_grad(loss_fn)(w)
 
@@ -322,7 +322,24 @@ def main():
             },
         }
 
-    # 3. Verify Kurtz O(M^{-1/2}) propagation of chaos against finite-agent stochastic Gillespie
+    # 3. Regularized Latent ODE L2 sensitivity sweep across {5e-4, 5e-3, 2e-2, 1e-1}
+    reg_sweep = {}
+    for n_tr in (8, 9):
+        skey = f"days_1to{n_tr}_to_{n_tr+1}to14"
+        best_r = None
+        for reg_val in (5e-4, 5e-3, 2e-2, 1e-1):
+            w_r = fit_latent_ode_multistart(OBS_COUNTS[:n_tr], DAYS[:n_tr], n_starts=4, reg=reg_val)
+            p_r = np.asarray(predict_epidemic_latent_ode(jnp.asarray(w_r), ts_all))
+            m_te = metrics_on_slice(p_r[n_tr:], OBS_COUNTS[n_tr:])
+            if best_r is None or m_te["mean_kl_nats"] < best_r["test"]["mean_kl_nats"]:
+                best_r = {
+                    "best_l2": reg_val,
+                    "train": metrics_on_slice(p_r[:n_tr], OBS_COUNTS[:n_tr]),
+                    "test": m_te,
+                }
+        reg_sweep[skey] = best_r
+
+    # 4. Verify Kurtz O(M^{-1/2}) propagation of chaos against finite-agent stochastic Gillespie
     kurtz = verify_kurtz_propagation_of_chaos(drn_params_full)
 
     out = {
@@ -359,6 +376,7 @@ def main():
             },
         },
         "extrapolation_splits": extrap_splits,
+        "regularized_latent_ode_sensitivity": reg_sweep,
         "kurtz_propagation_of_chaos": kurtz,
     }
     out_path = ROOT / "results" / "archived" / "mean_field_epidemic_summary.json"

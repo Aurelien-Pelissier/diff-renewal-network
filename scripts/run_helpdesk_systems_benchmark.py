@@ -673,6 +673,30 @@ def run_coarsening_panel_experiment(trajs_train, trajs_test):
         pf_ctmc, pa_ctmc = predict_ctmc(jnp.asarray(res_ctmc.x), h_eval_jax)
         kl_ctmc = empirical_kl(np.asarray(pf_ctmc), fresh_te)
 
+        # 5. Multi-hop Neural-CME(t) and Latent ODE trained on the EXACT same coarsened grid {m * dt}
+        def fit_grid_neural(init_w, pred_fn):
+            @jax.jit
+            def n_vg(w):
+                def loss_fn(ww):
+                    pf, _ = pred_fn(ww, grid_jax)
+                    nll = -jnp.sum(f_grid_jax * jnp.log(jnp.clip(pf, 1e-12, 1.0))) / n_grid_obs
+                    return nll + 1e-4 * jnp.mean(ww**2)
+
+                return jax.value_and_grad(loss_fn)(w)
+
+            res_n = minimize(
+                lambda x: tuple(map(lambda z: float(z) if np.ndim(z) == 0 else np.asarray(z, np.float64), n_vg(jnp.asarray(x)))),
+                init_w,
+                jac=True,
+                method="L-BFGS-B",
+                options={"maxiter": 150},
+            )
+            pf_n, pa_n = pred_fn(jnp.asarray(res_n.x), h_eval_jax)
+            return empirical_kl(np.asarray(pf_n), fresh_te), empirical_kl(np.asarray(pa_n), aged_te)
+
+        kl_cme, kl_cme_aged = fit_grid_neural(init_helpdesk_neural_cme(42), predict_helpdesk_neural_cme)
+        kl_lode, kl_lode_aged = fit_grid_neural(init_helpdesk_latent_ode(42), predict_helpdesk_latent_ode)
+
         # Fraction of direct-to-Closed transitions from Assign/Active/Wait inside a single delta_t step (multi-hop!)
         # In EDGES, only node 3 (Resolved) has a direct edge to node 4 (Closed)!
         off_diag = panel_tr[:4].copy()
@@ -696,6 +720,10 @@ def run_coarsening_panel_experiment(trajs_train, trajs_test):
             "drn_multihop_aged_kl": kl_drn_aged,
             "edge_memory_drn_multihop_kl": kl_em,
             "edge_memory_drn_multihop_aged_kl": kl_em_aged,
+            "neural_cme_multihop_kl": kl_cme,
+            "neural_cme_multihop_aged_kl": kl_cme_aged,
+            "latent_ode_multihop_kl": kl_lode,
+            "latent_ode_multihop_aged_kl": kl_lode_aged,
         }
         print(
             f"Coarsening dt={dt:4.1f}d ({len(grid_obs):2d} snaps) | "

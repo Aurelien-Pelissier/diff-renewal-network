@@ -1,0 +1,33 @@
+{
+  "v64_converged_256param": {
+    "nodes": 64,
+    "edges": 128,
+    "parameters": 256,
+    "naive_tensor_states": 16384,
+    "compiled_sparse_states": 1984,
+    "preparations": 32,
+    "lbfgs_iterations": 140,
+    "optimization_wall_seconds": 393.56,
+    "heldout_kl_sparse_drn_nats": 6e-05,
+    "heldout_kl_ctmc_nats": 0.231717,
+    "kl_reduction_vs_ctmc": 3838.0,
+    "initial_mean_rms_pct": 17.15,
+    "all_nodes_mean_rms_pct": 1.33,
+    "entry_nodes_mean_rms_pct": 0.88,
+    "initial_shape_rms_pct": 19.74,
+    "all_nodes_shape_rms_pct": 9.77,
+    "entry_nodes_shape_rms_pct": 2.35
+  },
+  "v256_e2e_1024param": {
+    "nodes": 256,
+    "edges": 512,
+    "parameters": 1024,
+    "naive_tensor_states": 65536,
+    "compiled_sparse_states": 7936,
+    "lbfgs_iterations": 60,
+    "optimization_wall_seconds": 255.83,
+    "heldout_kl_sparse_drn_nats": 0.000775,
+    "heldout_kl_ctmc_nats": 0.201981,
+    "kl_reduction_vs_ctmc": 260.7
+  }
+}

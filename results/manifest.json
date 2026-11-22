@@ -1,7 +1,11 @@
 {
   "description": "SHA-256 provenance manifest for all archived Differentiable Renewal Network benchmark summaries.",
-  "count": 31,
+  "count": 34,
   "files": {
+    "results/archived/bio_influenza_r5_complete.json": {
+      "bytes": 3703,
+      "sha256": "9f0d56b5ce20498e1cc3e89fa206b35128a737330fcf3c9113ee6649353881c7"
+    },
     "results/archived/edge_memory_sleep_summary.json": {
       "bytes": 913,
       "sha256": "16ea62f21bcc0845b27cb29cfcd326cfa9efa37d41584bd08e7c1d493dc5b329"
@@ -21,6 +25,10 @@
     "results/archived/helpdesk_extended_baselines.json": {
       "bytes": 5292,
       "sha256": "7016016b465a4920cd9836963000be9287c644de398af51995ae97e80017960e"
+    },
+    "results/archived/helpdesk_r5_complete.json": {
+      "bytes": 9320,
+      "sha256": "f0057a33b50b253493302fb701b802555936c53f82dd03374eb1e4ecdbaac969"
     },
     "results/archived/helpdesk_systems_summary.json": {
       "bytes": 10557,
@@ -101,6 +109,10 @@
     "results/archived/sparse_large_graph_scaling.json": {
       "bytes": 2670,
       "sha256": "b0f8338da68e5921e94cde21b595d1167d0d3f13f863125d59968aeaf5462322"
+    },
+    "results/archived/sparse_r5_converged.json": {
+      "bytes": 941,
+      "sha256": "8913e63ca75f2c313bfb6478645c8cc1f32916024bf18f9c6561617bf8d2831c"
     },
     "results/archived/stem_cells_pilot.json": {
       "bytes": 1567,

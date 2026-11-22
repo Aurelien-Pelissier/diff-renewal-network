@@ -1,6 +1,6 @@
 {
   "status": "PASSED",
-  "verified_archive_files": 31,
+  "verified_archive_files": 34,
   "erlang16_replay": {
     "nominal_max_error": 1.2656542480726785e-14,
     "rate_sensitivity_defect": 0.2619669022259721

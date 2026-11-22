@@ -1,0 +1,134 @@
+{
+  "universal_clock_certificate_full_cone": {
+    "stages_red": 8,
+    "stages_full": 16,
+    "cone_min_shape": 1.4,
+    "cone_max_shape": 7.8,
+    "sup_survival_abs_error": 0.0038458029825823026,
+    "sup_shape_sens_abs_error": 0.04093519089807307,
+    "calibration_seconds": 10.605134663986973
+  },
+  "hematopoiesis_r5": {
+    "donor_5fold_cv": {
+      "ltc_ode": {
+        "states": 12,
+        "params": 344,
+        "kl": 0.11126981096116942,
+        "prob_rmse": 0.08378779936512801
+      },
+      "s4d_ode": {
+        "states": 15,
+        "params": 324,
+        "kl": 0.11150490643474406,
+        "prob_rmse": 0.0837326835380122
+      },
+      "universal_pos_sens_fullcone": {
+        "states": 49,
+        "params": 14,
+        "kl": 0.12028939114446953,
+        "prob_rmse": 0.08508847173004044
+      }
+    },
+    "pooled_day7": {
+      "ltc_ode": {
+        "day7_kl": 0.036162707943714,
+        "day7_rmse": 0.04895757308771653
+      },
+      "s4d_ode": {
+        "day7_kl": 0.07302117002733631,
+        "day7_rmse": 0.067960182375293
+      },
+      "universal_pos_sens_fullcone": {
+        "day7_kl": 0.010239414252628233,
+        "day7_rmse": 0.016101434703381032
+      }
+    },
+    "donor_heldout_day7": {
+      "ltc_ode": {
+        "kl_mean": 0.2050402107751451,
+        "kl_sd": 0.1823378669729623,
+        "rmse_mean": 0.10827942305781238
+      },
+      "s4d_ode": {
+        "kl_mean": 0.20469418270372683,
+        "kl_sd": 0.25427230435630194,
+        "rmse_mean": 0.10249860758279532
+      },
+      "universal_pos_sens_fullcone": {
+        "kl_mean": 0.1508654421046013,
+        "kl_sd": 0.11690966570543945,
+        "rmse_mean": 0.102443664296718
+      }
+    }
+  },
+  "influenza_r5": {
+    "ltc_ode": {
+      "states": 7,
+      "params": 166,
+      "full_fit": {
+        "mean_kl_nats": 0.0024484118429041715,
+        "count_rmse_boys": 11.862401549583268,
+        "frac_rmse": 0.0155470531449322
+      },
+      "days_1to8_to_9to14_best_l2": {
+        "best_l2": 0.005,
+        "test": {
+          "mean_kl_nats": 0.49551852838027166,
+          "count_rmse_boys": 206.15621357885684,
+          "frac_rmse": 0.270191629854334
+        }
+      },
+      "days_1to9_to_10to14_best_l2": {
+        "best_l2": 0.0005,
+        "test": {
+          "mean_kl_nats": 0.13302070378040262,
+          "count_rmse_boys": 84.49336757755823,
+          "frac_rmse": 0.11073835855512217
+        }
+      }
+    },
+    "s4d_ode": {
+      "states": 9,
+      "params": 148,
+      "full_fit": {
+        "mean_kl_nats": 0.0013960391947982899,
+        "count_rmse_boys": 10.240097748268953,
+        "frac_rmse": 0.013420835843078576
+      },
+      "days_1to8_to_9to14_best_l2": {
+        "best_l2": 0.005,
+        "test": {
+          "mean_kl_nats": 0.269243847826186,
+          "count_rmse_boys": 147.83805661626823,
+          "frac_rmse": 0.19375892086011565
+        }
+      },
+      "days_1to9_to_10to14_best_l2": {
+        "best_l2": 0.0005,
+        "test": {
+          "mean_kl_nats": 0.13663093713959834,
+          "count_rmse_boys": 93.07581340326304,
+          "frac_rmse": 0.12198664928343779
+        }
+      }
+    }
+  },
+  "sleep_hyper_pos_sens_r5": {
+    "hyper_pos_sens_states": 45,
+    "hyper_pos_sens_params": 36,
+    "models_5fold_mean": {
+      "hyper_pos_sens_joint": {
+        "fresh_kl_mean": 0.03366924635668446,
+        "fresh_kl_sd": 0.005163673118713088,
+        "aged_kl_mean": 0.03563982975428128,
+        "aged_kl_sd": 0.004021062150521877
+      },
+      "hyper_pos_sens_fresh_only": {
+        "fresh_kl_mean": 0.027886510229377926,
+        "fresh_kl_sd": 0.005387302210356207,
+        "aged_kl_mean": 0.08746878769687912,
+        "aged_kl_sd": 0.01739517590528872
+      }
+    }
+  }
+}
