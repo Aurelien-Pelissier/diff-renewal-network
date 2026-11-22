@@ -1,0 +1,232 @@
+{
+  "universal_clock_cert": {
+    "stages_red": 8,
+    "stages_full": 16,
+    "cone_min_shape": 1.4,
+    "cone_max_shape": 7.8,
+    "sup_survival_abs_error": 0.0029948952765215253,
+    "sup_shape_sens_abs_error": 0.04656023453513741,
+    "calibration_seconds": 31.608086319989525
+  },
+  "stackoverflow_v22_r8": {
+    "prop3_persistence": {
+      "n_pairs": 76551,
+      "sojourn_cv": 1.2765742580798687,
+      "lag1_residual_corr": 0.06489232251075304,
+      "ar1_beta": 0.05420409064143281,
+      "heldout_ll_gain_per_100_visits": 0.26319469478317475,
+      "between_user_icc": 0.07411556077521297
+    },
+    "n_edges": 276,
+    "n_eval_nodes": 21,
+    "talbot_sparse_hyper_drn_fresh_only": {
+      "fresh_kl": 0.025972542669163167,
+      "aged_kl": 0.14818854426117417,
+      "warm_grad_ms": 12.66,
+      "seconds": 1.77,
+      "nit": 120,
+      "params": 364,
+      "max_learned_lam_f": 21.52
+    },
+    "talbot_sparse_hyper_drn_joint": {
+      "fresh_kl": 0.03414317584502488,
+      "aged_kl": 0.06859650183346094,
+      "warm_grad_ms": 13.76,
+      "seconds": 1.85,
+      "nit": 120,
+      "params": 364
+    },
+    "pure_frailty_g3_fresh_only": {
+      "fresh_kl": 0.022232596699040225,
+      "aged_kl": 0.11187776654501802,
+      "warm_grad_ms": 34.13,
+      "seconds": 3.97,
+      "nit": 120,
+      "params": 388,
+      "learned_gammas": [
+        0.123,
+        0.965,
+        8.453
+      ]
+    },
+    "pure_frailty_g3_joint": {
+      "fresh_kl": 0.02805451511229781,
+      "aged_kl": 0.0675216491695651,
+      "warm_grad_ms": 53.71,
+      "seconds": 7.65,
+      "nit": 120,
+      "params": 388
+    },
+    "hybrid_frailty_g2_fresh_only": {
+      "fresh_kl": 0.02289091898975232,
+      "aged_kl": 0.1654005111228263,
+      "warm_grad_ms": 39.37,
+      "seconds": 3.97,
+      "nit": 120,
+      "params": 409,
+      "learned_gammas": [
+        0.26,
+        3.848
+      ]
+    },
+    "hybrid_frailty_g2_joint": {
+      "fresh_kl": 0.029073410524973708,
+      "aged_kl": 0.06699266179529144,
+      "warm_grad_ms": 22.65,
+      "seconds": 5.79,
+      "nit": 120,
+      "params": 409
+    },
+    "universal_hyper_pos_sens_fresh_only": {
+      "fresh_kl": 0.026159843374887852,
+      "aged_kl": 0.15315156392843748,
+      "warm_grad_ms": 27.43,
+      "seconds": 2.74,
+      "nit": 120,
+      "params": 364,
+      "states": 198
+    },
+    "universal_hyper_pos_sens_joint": {
+      "fresh_kl": 0.03436339843467173,
+      "aged_kl": 0.06851986549211,
+      "warm_grad_ms": 60.53,
+      "seconds": 4.79,
+      "nit": 120,
+      "params": 364
+    },
+    "coarsening_r8": {
+      "dt_0.5": {
+        "talbot_hyper_drn_aged_kl": 0.0753731544123819,
+        "univ_hyper_pos_sens_aged_kl": 0.09486304274451218,
+        "thp_aged_kl": 0.3643115515845289,
+        "thp_params": 748
+      },
+      "dt_2.0": {
+        "talbot_hyper_drn_aged_kl": 0.09768099055031386,
+        "univ_hyper_pos_sens_aged_kl": 0.20410268067804352,
+        "thp_aged_kl": 0.1773714208344766,
+        "thp_params": 748
+      },
+      "dt_4.0": {
+        "talbot_hyper_drn_aged_kl": 0.1301281938084397,
+        "univ_hyper_pos_sens_aged_kl": 0.12530230210580917,
+        "thp_aged_kl": 0.18215811658553546,
+        "thp_params": 748
+      },
+      "dt_8.0": {
+        "talbot_hyper_drn_aged_kl": 0.3797209842137144,
+        "univ_hyper_pos_sens_aged_kl": 0.5570541364586991,
+        "thp_aged_kl": 0.2999946250352236,
+        "thp_params": 748
+      }
+    }
+  },
+  "mooc_v98_r8": {
+    "prop3_persistence": {
+      "n_pairs": 250776,
+      "sojourn_cv": 5.107441704484023,
+      "lag1_residual_corr": 0.061500603722870105,
+      "ar1_beta": 0.0673327647148554,
+      "heldout_ll_gain_per_100_visits": 0.14916869470029176,
+      "between_user_icc": 0.11483300773619791
+    },
+    "n_edges": 1355,
+    "n_eval_nodes": 97,
+    "talbot_sparse_hyper_drn_fresh_only": {
+      "fresh_kl": 0.1862211913488117,
+      "aged_kl": 0.19034555974982603,
+      "warm_grad_ms": 142.42,
+      "seconds": 12.49,
+      "nit": 80,
+      "params": 1747,
+      "max_learned_lam_f": 200.38
+    },
+    "talbot_sparse_hyper_drn_joint": {
+      "fresh_kl": 0.18933386581203748,
+      "aged_kl": 0.14874730205700637,
+      "warm_grad_ms": 162.34,
+      "seconds": 30.35,
+      "nit": 80,
+      "params": 1747
+    },
+    "hybrid_frailty_g2_fresh_only": {
+      "fresh_kl": 0.18405331716738244,
+      "aged_kl": 0.26741630977874015,
+      "warm_grad_ms": 319.71,
+      "seconds": 35.65,
+      "nit": 80,
+      "params": 1944,
+      "learned_gammas": [
+        0.414,
+        2.416
+      ]
+    },
+    "hybrid_frailty_g2_joint": {
+      "fresh_kl": 0.18837632665232162,
+      "aged_kl": 0.14898647948485258,
+      "warm_grad_ms": 681.67,
+      "seconds": 53.66,
+      "nit": 80,
+      "params": 1944
+    },
+    "universal_hyper_pos_sens_fresh_only": {
+      "fresh_kl": 0.18724246128867916,
+      "aged_kl": 0.26903520177292,
+      "warm_grad_ms": 179.19,
+      "seconds": 16.05,
+      "nit": 80,
+      "params": 1747,
+      "states": 874
+    },
+    "universal_hyper_pos_sens_joint": {
+      "fresh_kl": 0.18965102825161884,
+      "aged_kl": 0.15184452472490373,
+      "warm_grad_ms": 631.66,
+      "seconds": 36.08,
+      "nit": 80,
+      "params": 1747
+    },
+    "coarsening_r8": {
+      "dt_1.0": {
+        "talbot_hyper_drn_aged_kl": 0.26022536290901677,
+        "univ_hyper_pos_sens_aged_kl": 0.2992800085962875,
+        "thp_aged_kl": 0.39007069976728415,
+        "thp_params": 3332
+      },
+      "dt_6.0": {
+        "talbot_hyper_drn_aged_kl": 0.277724095843881,
+        "univ_hyper_pos_sens_aged_kl": 0.28698127491460096,
+        "thp_aged_kl": 0.30403968161819767,
+        "thp_params": 3332
+      },
+      "dt_12.0": {
+        "talbot_hyper_drn_aged_kl": 0.27289690774878334,
+        "univ_hyper_pos_sens_aged_kl": 0.2777659475279799,
+        "thp_aged_kl": 0.2944721089175657,
+        "thp_params": 3332
+      },
+      "dt_24.0": {
+        "talbot_hyper_drn_aged_kl": 0.2670648400989671,
+        "univ_hyper_pos_sens_aged_kl": 0.2705275296904292,
+        "thp_aged_kl": 0.2964302030243476,
+        "thp_params": 3332
+      }
+    },
+    "deep_2layer_mamba_adamw": {
+      "params": 136331,
+      "layers": 2,
+      "hidden": 64,
+      "fresh_only": {
+        "fresh_kl": 4.15726243301686,
+        "aged_kl": 1.2294128940816011,
+        "seconds": 1553.79
+      },
+      "joint": {
+        "fresh_kl": 4.260324896445666,
+        "aged_kl": 0.7185083995050461,
+        "seconds": 2031.86
+      }
+    }
+  },
+  "total_seconds": 4137.15
+}

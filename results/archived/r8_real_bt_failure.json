@@ -1,0 +1,162 @@
+{
+  "hematopoiesis_7node_real_bt_vs_pos_sens": {
+    "full_states": 97,
+    "balanced_truncation_sweep": {
+      "r18": {
+        "fwd_linf": 0.003925630191596308,
+        "fwd_l2": 0.004123126974192583,
+        "mean_sens_l2_err": 0.01166836577405071,
+        "max_sens_l2_err": 0.05135483237011162,
+        "mean_rel_sens_err": 0.3068077342394432,
+        "distortion_ratio_l2": 2.8299797331212884,
+        "min_prob_red": -0.0007696048344017041,
+        "min_prob_full": 8.549314232908632e-23,
+        "violates_positivity": true,
+        "rebal_mean_sens_l2_err": 0.0035337326800240413,
+        "rebal_distortion_ratio_l2": 0.8570516266276372,
+        "sigma_r_plus_1": 0.0018906373460306713,
+        "glover_ub": 0.015910136191974185,
+        "total_states": 19
+      },
+      "r24": {
+        "fwd_linf": 0.00018749071568358033,
+        "fwd_l2": 0.00016258608087592043,
+        "mean_sens_l2_err": 0.0030607577276341703,
+        "max_sens_l2_err": 0.01942380503334269,
+        "mean_rel_sens_err": 0.0926767636003341,
+        "distortion_ratio_l2": 18.8254597880985,
+        "min_prob_red": -8.276525887893071e-05,
+        "min_prob_full": 8.549314232908632e-23,
+        "violates_positivity": true,
+        "rebal_mean_sens_l2_err": 0.00017693726506276414,
+        "rebal_distortion_ratio_l2": 1.0882682214217094,
+        "sigma_r_plus_1": 6.916136012911888e-05,
+        "glover_ub": 0.0005190220476276332,
+        "total_states": 25
+      },
+      "r36": {
+        "fwd_linf": 6.518248163445151e-10,
+        "fwd_l2": 5.950023193961401e-10,
+        "mean_sens_l2_err": 0.00041390454018026015,
+        "max_sens_l2_err": 0.004254361368457252,
+        "mean_rel_sens_err": 0.011648259607497427,
+        "distortion_ratio_l2": 695635.1709692937,
+        "min_prob_red": -1.3780820928843696e-10,
+        "min_prob_full": 8.549314232908632e-23,
+        "violates_positivity": false,
+        "rebal_mean_sens_l2_err": 6.845729166306735e-07,
+        "rebal_distortion_ratio_l2": 1150.5382320617464,
+        "sigma_r_plus_1": 6.195903487785022e-10,
+        "glover_ub": 3.6919359773758653e-09,
+        "total_states": 37
+      },
+      "r48": {
+        "fwd_linf": 3.963496197911809e-14,
+        "fwd_l2": 5.487325909353087e-14,
+        "mean_sens_l2_err": 1.278992149162301e-06,
+        "max_sens_l2_err": 9.436167394714e-06,
+        "mean_rel_sens_err": 8.520299100489787e-05,
+        "distortion_ratio_l2": 23308113.465290498,
+        "min_prob_red": -7.278899705198683e-15,
+        "min_prob_full": 8.549314232908632e-23,
+        "violates_positivity": false,
+        "rebal_mean_sens_l2_err": 5.0826441917707885e-09,
+        "rebal_distortion_ratio_l2": 92625.15614586473,
+        "sigma_r_plus_1": 5.413522630577385e-15,
+        "glover_ub": 3.10746554548016e-14,
+        "total_states": 49
+      }
+    },
+    "universal_pos_sens_49": {
+      "fwd_linf": 0.002383450027839018,
+      "fwd_l2": 0.0039266763343261835,
+      "mean_sens_l2_err": 0.0022622898783768598,
+      "max_sens_l2_err": 0.008121265663418673,
+      "mean_rel_sens_err": 0.026990213494184078,
+      "distortion_ratio_l2": 0.5761335250884813,
+      "min_prob_red": 1.890295030329057e-15,
+      "min_prob_full": 8.549314232908632e-23,
+      "violates_positivity": false,
+      "total_states": 49,
+      "cert_sup_surv": 0.0029948952765215253
+    }
+  },
+  "helpdesk_5node_real_bt_vs_hyper_pos_sens": {
+    "full_states": 69,
+    "balanced_truncation_sweep": {
+      "r12": {
+        "fwd_linf": 0.00653190428578841,
+        "fwd_l2": 0.009296969101871201,
+        "mean_sens_l2_err": 0.03294460191826239,
+        "max_sens_l2_err": 0.05633820597658694,
+        "mean_rel_sens_err": 0.5941285046474497,
+        "distortion_ratio_l2": 3.543585178919399,
+        "min_prob_red": -9.287465752520329e-05,
+        "min_prob_full": 4.2733237226526813e-14,
+        "violates_positivity": true,
+        "rebal_mean_sens_l2_err": 0.01603702103360219,
+        "rebal_distortion_ratio_l2": 1.7249730377585548,
+        "sigma_r_plus_1": 0.030516504756442797,
+        "total_states": 13
+      },
+      "r20": {
+        "fwd_linf": 7.825584076137648e-05,
+        "fwd_l2": 0.00016112247457622435,
+        "mean_sens_l2_err": 0.003270785373878184,
+        "max_sens_l2_err": 0.016637457713813968,
+        "mean_rel_sens_err": 0.08253542483219398,
+        "distortion_ratio_l2": 20.299994662326455,
+        "min_prob_red": -4.678400564112409e-07,
+        "min_prob_full": 4.2733237226526813e-14,
+        "violates_positivity": true,
+        "rebal_mean_sens_l2_err": 0.000171125598041523,
+        "rebal_distortion_ratio_l2": 1.0620839736455658,
+        "sigma_r_plus_1": 9.092697852867628e-05,
+        "total_states": 21
+      },
+      "r28": {
+        "fwd_linf": 1.0115757120843227e-09,
+        "fwd_l2": 2.6679949682068023e-09,
+        "mean_sens_l2_err": 0.0005454683356691967,
+        "max_sens_l2_err": 0.002959395492501925,
+        "mean_rel_sens_err": 0.016148430260691227,
+        "distortion_ratio_l2": 204448.78726132447,
+        "min_prob_red": -6.631207128543481e-11,
+        "min_prob_full": 4.2733237226526813e-14,
+        "violates_positivity": false,
+        "rebal_mean_sens_l2_err": 6.259609343267002e-06,
+        "rebal_distortion_ratio_l2": 2346.1848383747797,
+        "sigma_r_plus_1": 8.146112618543358e-09,
+        "total_states": 29
+      },
+      "r36": {
+        "fwd_linf": 5.513367540288527e-13,
+        "fwd_l2": 1.4359592752946714e-12,
+        "mean_sens_l2_err": 1.4064616569039759e-05,
+        "max_sens_l2_err": 5.173400843527647e-05,
+        "mean_rel_sens_err": 0.00041310721424250857,
+        "distortion_ratio_l2": 9794579.004445357,
+        "min_prob_red": 9.475926987523309e-15,
+        "min_prob_full": 4.2733237226526813e-14,
+        "violates_positivity": false,
+        "rebal_mean_sens_l2_err": 3.6982438604630777e-09,
+        "rebal_distortion_ratio_l2": 2575.4517722685177,
+        "sigma_r_plus_1": 1.8456033482801863e-11,
+        "total_states": 37
+      }
+    },
+    "universal_hyper_pos_sens_37": {
+      "fwd_linf": 0.001565302369986421,
+      "fwd_l2": 0.004821602994877085,
+      "mean_sens_l2_err": 0.0034132986319968927,
+      "max_sens_l2_err": 0.009776923357616832,
+      "mean_rel_sens_err": 0.041387076266030345,
+      "distortion_ratio_l2": 0.7079178098287013,
+      "min_prob_red": 1.21536641500386e-13,
+      "min_prob_full": 4.2733237226526813e-14,
+      "violates_positivity": false,
+      "total_states": 37
+    }
+  },
+  "total_seconds": 72.49
+}

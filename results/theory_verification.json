@@ -43,18 +43,18 @@
   },
   "interpolatory_projection_baur2011": {
     "basis_dimension": 33,
-    "span_residual": 4.583026015015012e-16,
-    "anchor_transfer_max_abs": 8.659739592076221e-15,
-    "anchor_sensitivity_max_abs": 1.4998419173295474e-14
+    "span_residual": 4.615197775414678e-16,
+    "anchor_transfer_max_abs": 7.105427357601002e-15,
+    "anchor_sensitivity_max_abs": 1.8485213360008856e-14
   },
   "theorem_4_positive_sensitivity_reduction": {
     "metzler_min_off_diagonal": 0.0,
     "generator_col_sum_max_abs": 3.0057912810219772e-15,
-    "pos33_min_early_probability": 2.585098329015292e-22,
-    "sp33_min_early_probability": -0.00043283972493148883,
-    "fisher_projector_orthonormality_error": 4.9960036108132044e-15,
-    "linearized_fisher_bias": 0.017691310447873265,
-    "fisher_whitened_residual_bound": 0.028540974319557225
+    "pos33_min_early_probability": 2.5850983290152917e-22,
+    "sp33_min_early_probability": -0.000432839724930202,
+    "fisher_projector_orthonormality_error": 2.7627227408466457e-15,
+    "linearized_fisher_bias": 0.017691310447873504,
+    "fisher_whitened_residual_bound": 0.028540974319557405
   },
   "proposition_2_and_universal_pos_sens": {
     "proposition_2_hyper_race_naive_states": 1728,
@@ -68,7 +68,7 @@
       "cone_max_shape": 9.5,
       "sup_survival_abs_error": 0.003702644230308527,
       "sup_shape_sens_abs_error": 0.016828566234786416,
-      "calibration_seconds": 19.933457247912884
+      "calibration_seconds": 14.710210326942615
     },
     "edge_memory_hyper_metzler_col_sum_err": 1.3322676295501878e-15
   },
@@ -138,7 +138,7 @@
     "hyper_pos_sens_metzler_col_sum_err": 4.440892098500626e-16
   },
   "theorem_6_quantitative_bt_distortion": {
-    "k4_delta_1e-4_fwd_hinf": 2.6619907096015325e-06,
+    "k4_delta_1e-4_fwd_hinf": 2.661990709548704e-06,
     "k4_delta_1e-4_err_rebal": 0.010668,
     "k4_delta_1e-4_err_frozen": 0.111608,
     "k4_delta_1e-4_ratio_rebal": 4007.6,

@@ -161,6 +161,18 @@
     "results/archived/zeroshot_age0_control.json": {
       "bytes": 1220,
       "sha256": "66b9dd2c9f303a3cca0541e441dcf0d2937b92ee4fcd479b6bc7d579d177969f"
+    },
+    "results/archived/r8_temporal_networks_upgraded.json": {
+      "bytes": 6477,
+      "sha256": "9471840dbd9e9e20d8cd406a4c424d52e9917492510e5dab85e13b70f8777192"
+    },
+    "results/archived/r8_defi_upgraded.json": {
+      "bytes": 41017,
+      "sha256": "29174cabc458953b9ebe137705a30f638f7b0e6bd28b266d8062de199e77c8b4"
+    },
+    "results/archived/r8_real_bt_failure.json": {
+      "bytes": 6467,
+      "sha256": "78b75807f42a3bbef14a601eb799aaa86441b22fd646fa69ee1f76c7fd7e2978"
     }
   }
 }

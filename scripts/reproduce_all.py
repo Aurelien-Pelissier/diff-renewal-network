@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 40 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 43 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -119,6 +119,9 @@ def verify_headline_numbers() -> dict:
     r7m = json.loads((ARCH / "r7_mamba_thp_baselines.json").read_text(encoding="utf-8"))
     r7d = json.loads((ARCH / "r7_defi_neural_clock.json").read_text(encoding="utf-8"))
     r7n = json.loads((ARCH / "r7_temporal_networks.json").read_text(encoding="utf-8"))
+    r8n = json.loads((ARCH / "r8_temporal_networks_upgraded.json").read_text(encoding="utf-8"))
+    r8d = json.loads((ARCH / "r8_defi_upgraded.json").read_text(encoding="utf-8"))
+    r8b = json.loads((ARCH / "r8_real_bt_failure.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -342,6 +345,21 @@ def verify_headline_numbers() -> dict:
             "regime_b_drift_neural_clock": round(r7d["regime_b_temporal_drift_sale"]["neural_clock"]["all"]["logloss"], 5),
             "regime_b_drift_mlp_age": round(r7d["regime_b_temporal_drift_sale"]["mlp_age"]["all"]["logloss"], 5),
             "regime_b_drift_mamba": round(r7d["regime_b_temporal_drift_sale"]["mamba_ssm"]["all"]["logloss"], 5),
+        },
+        "r8_laplace_talbot_frailty_and_defi_mh": {
+            "mooc_talbot_warm_grad_ms": r8n["mooc_v98_r8"]["talbot_sparse_hyper_drn_fresh_only"]["warm_grad_ms"],
+            "mooc_talbot_0shot_aged_kl": round(r8n["mooc_v98_r8"]["talbot_sparse_hyper_drn_fresh_only"]["aged_kl"], 4),
+            "mooc_talbot_joint_aged_kl": round(r8n["mooc_v98_r8"]["talbot_sparse_hyper_drn_joint"]["aged_kl"], 4),
+            "mooc_univ_hyper_pos_0shot_aged_kl": round(r8n["mooc_v98_r8"]["universal_hyper_pos_sens_fresh_only"]["aged_kl"], 4),
+            "mooc_deep_2layer_mamba_params": r8n["mooc_v98_r8"]["deep_2layer_mamba_adamw"]["params"],
+            "mooc_deep_2layer_mamba_joint_aged_kl": round(r8n["mooc_v98_r8"]["deep_2layer_mamba_adamw"]["joint"]["aged_kl"], 4),
+            "stackoverflow_pure_frailty_0shot_aged_kl": round(r8n["stackoverflow_v22_r8"]["pure_frailty_g3_fresh_only"]["aged_kl"], 4),
+            "defi_m4_drift_logloss": round(r8d["regime_b_temporal_drift"]["neural_clock_m4"]["all"]["logloss"], 5),
+            "defi_m4_bsc_to_base_logloss": round(r8d["regime_c_bsc_to_base_young"]["neural_clock_m4"]["all"]["logloss"], 5),
+            "defi_m4_dt120_zeroshot_logloss": round(r8d["multi_horizon_zeroshot_transfer"]["all_age_train_dt10"]["dt_120m"]["neural_clock_m4"]["logloss"], 4),
+            "defi_mlp_chain_dt120_logloss": round(r8d["multi_horizon_zeroshot_transfer"]["all_age_train_dt10"]["dt_120m"]["mlp_age_chained"]["logloss"], 4),
+            "real_hemato_bt49_distortion_fz": round(r8b["hematopoiesis_7node_real_bt_vs_pos_sens"]["balanced_truncation_sweep"]["r48"]["distortion_ratio_l2"], 1),
+            "real_helpdesk_bt37_distortion_fz": round(r8b["helpdesk_5node_real_bt_vs_hyper_pos_sens"]["balanced_truncation_sweep"]["r36"]["distortion_ratio_l2"], 1),
         },
     }
 

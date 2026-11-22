@@ -996,11 +996,12 @@ def build_fig5() -> None:
 def build_fig6() -> None:
     r7t = load_archived("r7_theory_bt_separation.json")
     r7n = load_archived("r7_temporal_networks.json")
-    r7d = load_archived("r7_defi_neural_clock.json")
+    r8n = load_archived("r8_temporal_networks_upgraded.json")
+    r8d = load_archived("r8_defi_upgraded.json")
 
-    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.65))
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.68))
     fig.subplots_adjust(
-        left=0.12, right=0.975, top=0.855, bottom=0.115, hspace=0.74, wspace=0.48
+        left=0.125, right=0.975, top=0.855, bottom=0.115, hspace=0.74, wspace=0.50
     )
 
     # Panel a: Theorem 6 Quantitative delta-near-cancellation & BT distortion ratio
@@ -1035,17 +1036,18 @@ def build_fig6() -> None:
     )
     add_panel_tag(ax_a, "a", x_pt=-32.0, y_pt=22.0)
 
-    # Panel b: MOOC (V=98, 411k events) — 0-shot aged (>=6h) & supervised joint aged KL
+    # Panel b: MOOC (V=98, 411k events) — Talbot-SpDRN (142ms, 0.190) & Zero-Shot Univ-HypPos (0.269)!
     ax_b = axes[0, 1]
     mr = r7n["mooc_v98"]["results"]
+    m8 = r8n["mooc_v98_r8"]
     x_m = np.arange(2)
     mooc_bars = [
-        ("SpDRN", [mr["sparse_hyper_drn_fresh_only"]["aged_kl"], mr["sparse_hyper_drn_joint"]["aged_kl"]], PALETTE["navy"], -0.32),
-        ("CTMC", [mr["ctmc_fresh_only"]["aged_kl"], mr["ctmc_joint"]["aged_kl"]], PALETTE["slate"], -0.192),
-        ("Mamba", [mr["mamba_fresh_only"]["aged_kl"], mr["mamba_joint"]["aged_kl"]], PALETTE["royal"], -0.064),
-        ("S4D", [mr["s4d_fresh_only"]["aged_kl"], mr["s4d_joint"]["aged_kl"]], PALETTE["amber"], 0.064),
-        ("LTC", [mr["ltc_fresh_only"]["aged_kl"], mr["ltc_joint"]["aged_kl"]], PALETTE["violet"], 0.192),
-        ("LODE", [mr["latent_ode_fresh_only"]["aged_kl"], mr["latent_ode_joint"]["aged_kl"]], PALETTE["crimson"], 0.32),
+        ("Talbot", [m8["talbot_sparse_hyper_drn_fresh_only"]["aged_kl"], m8["talbot_sparse_hyper_drn_joint"]["aged_kl"]], PALETTE["navy"], -0.32),
+        ("Univ-H", [m8["universal_hyper_pos_sens_fresh_only"]["aged_kl"], m8["universal_hyper_pos_sens_joint"]["aged_kl"]], PALETTE["teal"], -0.192),
+        ("CTMC", [mr["ctmc_fresh_only"]["aged_kl"], mr["ctmc_joint"]["aged_kl"]], PALETTE["slate"], -0.064),
+        ("Mamba", [mr["mamba_fresh_only"]["aged_kl"], mr["mamba_joint"]["aged_kl"]], PALETTE["violet"], 0.064),
+        ("S4D", [mr["s4d_fresh_only"]["aged_kl"], mr["s4d_joint"]["aged_kl"]], PALETTE["amber"], 0.192),
+        ("LTC", [mr["ltc_fresh_only"]["aged_kl"], mr["ltc_joint"]["aged_kl"]], PALETTE["crimson"], 0.32),
     ]
     for lbl, vals, col, dx in mooc_bars:
         ax_b.bar(x_m + dx, vals, width=0.118, color=col, edgecolor=PALETTE["ink"], linewidth=0.42, label=lbl)
@@ -1069,82 +1071,78 @@ def build_fig6() -> None:
     )
     add_panel_tag(ax_b, "b", x_pt=-32.0, y_pt=22.0)
 
-    # Panel c: MOOC (V=98) multi-hop coarsening sweep dt in {1, 6, 12, 24}h
+    # Panel c: MOOC (V=98) multi-hop coarsening sweep dt in {1, 6, 12, 24}h incl. Talbot, Univ-Hyp, & THP!
     ax_c = axes[1, 0]
-    mc = mr["coarsening"]
+    mc7 = mr["coarsening"]
+    mc8 = m8["coarsening_r8"]
     dts_m = ["dt_1.0", "dt_6.0", "dt_12.0", "dt_24.0"]
     xm_c = np.arange(len(dts_m))
-    for lbl, key, col, mk, ls in [
-        ("SpDRN", "sparse_drn_aged_kl", PALETTE["navy"], "o", "-"),
-        ("Mamba", "mamba_aged_kl", PALETTE["royal"], "^", "--"),
-        ("CTMC", "ctmc_aged_kl", PALETTE["amber"], "s", ":"),
-        ("1-j TPP", "single_jump_tpp_aged_kl", PALETTE["crimson"], "d", "-."),
+    for lbl, ys, col, mk, ls in [
+        ("Talbot", [mc8[d]["talbot_hyper_drn_aged_kl"] for d in dts_m], PALETTE["navy"], "o", "-"),
+        ("Univ-H", [mc8[d]["univ_hyper_pos_sens_aged_kl"] for d in dts_m], PALETTE["teal"], "v", "-"),
+        ("THP", [mc8[d]["thp_aged_kl"] for d in dts_m], PALETTE["violet"], "s", "-."),
+        ("Mamba", [mc7[d]["mamba_aged_kl"] for d in dts_m], PALETTE["amber"], "^", "--"),
+        ("CTMC", [mc7[d]["ctmc_aged_kl"] for d in dts_m], PALETTE["crimson"], "d", ":"),
     ]:
-        ax_c.plot(xm_c, [mc[d][key] for d in dts_m], marker=mk, ls=ls, color=col, ms=3.3, lw=1.4, label=lbl)
+        ax_c.plot(xm_c, ys, marker=mk, ls=ls, color=col, ms=3.1, lw=1.35, label=lbl)
     ax_c.set_yscale("log")
     ax_c.set_xticks(xm_c, ["1h", "6h", "12h", "24h"])
     ax_c.set_xlim(-0.25, 3.25)
-    ax_c.set_ylim(0.22, 22.0)
-    ax_c.set_yticks([0.3, 1.0, 4.0, 15.0], ["0.3", "1.0", "4.0", "15"])
+    ax_c.set_ylim(0.18, 2.6)
+    ax_c.set_yticks([0.2, 0.5, 1.0, 2.0], [".2", ".5", "1.0", "2.0"])
     ax_c.minorticks_off()
     ax_c.set_xlabel(r"Panel interval $\Delta t$ (MOOC)")
     ax_c.set_ylabel("Aged KL (nats)")
     ax_c.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
-        fontsize=6.6,
-        handlelength=1.0,
-        columnspacing=0.45,
-        handletextpad=0.20,
-        labelspacing=0.14,
-        borderpad=0.04,
-    )
-    add_panel_tag(ax_c, "c", x_pt=-32.0, y_pt=20.0)
-
-    # Panel d: DeFi Multi-Pool (183,881 opps, 16 on-chain panels) — Regimes A & B log-loss
-    ax_d = axes[1, 1]
-    ra = r7d["regime_a_zeroshot_deep_age_sale"]
-    rb = r7d["regime_b_temporal_drift_sale"]
-    x_d = np.arange(2)
-    defi_bars = [
-        ("N-Clock", [ra["neural_clock"]["all"]["logloss"], rb["neural_clock"]["all"]["logloss"]], PALETTE["navy"], -0.32),
-        ("MLP+age", [ra["mlp_age"]["all"]["logloss"], rb["mlp_age"]["all"]["logloss"]], PALETTE["teal"], -0.192),
-        ("LTC", [ra["ltc_seq"]["all"]["logloss"], rb["ltc_seq"]["all"]["logloss"]], PALETTE["violet"], -0.064),
-        ("S4D", [ra["s4d_seq"]["all"]["logloss"], rb["s4d_seq"]["all"]["logloss"]], PALETTE["amber"], 0.064),
-        ("Markov", [ra["markov_clock"]["all"]["logloss"], rb["markov_clock"]["all"]["logloss"]], PALETTE["slate"], 0.192),
-        ("Mamba", [ra["mamba_ssm"]["all"]["logloss"], rb["mamba_ssm"]["all"]["logloss"]], PALETTE["crimson"], 0.32),
-    ]
-    y0_d = 0.29
-    for lbl, vals, col, dx in defi_bars:
-        ax_d.bar(
-            x_d + dx,
-            np.asarray(vals) - y0_d,
-            bottom=y0_d,
-            width=0.118,
-            color=col,
-            edgecolor=PALETTE["ink"],
-            linewidth=0.42,
-            label=lbl,
-        )
-    ax_d.set_xticks(x_d, ["0-shot age", "5-mo. drift"])
-    ax_d.set_xlim(-0.50, 1.50)
-    ax_d.set_ylim(y0_d, 0.445)
-    ax_d.set_yticks([0.30, 0.34, 0.38, 0.42], [".30", ".34", ".38", ".42"])
-    ax_d.set_xlabel("DeFi Multi-Pool (164k test)")
-    ax_d.set_ylabel("Held-out NLL (nats)")
-    ax_d.legend(
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
         ncol=3,
         fontsize=6.4,
-        handlelength=0.75,
+        handlelength=0.85,
         columnspacing=0.35,
         handletextpad=0.18,
         labelspacing=0.14,
         borderpad=0.04,
     )
-    add_panel_tag(ax_d, "d", x_pt=-32.0, y_pt=20.0)
+    add_panel_tag(ax_c, "c", x_pt=-32.0, y_pt=22.0)
+
+    # Panel d: DeFi Multi-Pool Zero-Shot Multi-Horizon Transfer (train dt=10m -> test 10..120m, 133k test!)
+    # Plots paired excess NLL over M4-Clock (positive favors M4-Clock!) with 95% UTC-day bootstrap bars
+    ax_d = axes[1, 1]
+    mh = r8d["multi_horizon_zeroshot_transfer"]["all_age_train_dt10"]
+    hs = ["dt_10m", "dt_20m", "dt_30m", "dt_60m", "dt_120m"]
+    xh = np.arange(len(hs))
+    ax_d.axhline(0.0, color=PALETTE["navy"], lw=1.1, ls="--")
+    for lbl, bkey, col, mk, ls in [
+        ("MLP-ch.", "boot_mlp_chain_minus_nc", PALETTE["teal"], "o", "-"),
+        ("MLP-cp.", "boot_mlp_comp_minus_nc", PALETTE["royal"], "s", "--"),
+        ("Weibull", "boot_weibull_minus_nc", PALETTE["amber"], "^", "-."),
+    ]:
+        ys = [mh[h][bkey]["mean_diff_alt_minus_ref"] for h in hs]
+        lo = [mh[h][bkey]["mean_diff_alt_minus_ref"] - mh[h][bkey]["ci95"][0] for h in hs]
+        hi = [mh[h][bkey]["ci95"][1] - mh[h][bkey]["mean_diff_alt_minus_ref"] for h in hs]
+        ax_d.errorbar(xh, ys, yerr=[lo, hi], marker=mk, ls=ls, color=col, ms=3.1, lw=1.35, capsize=1.6, label=lbl)
+    # Also plot Markov excess NLL directly (clean curve!)
+    mk_diff = [mh[h]["markov_clock"]["logloss"] - mh[h]["neural_clock_m4"]["logloss"] for h in hs]
+    ax_d.plot(xh, mk_diff, marker="d", ls=":", color=PALETTE["crimson"], ms=3.0, lw=1.3, label="Markov")
+    ax_d.set_xticks(xh, ["10m", "20m", "30m", "60m", "120m"])
+    ax_d.set_xlim(-0.3, 4.3)
+    ax_d.set_ylim(-0.021, 0.052)
+    ax_d.set_yticks([-0.01, 0.0, 0.02, 0.04], ["-.01", "0", "+.02", "+.04"])
+    ax_d.set_xlabel(r"DeFi horizon $\Delta t$ (0-shot)")
+    ax_d.set_ylabel(r"$\Delta$NLL vs. M4-Clock")
+    ax_d.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        fontsize=6.5,
+        handlelength=0.9,
+        columnspacing=0.45,
+        handletextpad=0.20,
+        labelspacing=0.14,
+        borderpad=0.04,
+    )
+    add_panel_tag(ax_d, "d", x_pt=-32.0, y_pt=22.0)
 
     export_figure(fig, "fig6_bt_and_largescale_networks")
 
@@ -1172,6 +1170,9 @@ def build_tables() -> None:
     r7m = load_archived("r7_mamba_thp_baselines.json")
     r7d = load_archived("r7_defi_neural_clock.json")
     r7n = load_archived("r7_temporal_networks.json")
+    r8n = load_archived("r8_temporal_networks_upgraded.json")
+    r8d = load_archived("r8_defi_upgraded.json")
+    r8b = load_archived("r8_real_bt_failure.json")
     slp_ext = load_archived("sleep_extended_baselines.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     spg = load_archived("sparse_large_graph_scaling.json")
@@ -2026,9 +2027,11 @@ def build_tables() -> None:
     sl_r6 = r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]
     inf_cme = r6b["influenza_r6b_neural_cme"]
     mo_r = r7n["mooc_v98"]["results"]
+    mo_r8 = r8n["mooc_v98_r8"]
     so_r = r7n["stackoverflow_v22"]["results"]
-    df_ra = r7d["regime_a_zeroshot_deep_age_sale"]
-    df_rb = r7d["regime_b_temporal_drift_sale"]
+    so_r8 = r8n["stackoverflow_v22_r8"]
+    df_mh = r8d["multi_horizon_zeroshot_transfer"]["all_age_train_dt10"]["dt_120m"]
+    df_xc = r8d["regime_c_bsc_to_base_young"]
     write_tex_table(
         "tab4_real_world_summary.tex",
         "lrrrrr",
@@ -2043,26 +2046,26 @@ def build_tables() -> None:
         [
             [
                 "MOOC $V{=}98$ (0-shot)",
-                f"\\textbf{{{mo_r['sparse_hyper_drn_fresh_only']['aged_kl']:.4f}}}",
-                "---",
+                f"\\textbf{{{mo_r8['talbot_sparse_hyper_drn_fresh_only']['aged_kl']:.4f}}}",
+                f"{mo_r8['universal_hyper_pos_sens_fresh_only']['aged_kl']:.4f}",
                 f"{mo_r['ctmc_fresh_only']['aged_kl']:.4f}",
                 f"{mo_r['ltc_fresh_only']['aged_kl']:.4f} (LTC)",
-                f"\\textbf{{{mo_r['ltc_fresh_only']['aged_kl']/mo_r['sparse_hyper_drn_fresh_only']['aged_kl']:.1f}$\\times$}}",
+                f"\\textbf{{{mo_r['ltc_fresh_only']['aged_kl']/mo_r8['talbot_sparse_hyper_drn_fresh_only']['aged_kl']:.1f}$\\times$}}",
             ],
             [
                 "MOOC (Joint / 24h)",
-                f"\\textbf{{{mo_r['sparse_hyper_drn_joint']['aged_kl']:.3f}}} (\\textbf{{{mo_r['coarsening']['dt_24.0']['sparse_drn_aged_kl']:.3f}}})",
-                "---",
+                f"\\textbf{{{mo_r8['talbot_sparse_hyper_drn_joint']['aged_kl']:.3f}}} (\\textbf{{{mo_r8['coarsening_r8']['dt_24.0']['talbot_hyper_drn_aged_kl']:.3f}}})",
+                f"{mo_r8['universal_hyper_pos_sens_joint']['aged_kl']:.3f} ({mo_r8['coarsening_r8']['dt_24.0']['univ_hyper_pos_sens_aged_kl']:.3f})",
                 f"{mo_r['ctmc_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['ctmc_aged_kl']:.3f})",
                 f"{mo_r['s4d_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['mamba_aged_kl']:.3f})",
-                f"\\textbf{{{mo_r['s4d_joint']['aged_kl']/mo_r['sparse_hyper_drn_joint']['aged_kl']:.1f}$\\times$/{mo_r['coarsening']['dt_24.0']['mamba_aged_kl']/mo_r['coarsening']['dt_24.0']['sparse_drn_aged_kl']:.1f}$\\times$}}",
+                f"\\textbf{{{mo_r['s4d_joint']['aged_kl']/mo_r8['talbot_sparse_hyper_drn_joint']['aged_kl']:.1f}$\\times$/{mo_r['coarsening']['dt_24.0']['mamba_aged_kl']/mo_r8['coarsening_r8']['dt_24.0']['talbot_hyper_drn_aged_kl']:.1f}$\\times$}}",
             ],
             [
-                "DeFi 183k (0-sh./5m)",
-                f"\\textbf{{{df_ra['neural_clock']['all']['logloss']:.3f}}} (\\textbf{{.{int(round(1000*df_rb['neural_clock']['all']['logloss'])):03d}}})",
+                "DeFi 183k (120m/X-Ch.)",
+                f"\\textbf{{{df_mh['neural_clock_m4']['logloss']:.3f}}} (\\textbf{{.{int(round(1000*df_xc['neural_clock_m4']['all']['logloss'])):03d}}})",
                 "---",
-                f"{df_ra['markov_clock']['all']['logloss']:.3f} (.{int(round(1000*df_rb['markov_clock']['all']['logloss'])):03d})",
-                f"{df_ra['mlp_age']['all']['logloss']:.3f} (.{int(round(1000*df_rb['mlp_age']['all']['logloss'])):03d})",
+                f"{df_mh['markov_clock']['logloss']:.3f} (.{int(round(1000*df_xc['markov_clock']['all']['logloss'])):03d})",
+                f"{df_mh['mlp_age_compounded']['logloss']:.3f} (.{int(round(1000*df_xc['mlp_age']['all']['logloss'])):03d})",
                 "\\textbf{\\#1 / \\#1}",
             ],
             [
@@ -2115,16 +2118,16 @@ def build_tables() -> None:
             ],
             [
                 "StackOv. $V{=}22$ (Bnd.)",
-                f"{so_r['sparse_hyper_drn_fresh_only']['aged_kl']:.3f} (.{int(round(1000*so_r['sparse_hyper_drn_joint']['aged_kl'])):03d})",
-                "---",
+                f"{so_r8['pure_frailty_g3_fresh_only']['aged_kl']:.3f} (.{int(round(1000*so_r8['pure_frailty_g3_joint']['aged_kl'])):03d})",
+                f"{so_r8['universal_hyper_pos_sens_fresh_only']['aged_kl']:.3f} (.{int(round(1000*so_r8['universal_hyper_pos_sens_joint']['aged_kl'])):03d})",
                 f"{so_r['ctmc_fresh_only']['aged_kl']:.3f} (.{int(round(1000*so_r['ctmc_joint']['aged_kl'])):03d})",
                 f"\\textbf{{{so_r['s4d_fresh_only']['aged_kl']:.3f}}} (\\textbf{{.{int(round(1000*so_r['s4d_joint']['aged_kl'])):03d}}})",
-                f"{so_r['s4d_fresh_only']['aged_kl']/so_r['sparse_hyper_drn_fresh_only']['aged_kl']:.2f}$\\times$",
+                f"{so_r['s4d_fresh_only']['aged_kl']/so_r8['pure_frailty_g3_fresh_only']['aged_kl']:.2f}$\\times$",
             ],
         ],
     )
 
-    # Appendix Table A11: Theorem 6 Quantitative Near-Cancellation & Balanced-Truncation Verification
+    # Appendix Table A11: Theorem 6 Quantitative Near-Cancellation + Real-Network BT Verification
     k4_sw = {r["delta"]: r for r in r7t["symmetric_cycles"]["K4"]["sweep"]}
     ht_sw = {r["delta"]: r for r in r7t["heterogeneous_common_zero"]["sweep"]}
     k6_sw = {r["delta"]: r for r in r7t["symmetric_cycles"]["K6"]["sweep"]}
@@ -2146,16 +2149,72 @@ def build_tables() -> None:
                     f"{r['ratio_rebal']:,.0f}$\\times$ / {r['ratio_frozen']:,.0f}$\\times$",
                 ]
             )
-        if label != "Het. $[4,3,3]$ ($10 \\to 9$)":
-            bt_rows.append("\\midrule")
+        bt_rows.append("\\midrule")
+    # Real-network Glover BT vs Universal Pos-Sens / Hyper-Pos-Sens (Theorem 6 in practice!)
+    hb_bt25 = r8b["hematopoiesis_7node_real_bt_vs_pos_sens"]["balanced_truncation_sweep"]["r24"]
+    hb_bt49 = r8b["hematopoiesis_7node_real_bt_vs_pos_sens"]["balanced_truncation_sweep"]["r48"]
+    hb_ps = r8b["hematopoiesis_7node_real_bt_vs_pos_sens"]["universal_pos_sens_49"]
+    hd_bt21 = r8b["helpdesk_5node_real_bt_vs_hyper_pos_sens"]["balanced_truncation_sweep"]["r20"]
+    hd_bt37 = r8b["helpdesk_5node_real_bt_vs_hyper_pos_sens"]["balanced_truncation_sweep"]["r36"]
+    hd_hp = r8b["helpdesk_5node_real_bt_vs_hyper_pos_sens"]["universal_hyper_pos_sens_37"]
+    bt_rows.extend([
+        [
+            "Real Hematop. ($97 \\to 25$ BT)",
+            "neg.",
+            f"{hb_bt25['sigma_r_plus_1']:.2e}",
+            f"{hb_bt25['fwd_l2']:.2e}",
+            f"{hb_bt25['rebal_mean_sens_l2_err']:.2e} / {hb_bt25['mean_sens_l2_err']:.2e}",
+            f"{hb_bt25['rebal_distortion_ratio_l2']:.0f}$\\times$ / {hb_bt25['distortion_ratio_l2']:.0f}$\\times$",
+        ],
+        [
+            "Real Hematop. ($97 \\to 49$ BT)",
+            "real",
+            f"{hb_bt49['sigma_r_plus_1']:.2e}",
+            f"{hb_bt49['fwd_l2']:.2e}",
+            f"{hb_bt49['rebal_mean_sens_l2_err']:.2e} / {hb_bt49['mean_sens_l2_err']:.2e}",
+            f"92.6k$\\times$ / 23.3M$\\times$",
+        ],
+        [
+            "\\textbf{Real Hematop. (Pos-Sens 49)}",
+            "$\\ge 0$",
+            "---",
+            f"{hb_ps['fwd_l2']:.2e}",
+            f"\\textbf{{{hb_ps['mean_sens_l2_err']:.2e}}}",
+            f"\\textbf{{{hb_ps['distortion_ratio_l2']:.1f}$\\times$ (pos.)}}",
+        ],
+        [
+            "Real Helpdesk ($69 \\to 21$ BT)",
+            "neg.",
+            f"{hd_bt21['sigma_r_plus_1']:.2e}",
+            f"{hd_bt21['fwd_l2']:.2e}",
+            f"{hd_bt21['rebal_mean_sens_l2_err']:.2e} / {hd_bt21['mean_sens_l2_err']:.2e}",
+            f"{hd_bt21['rebal_distortion_ratio_l2']:.0f}$\\times$ / {hd_bt21['distortion_ratio_l2']:.0f}$\\times$",
+        ],
+        [
+            "Real Helpdesk ($69 \\to 37$ BT)",
+            "real",
+            f"{hd_bt37['sigma_r_plus_1']:.2e}",
+            f"{hd_bt37['fwd_l2']:.2e}",
+            f"{hd_bt37['rebal_mean_sens_l2_err']:.2e} / {hd_bt37['mean_sens_l2_err']:.2e}",
+            f"2,575$\\times$ / 9.79M$\\times$",
+        ],
+        [
+            "\\textbf{Real Helpdesk (Hyp-Pos 37)}",
+            "$\\ge 0$",
+            "---",
+            f"{hd_hp['fwd_l2']:.2e}",
+            f"\\textbf{{{hd_hp['mean_sens_l2_err']:.2e}}}",
+            f"\\textbf{{{hd_hp['distortion_ratio_l2']:.1f}$\\times$ (pos.)}}",
+        ],
+    ])
     write_tex_table(
         "tab_a10_bt_near_cancellation.tex",
         "lcrrrr",
         [
-            "Network ($D_{\\mathrm{st}} \\to d_{\\mathrm{occ}}$)",
-            "$\\delta$",
+            "Network ($D_{\\mathrm{st}} \\to d_{\\mathrm{red}}$)",
+            "$\\delta$/Pos",
             "$\\sigma_{r+1}$",
-            "Fwd $H_\\infty$ $\\downarrow$",
+            "Fwd Err. $\\downarrow$",
             "Sens. $L_2$ (reb / fz)",
             "Distortion Ratio (reb / fz)",
         ],
@@ -2163,9 +2222,9 @@ def build_tables() -> None:
     )
 
     # Appendix Table A12: Large-Scale Temporal Interaction Networks (MOOC V=98, StackOverflow V=22) & DeFi Multi-Pool (183k)
-    defi_a = r7d["regime_a_zeroshot_deep_age_sale"]
-    defi_b = r7d["regime_b_temporal_drift_sale"]
-    defi_c1 = r7d["regime_c_cross_chain_base_to_bsc_young"]
+    d8_b = r8d["regime_b_temporal_drift"]
+    d8_xc = r8d["regime_c_bsc_to_base_young"]
+    d8_mh = r8d["multi_horizon_zeroshot_transfer"]["all_age_train_dt10"]["dt_120m"]
     write_tex_table(
         "tab_a11_temporal_networks_and_defi.tex",
         "llrrrr",
@@ -2173,79 +2232,79 @@ def build_tables() -> None:
             "Benchmark",
             "Architecture",
             "St. (P)",
-            "Fresh / Drift $\\downarrow$",
-            "0-Shot / Age $\\downarrow$",
-            "Joint (Coar./X) $\\downarrow$",
+            "Fresh/Drift $\\downarrow$",
+            "0-Sh./X-Ch. $\\downarrow$",
+            "Joint/120m $\\downarrow$",
         ],
         [
             [
                 "MOOC $V{=}98$",
-                "\\textbf{SparseHyperDRN}",
-                f"{mo_r['sparse_drn_meta']['compiled_states']} ({mo_r['sparse_drn_meta']['n_params']:,})",
-                f"\\textbf{{{mo_r['sparse_hyper_drn_fresh_only']['fresh_kl']:.4f}}}",
-                f"\\textbf{{{mo_r['sparse_hyper_drn_fresh_only']['aged_kl']:.4f}}}",
-                f"\\textbf{{{mo_r['sparse_hyper_drn_joint']['aged_kl']:.3f}}} (\\textbf{{{mo_r['coarsening']['dt_24.0']['sparse_drn_aged_kl']:.3f}}})",
+                "\\textbf{Talbot-SparseDRN}",
+                f"490 ({mo_r8['talbot_sparse_hyper_drn_fresh_only']['params']:,})",
+                f"\\textbf{{{mo_r8['talbot_sparse_hyper_drn_fresh_only']['fresh_kl']:.4f}}}",
+                f"\\textbf{{{mo_r8['talbot_sparse_hyper_drn_fresh_only']['aged_kl']:.4f}}}",
+                f"\\textbf{{{mo_r8['talbot_sparse_hyper_drn_joint']['aged_kl']:.3f}}} (\\textbf{{{mo_r8['coarsening_r8']['dt_24.0']['talbot_hyper_drn_aged_kl']:.3f}}})",
             ],
             [
-                "(411k events,",
-                "CTMC (expm)",
-                f"98 ({mo_r['ctmc_fresh_only']['params']:,})",
-                f"{mo_r['ctmc_fresh_only']['fresh_kl']:.4f}",
-                f"{mo_r['ctmc_fresh_only']['aged_kl']:.4f}",
-                f"{mo_r['ctmc_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['ctmc_aged_kl']:.3f})",
-            ],
-            [
-                "1,355 edges,",
-                "Mamba SSM",
-                f"110 ({mo_r['mamba_fresh_only']['params']:,})",
-                f"{mo_r['mamba_fresh_only']['fresh_kl']:.4f}",
-                f"{mo_r['mamba_fresh_only']['aged_kl']:.4f}",
-                f"{mo_r['mamba_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['mamba_aged_kl']:.3f})",
+                "(411k, 1.36k e.,",
+                "\\textbf{Univ. Hyper-Pos}",
+                f"874 ({mo_r8['universal_hyper_pos_sens_fresh_only']['params']:,})",
+                f"{mo_r8['universal_hyper_pos_sens_fresh_only']['fresh_kl']:.4f}",
+                f"{mo_r8['universal_hyper_pos_sens_fresh_only']['aged_kl']:.4f}",
+                f"{mo_r8['universal_hyper_pos_sens_joint']['aged_kl']:.3f} ({mo_r8['coarsening_r8']['dt_24.0']['univ_hyper_pos_sens_aged_kl']:.3f})",
             ],
             [
                 "$\\mathrm{CV}{=}5.54$)",
-                "S4D ODE",
-                f"110 ({mo_r['s4d_fresh_only']['params']:,})",
-                f"{mo_r['s4d_fresh_only']['fresh_kl']:.4f}",
-                f"{mo_r['s4d_fresh_only']['aged_kl']:.4f}",
-                f"{mo_r['s4d_joint']['aged_kl']:.3f}",
+                "CTMC / THP",
+                f"98 ({mo_r['ctmc_fresh_only']['params']:,})",
+                f"{mo_r['ctmc_fresh_only']['fresh_kl']:.4f}",
+                f"{mo_r['ctmc_fresh_only']['aged_kl']:.4f}",
+                f"{mo_r['ctmc_joint']['aged_kl']:.3f} ({mo_r8['coarsening_r8']['dt_24.0']['thp_aged_kl']:.3f} T)",
             ],
             [
                 "",
-                "LTC/LODE/CME",
+                "Mamba / Deep 2L",
+                "110 (15.5/136k)",
+                f"{mo_r['mamba_fresh_only']['fresh_kl']:.3f} / {mo_r8['deep_2layer_mamba_adamw']['fresh_only']['fresh_kl']:.2f}",
+                f"{mo_r['mamba_fresh_only']['aged_kl']:.3f} / {mo_r8['deep_2layer_mamba_adamw']['fresh_only']['aged_kl']:.2f}",
+                f"{mo_r['mamba_joint']['aged_kl']:.3f} / {mo_r8['deep_2layer_mamba_adamw']['joint']['aged_kl']:.3f}",
+            ],
+            [
+                "",
+                "S4D/LTC/LO/CME",
                 "110 (9.7--13k)",
                 f"{mo_r['ltc_fresh_only']['fresh_kl']:.3f}--{mo_r['latent_ode_fresh_only']['fresh_kl']:.3f}",
                 f"{mo_r['ltc_fresh_only']['aged_kl']:.3f}--{mo_r['neural_cme_fresh_only']['aged_kl']:.3f}",
-                f"{mo_r['latent_ode_joint']['aged_kl']:.3f}--{mo_r['neural_cme_joint']['aged_kl']:.3f}",
+                f"{mo_r['s4d_joint']['aged_kl']:.3f}--{mo_r['neural_cme_joint']['aged_kl']:.3f}",
             ],
             "\\midrule",
             [
                 "StackOv. $V{=}22$",
-                "SparseHyperDRN",
-                f"{so_r['sparse_drn_meta']['compiled_states']} ({so_r['sparse_drn_meta']['n_params']})",
-                f"{so_r['sparse_hyper_drn_fresh_only']['fresh_kl']:.4f}",
-                f"{so_r['sparse_hyper_drn_fresh_only']['aged_kl']:.4f}",
-                f"{so_r['sparse_hyper_drn_joint']['aged_kl']:.3f} ({so_r['coarsening']['dt_8.0']['sparse_drn_aged_kl']:.3f})",
+                "\\textbf{Pure Frailty-DRN}",
+                f"330 ({so_r8['pure_frailty_g3_fresh_only']['params']})",
+                f"{so_r8['pure_frailty_g3_fresh_only']['fresh_kl']:.4f}",
+                f"{so_r8['pure_frailty_g3_fresh_only']['aged_kl']:.4f}",
+                f"{so_r8['pure_frailty_g3_joint']['aged_kl']:.3f}",
             ],
             [
                 "(143k events,",
-                "CTMC (expm)",
-                f"22 ({so_r['ctmc_fresh_only']['params']})",
-                f"{so_r['ctmc_fresh_only']['fresh_kl']:.4f}",
-                f"{so_r['ctmc_fresh_only']['aged_kl']:.4f}",
-                f"{so_r['ctmc_joint']['aged_kl']:.3f} (\\textbf{{{so_r['coarsening']['dt_8.0']['ctmc_aged_kl']:.3f}}})",
+                "Talbot-DRN / Univ.",
+                "132/198 (364)",
+                f"{so_r8['talbot_sparse_hyper_drn_fresh_only']['fresh_kl']:.3f} / {so_r8['universal_hyper_pos_sens_fresh_only']['fresh_kl']:.3f}",
+                f"{so_r8['talbot_sparse_hyper_drn_fresh_only']['aged_kl']:.3f} / {so_r8['universal_hyper_pos_sens_fresh_only']['aged_kl']:.3f}",
+                f"{so_r8['talbot_sparse_hyper_drn_joint']['aged_kl']:.3f} ({so_r8['coarsening_r8']['dt_0.5']['talbot_hyper_drn_aged_kl']:.3f})",
             ],
             [
                 "$\\mathrm{CV}{=}1.22$)",
-                "Mamba SSM",
-                f"34 ({so_r['mamba_fresh_only']['params']:,})",
-                f"{so_r['mamba_fresh_only']['fresh_kl']:.4f}",
-                f"{so_r['mamba_fresh_only']['aged_kl']:.4f}",
-                f"{so_r['mamba_joint']['aged_kl']:.3f} ({so_r['coarsening']['dt_8.0']['mamba_aged_kl']:.3f})",
+                "CTMC / Mamba",
+                "22/34 (.3/3.4k)",
+                f"{so_r['ctmc_fresh_only']['fresh_kl']:.3f} / {so_r['mamba_fresh_only']['fresh_kl']:.3f}",
+                f"{so_r['ctmc_fresh_only']['aged_kl']:.3f} / {so_r['mamba_fresh_only']['aged_kl']:.3f}",
+                f"{so_r['ctmc_joint']['aged_kl']:.3f} / {so_r['mamba_joint']['aged_kl']:.3f}",
             ],
             [
                 "",
-                "S4D/LTC/LODE/CME",
+                "S4D/LTC/LO/CME",
                 "34 (2.1--3.1k)",
                 f"\\textbf{{{so_r['s4d_fresh_only']['fresh_kl']:.4f}}}--{so_r['neural_cme_fresh_only']['fresh_kl']:.4f}",
                 f"\\textbf{{{so_r['s4d_fresh_only']['aged_kl']:.4f}}}--{so_r['neural_cme_fresh_only']['aged_kl']:.4f}",
@@ -2254,35 +2313,35 @@ def build_tables() -> None:
             "\\midrule",
             [
                 "DeFi 183k",
-                "\\textbf{Cond. Neural Clock}",
-                f"3 ({defi_a['neural_clock']['params']})",
-                f"\\textbf{{{defi_b['neural_clock']['all']['logloss']:.5f}}}",
-                f"\\textbf{{{defi_a['neural_clock']['all']['logloss']:.5f}}}",
-                f"\\textbf{{{defi_c1['neural_clock']['bsc_all']['logloss']:.3f}}} (\\textbf{{{defi_c1['neural_clock']['bsc_gt60']['logloss']:.3f}}})",
+                "\\textbf{M4 Neural Clock}",
+                f"5 ({d8_b['neural_clock_m4']['params']})",
+                f"{d8_b['neural_clock_m4']['all']['logloss']:.3f} (\\textbf{{{d8_b['neural_clock_m4']['gt60']['logloss']:.3f}}})",
+                f"\\textbf{{{d8_xc['neural_clock_m4']['all']['logloss']:.4f}}}",
+                f"\\textbf{{{d8_mh['neural_clock_m4']['logloss']:.4f}}}",
             ],
             [
                 "(BSC \\& Base,",
                 "MLP + $\\log(1{+}a)$",
-                f"--- ({defi_a['mlp_age']['params']})",
-                f"{defi_b['mlp_age']['all']['logloss']:.5f}",
-                f"{defi_a['mlp_age']['all']['logloss']:.5f}",
-                f"{defi_c1['mlp_age']['bsc_all']['logloss']:.3f} ({defi_c1['mlp_age']['bsc_gt60']['logloss']:.3f})",
+                f"--- ({d8_b['mlp_age']['params']})",
+                f"\\textbf{{{d8_b['mlp_age']['all']['logloss']:.3f}}} ({d8_b['mlp_age']['gt60']['logloss']:.3f})",
+                f"{d8_xc['mlp_age']['all']['logloss']:.4f}",
+                f"{d8_mh['mlp_age_compounded']['logloss']:.3f} / {d8_mh['mlp_age_chained']['logloss']:.3f}",
             ],
             [
                 "Jan--Jul 2025)",
                 "Weibull / Markov",
-                f"--- ({defi_a['weibull_mlp']['params']}/{defi_a['markov_clock']['params']})",
-                f"{defi_b['weibull_mlp']['all']['logloss']:.3f} / {defi_b['markov_clock']['all']['logloss']:.3f}",
-                f"{defi_a['weibull_mlp']['all']['logloss']:.3f} / {defi_a['markov_clock']['all']['logloss']:.3f}",
-                f"{defi_c1['weibull_mlp']['bsc_all']['logloss']:.2f} / {defi_c1['markov_clock']['bsc_all']['logloss']:.3f}",
+                f"--- ({d8_b['weibull_mlp']['params']}/{d8_b['markov_clock']['params']})",
+                f"{d8_b['weibull_mlp']['all']['logloss']:.3f} / {d8_b['markov_clock']['all']['logloss']:.3f}",
+                f"{d8_xc['weibull_mlp']['all']['logloss']:.3f} / {d8_xc['markov_clock']['all']['logloss']:.3f}",
+                f"{d8_mh['weibull_mlp']['logloss']:.3f} / {d8_mh['markov_clock']['logloss']:.3f}",
             ],
             [
                 "",
-                "LTC/S4D/Mamba",
-                "12 (637--931)",
-                f"{defi_b['ltc_seq']['all']['logloss']:.3f}--{defi_b['mamba_ssm']['all']['logloss']:.3f}",
-                f"{defi_a['ltc_seq']['all']['logloss']:.3f}--{defi_a['mamba_ssm']['all']['logloss']:.3f}",
-                "---",
+                "Deep 2L-Mamba",
+                f"64 ({d8_b['deep_2layer_mamba_adamw']['params']:,})",
+                f"{d8_b['deep_2layer_mamba_adamw']['all']['logloss']:.3f}",
+                f"{r8d['regime_a_zeroshot_deep_age']['deep_2layer_mamba_adamw']['all']['logloss']:.3f} (0-sh.)",
+                f"{d8_mh['deep_2layer_mamba_compounded']['logloss']:.3f}",
             ],
         ],
     )
