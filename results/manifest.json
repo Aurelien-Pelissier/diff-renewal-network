@@ -1,6 +1,6 @@
 {
   "description": "SHA-256 provenance manifest for all archived Differentiable Renewal Network benchmark summaries.",
-  "count": 34,
+  "count": 36,
   "files": {
     "results/archived/bio_influenza_r5_complete.json": {
       "bytes": 3703,
@@ -69,6 +69,14 @@
     "results/archived/positive_sensitivity_summary.json": {
       "bytes": 23717,
       "sha256": "cba078cf3f51cf3355c7e1d5c0640ef4ab60a014debbe3d13edbe65ba2150966"
+    },
+    "results/archived/r6_integrity_fixes.json": {
+      "bytes": 4789,
+      "sha256": "6ce2eeaaf9fd07272a23044779d2f5cb5a8647e2d7681bf009cb11f91bc203df"
+    },
+    "results/archived/r6_uniformity_closure.json": {
+      "bytes": 2285,
+      "sha256": "9af80f8055743e2d9ec40a4820ba1e3f615239373200f7d5f915b20a342396f5"
     },
     "results/archived/real_continuous_benchmarks.json": {
       "bytes": 2850,

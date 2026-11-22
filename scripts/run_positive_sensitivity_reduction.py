@@ -6,6 +6,7 @@ the identical two-start SLSQP likelihood optimizer and paired bootstrap protocol
 """
 
 import json
+import os
 from pathlib import Path
 import sys
 from time import perf_counter
@@ -32,7 +33,7 @@ from diff_renewal.reduction import (  # noqa: E402
     pos33_cycle_matrices,
 )
 
-NM_ROOT = Path("/usr/local/google/home/apelissier/non-markovian-diffrax")
+NM_ROOT = Path(os.environ.get("DRN_DATA_ROOT", str(ROOT.parent / "non-markovian-diffrax")))
 STARTS = [np.log([m] * 3 + [k] * 3) for m, k in [(1.8, 5.3), (2.3, 7.7)]]
 BOUNDS = [(np.log(0.95), np.log(3.8))] * 3 + [(np.log(3.0), np.log(12.0))] * 3
 FLOOR = 1e-8

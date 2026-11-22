@@ -1,6 +1,6 @@
 {
   "status": "PASSED",
-  "verified_archive_files": 34,
+  "verified_archive_files": 36,
   "erlang16_replay": {
     "nominal_max_error": 1.2656542480726785e-14,
     "rate_sensitivity_defect": 0.2619669022259721
@@ -37,8 +37,10 @@
     },
     "real_continuous_zeroshot_aged_kl": {
       "ecoli_drn": 0.05691,
-      "ecoli_lode": 0.42433,
-      "sleep_edge_memory_drn": 0.0622
+      "ecoli_lode_clean_age0": 0.4214,
+      "ecoli_s4d_clean_age0": 0.41061,
+      "sleep_edge_memory_drn": 0.0622,
+      "sleep_ctmc_strict_fresh_only": 0.11109
     },
     "sleep_edge_memory_joint_aged_kl": 0.02206,
     "hematopoiesis_day7_extrapolation_kl": 0.00816,
@@ -51,19 +53,24 @@
       "sleep_n2": 0.01201,
       "ecoli_si": 0.01293
     },
-    "helpdesk_zeroshot_aged_kl": {
+    "helpdesk_zeroshot_aged_kl_clean_age0": {
       "edge_memory_drn": 0.0348,
+      "hyper_pos_sens": 0.0474,
       "universal_pos_sens": 0.1261,
-      "ltc_ode": 0.2355,
-      "s4d_ode": 0.2462,
-      "latent_ode": 0.2542,
-      "neural_cme": 0.3316,
+      "ltc_ode": 0.2421,
+      "s4d_ode": 0.2567,
+      "latent_ode": 0.2516,
+      "neural_cme": 0.2835,
       "chrono_edge_memory_drn": 0.1423,
-      "chrono_ltc_ode": 0.5851
+      "chrono_ltc_ode": 0.5265
     },
-    "sleep_extended_zeroshot_aged_kl": {
-      "ltc_ode": 0.0892,
-      "s4d_ode": 0.088
+    "sleep_3start_clean_age0_zeroshot_aged_kl": {
+      "ctmc_strict_fresh_only": 0.11109,
+      "ltc_ode": 0.08932,
+      "s4d_ode": 0.08779,
+      "neural_cme": 0.0844,
+      "neural_cme_shifted_t_plus_a": 0.11154,
+      "latent_ode": 0.08785
     },
     "hematopoiesis_donor_heldout_day7_kl": {
       "compiled_drn": 0.148,
@@ -72,6 +79,7 @@
     "mean_field_influenza_day9to14_kl": {
       "mean_field_drn": 0.0168,
       "markov_seicr": 0.0573,
+      "neural_cme": 0.0393,
       "kurtz_slope": -0.532
     },
     "sparse_drn_v1024": {
@@ -79,7 +87,8 @@
       "sparse_operator_mb": 0.969,
       "peak_total_rss_mb": 644.36,
       "grad_warm_ms": 451.9,
-      "e2e_v64_kl_reduction_vs_ctmc": 942.6
+      "e2e_v64_kl_reduction_vs_ctmc": 3838.0,
+      "e2e_v256_kl_reduction_vs_ctmc": 260.7
     }
   }
 }

@@ -8,6 +8,7 @@ panel-alignment checks, PDF glyph-size floor checks, and PyMuPDF collision check
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -32,10 +33,9 @@ if str(ROOT / "src") not in sys.path:
 
 from diff_renewal import smooth_erlang_logits, solve_erlang_chain  # noqa: E402
 
-SKILL_SCRIPTS = Path(
-    "/usr/local/google/home/apelissier/.gemini/config/skills/nature-figure/scripts"
-)
-if SKILL_SCRIPTS.exists():
+_qa_scripts_env = os.environ.get("DRN_QA_SCRIPTS")
+SKILL_SCRIPTS = Path(_qa_scripts_env) if _qa_scripts_env else None
+if SKILL_SCRIPTS is not None and SKILL_SCRIPTS.exists():
     sys.path.insert(0, str(SKILL_SCRIPTS))
     from audit_panel_alignment import require_matplotlib_panel_alignment  # noqa: E402
 else:
@@ -43,9 +43,9 @@ else:
 
 ARCH = ROOT / "results" / "archived"
 OUT_FIG_REPO = ROOT / "figures"
-LATEX_DIR = Path("/usr/local/google/home/apelissier/diff-renewal-network-latex")
-OUT_FIG_LATEX = LATEX_DIR / "figures"
-OUT_TAB_LATEX = LATEX_DIR / "tables"
+LATEX_DIR = Path(os.environ.get("DRN_LATEX_DIR", str(ROOT.parent / "diff-renewal-network-latex")))
+OUT_FIG_LATEX = LATEX_DIR / "figures" if LATEX_DIR.exists() else ROOT / "output" / "figures"
+OUT_TAB_LATEX = LATEX_DIR / "tables" if LATEX_DIR.exists() else ROOT / "output" / "tables"
 QA_DIR = ROOT / "output" / "qa"
 
 for folder in (OUT_FIG_REPO, OUT_FIG_LATEX, OUT_TAB_LATEX, QA_DIR):
@@ -768,17 +768,20 @@ def build_fig5() -> None:
     ems = load_archived("edge_memory_sleep_summary.json")
     hdk = load_archived("helpdesk_systems_summary.json")
     hdk_r5 = load_archived("helpdesk_r5_complete.json")
+    r6 = load_archived("r6_uniformity_closure.json")
+    r6b = load_archived("r6_integrity_fixes.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     rvm = load_archived("real_visit_memory.json")["datasets"]
 
-    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.44))
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.46))
     fig.subplots_adjust(
-        left=0.12, right=0.975, top=0.862, bottom=0.118, hspace=0.72, wspace=0.49
+        left=0.12, right=0.975, top=0.845, bottom=0.115, hspace=0.74, wspace=0.49
     )
 
-    # Panel a: 5-Node Human Sleep-EDF (Linear y-axis starting at 0.00 -> proportional bars!)
+    # Panel a: 5-Node Human Sleep-EDF (incl. leak-free strict 0-shot CTMC!)
     ax_a = axes[0, 0]
     sl_m = rcb["sleep_5node_branching_network"]["models_5fold_mean"]
+    sl_r6 = r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]
     x_c = np.arange(2)
     for mlabel, vals, sds, col, dx in [
         (
@@ -786,37 +789,44 @@ def build_fig5() -> None:
             [ems["edge_memory_drn_joint"]["aged_kl_mean"], ems["edge_memory_drn_fresh_only"]["aged_kl_mean"]],
             [ems["edge_memory_drn_joint"]["aged_kl_sd"], ems["edge_memory_drn_fresh_only"]["aged_kl_sd"]],
             PALETTE["navy"],
-            -0.27,
+            -0.30,
         ),
         (
             "Renew. DRN",
             [sl_m["drn_joint"]["aged_kl_mean"], sl_m["drn_fresh_only"]["aged_kl_mean"]],
             [sl_m["drn_joint"]["aged_kl_sd"], sl_m["drn_fresh_only"]["aged_kl_sd"]],
             PALETTE["teal"],
-            -0.09,
+            -0.15,
+        ),
+        (
+            "CTMC",
+            [sl_r6["ctmc_joint"]["aged_kl_mean"], sl_r6["ctmc_fresh_only"]["aged_kl_mean"]],
+            [sl_r6["ctmc_joint"]["aged_kl_sd"], sl_r6["ctmc_fresh_only"]["aged_kl_sd"]],
+            PALETTE["slate"],
+            0.00,
         ),
         (
             "Neural-CME",
-            [ems["neural_cme_joint"]["aged_kl_mean"], ems["neural_cme_fresh_only"]["aged_kl_mean"]],
-            [ems["neural_cme_joint"]["aged_kl_sd"], ems["neural_cme_fresh_only"]["aged_kl_sd"]],
+            [sl_r6["neural_cme_joint"]["aged_kl_mean"], sl_r6["neural_cme_fresh_only"]["aged_kl_mean"]],
+            [sl_r6["neural_cme_joint"]["aged_kl_sd"], sl_r6["neural_cme_fresh_only"]["aged_kl_sd"]],
             PALETTE["amber"],
-            0.09,
+            0.15,
         ),
         (
             "Latent ODE",
-            [sl_m["latent_ode_joint"]["aged_kl_mean"], sl_m["latent_ode_fresh_only"]["aged_kl_mean"]],
-            [sl_m["latent_ode_joint"]["aged_kl_sd"], sl_m["latent_ode_fresh_only"]["aged_kl_sd"]],
+            [sl_r6["latent_ode_joint"]["aged_kl_mean"], sl_r6["latent_ode_fresh_only"]["aged_kl_mean"]],
+            [sl_r6["latent_ode_joint"]["aged_kl_sd"], sl_r6["latent_ode_fresh_only"]["aged_kl_sd"]],
             PALETTE["crimson"],
-            0.27,
+            0.30,
         ),
     ]:
         ax_a.bar(
             x_c + dx,
             np.asarray(vals),
-            width=0.16,
+            width=0.135,
             color=col,
             edgecolor=PALETTE["ink"],
-            linewidth=0.5,
+            linewidth=0.45,
             label=mlabel,
         )
         ax_a.errorbar(
@@ -825,35 +835,39 @@ def build_fig5() -> None:
             yerr=sds,
             fmt="none",
             ecolor=PALETTE["ink"],
-            elinewidth=0.75,
-            capsize=1.5,
+            elinewidth=0.7,
+            capsize=1.3,
         )
     ax_a.set_xticks(x_c, ["Sleep (joint)", "Sleep (0-shot)"])
-    ax_a.set_xlim(-0.52, 1.52)
-    ax_a.set_ylim(0.0, 0.115)
-    ax_a.set_yticks([0.0, 0.04, 0.08, 0.11], ["0", ".04", ".08", ".11"])
+    ax_a.set_xlim(-0.50, 1.50)
+    ax_a.set_ylim(0.0, 0.145)
+    ax_a.set_yticks([0.0, 0.05, 0.10, 0.14], ["0", ".05", ".10", ".14"])
     ax_a.set_ylabel("Aged KL (nats)")
     ax_a.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
-        handlelength=0.85,
-        columnspacing=0.45,
-        handletextpad=0.22,
-        labelspacing=0.18,
-        borderpad=0.05,
+        ncol=3,
+        fontsize=6.5,
+        handlelength=0.75,
+        columnspacing=0.35,
+        handletextpad=0.18,
+        labelspacing=0.15,
+        borderpad=0.04,
     )
-    add_panel_tag(ax_a, "a", x_pt=-32.0, y_pt=20.0)
+    add_panel_tag(ax_a, "a", x_pt=-32.0, y_pt=22.0)
 
-    # Panel b: IT Helpdesk Coarsening Sweep across ALL 4 intervals {0.5, 2, 7, 14}d (log marker plot!)
+    # Panel b: IT Helpdesk Coarsening Sweep across ALL 4 intervals {0.5, 2, 7, 14}d
+    # Includes Hyper-Pos-Sens (best overall) & LTC (strongest neural baseline at 14d)!
     ax_b = axes[0, 1]
     c_rows = hdk["coarsening_panel_sweep"]
     c_r5 = hdk_r5["coarsening_neural_clean_age0"]
+    c_hp = r6["helpdesk_r6_hyper_pos_coarsening"]
     x_dt = np.arange(len(c_rows))
     for mlabel, ys, col, mk, ls in [
-        ("Edge-Mem 0-sh.", [float(r["edge_memory_drn_multihop_aged_kl"]) for r in c_rows], PALETTE["navy"], "o", "-"),
+        ("Hyper-Pos", [float(r["hyper_pos_sens_aged_kl"]) for r in c_hp], PALETTE["teal"], "v", "-"),
+        ("Edge-Mem", [float(r["edge_memory_drn_multihop_aged_kl"]) for r in c_rows], PALETTE["navy"], "o", "-"),
+        ("LTC 0-sh.", [float(r["ltc_ode_aged_kl_clean_age0"]) for r in c_r5], PALETTE["amber"], "^", ":"),
         ("LODE 0-sh.", [float(r["latent_ode_aged_kl_clean_age0"]) for r in c_r5], PALETTE["crimson"], "d", "--"),
-        ("CME 0-sh.", [float(r["neural_cme_aged_kl_clean_age0"]) for r in c_r5], PALETTE["amber"], "^", ":"),
         ("Neural-CR", [float(r["neural_competing_risks_best_kl"]) for r in c_rows], PALETTE["slate"], "s", "-."),
     ]:
         ax_b.plot(
@@ -862,8 +876,8 @@ def build_fig5() -> None:
             marker=mk,
             ls=ls,
             color=col,
-            ms=3.6,
-            lw=1.4,
+            ms=3.3,
+            lw=1.35,
             label=mlabel,
         )
     ax_b.set_yscale("log")
@@ -877,14 +891,15 @@ def build_fig5() -> None:
     ax_b.legend(
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
-        ncol=2,
-        handlelength=1.0,
-        columnspacing=0.45,
-        handletextpad=0.22,
-        labelspacing=0.18,
-        borderpad=0.05,
+        ncol=3,
+        fontsize=6.5,
+        handlelength=0.85,
+        columnspacing=0.35,
+        handletextpad=0.18,
+        labelspacing=0.15,
+        borderpad=0.04,
     )
-    add_panel_tag(ax_b, "b", x_pt=-32.0, y_pt=20.0)
+    add_panel_tag(ax_b, "b", x_pt=-32.0, y_pt=22.0)
 
     # Panel c: Nonlinear MeanFieldDRN on 1978 Influenza (Color=compartment, Linestyle=model!)
     ax_c = axes[1, 0]
@@ -954,7 +969,7 @@ def build_fig5() -> None:
             )
     ax_d.set_yticks([2, 1, 0], [lbl for _, _, lbl in cohorts])
     ax_d.set_ylim(-0.52, 2.55)
-    ax_d.set_xlim(-0.45, 2.45)
+    ax_d.set_xlim(-0.45, 2.75)
     ax_d.set_xlabel("Gain / 100 visits (nats)")
     ax_d.legend(
         loc="lower center",
@@ -986,6 +1001,8 @@ def build_tables() -> None:
     hdk = load_archived("helpdesk_systems_summary.json")
     hdk_ext = load_archived("helpdesk_extended_baselines.json")
     hdk_r5 = load_archived("helpdesk_r5_complete.json")
+    r6 = load_archived("r6_uniformity_closure.json")
+    r6b = load_archived("r6_integrity_fixes.json")
     slp_ext = load_archived("sleep_extended_baselines.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     spg = load_archived("sparse_large_graph_scaling.json")
@@ -1548,41 +1565,41 @@ def build_tables() -> None:
                 "",
                 "Memoryless CTMC",
                 "5 (16)",
-                fmt_pm(sl_m["ctmc"]["aged_kl_mean"], sl_m["ctmc"]["aged_kl_sd"]),
-                fmt_pm(sl_m["ctmc"]["aged_kl_mean"], sl_m["ctmc"]["aged_kl_sd"]),
-                f"{sl_m['ctmc']['fresh_kl_mean']:.4f}",
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ctmc_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ctmc_joint"]["aged_kl_sd"]),
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ctmc_fresh_only"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ctmc_fresh_only"]["aged_kl_sd"]),
+                f"{r6b['sleep_r6b_3start_clean_age0_and_fresh_ctmc']['ctmc_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "LTC ODE",
                 f"11 ({slp_ext['ltc_ode_params']})",
-                fmt_pm(sl_x["ltc_ode_joint"]["aged_kl_mean"], sl_x["ltc_ode_joint"]["aged_kl_sd"]),
-                fmt_pm(sl_x["ltc_ode_fresh_only"]["aged_kl_mean"], sl_x["ltc_ode_fresh_only"]["aged_kl_sd"]),
-                f"{sl_x['ltc_ode_joint']['fresh_kl_mean']:.4f}",
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ltc_ode_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ltc_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ltc_ode_fresh_only"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ltc_ode_fresh_only"]["aged_kl_sd"]),
+                f"{r6b['sleep_r6b_3start_clean_age0_and_fresh_ctmc']['ltc_ode_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "S4D ODE",
                 f"15 ({slp_ext['s4d_ode_params']})",
-                fmt_pm(sl_x["s4d_ode_joint"]["aged_kl_mean"], sl_x["s4d_ode_joint"]["aged_kl_sd"], bold=True),
-                fmt_pm(sl_x["s4d_ode_fresh_only"]["aged_kl_mean"], sl_x["s4d_ode_fresh_only"]["aged_kl_sd"]),
-                f"{sl_x['s4d_ode_joint']['fresh_kl_mean']:.4f}",
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["s4d_ode_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["s4d_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["s4d_ode_fresh_only"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["s4d_ode_fresh_only"]["aged_kl_sd"]),
+                f"\\textbf{{{r6b['sleep_r6b_3start_clean_age0_and_fresh_ctmc']['s4d_ode_joint']['fresh_kl_mean']:.4f}}}",
             ],
             [
                 "",
                 "Neural-CME$(t)$",
                 "5 (394)",
-                fmt_pm(ems["neural_cme_joint"]["aged_kl_mean"], ems["neural_cme_joint"]["aged_kl_sd"]),
-                fmt_pm(ems["neural_cme_fresh_only"]["aged_kl_mean"], ems["neural_cme_fresh_only"]["aged_kl_sd"]),
-                f"{ems['neural_cme_joint']['fresh_kl_mean']:.4f}",
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["neural_cme_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["neural_cme_joint"]["aged_kl_sd"]),
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["neural_cme_fresh_only"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["neural_cme_fresh_only"]["aged_kl_sd"]),
+                f"{r6b['sleep_r6b_3start_clean_age0_and_fresh_ctmc']['neural_cme_joint']['fresh_kl_mean']:.4f}",
             ],
             [
                 "",
                 "Latent ODE",
                 "11 (540)",
-                fmt_pm(sl_m["latent_ode_joint"]["aged_kl_mean"], sl_m["latent_ode_joint"]["aged_kl_sd"]),
-                fmt_pm(sl_m["latent_ode_fresh_only"]["aged_kl_mean"], sl_m["latent_ode_fresh_only"]["aged_kl_sd"]),
-                f"\\textbf{{{sl_m['latent_ode_joint']['fresh_kl_mean']:.4f}}}",
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_fresh_only"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_fresh_only"]["aged_kl_sd"]),
+                f"{r6b['sleep_r6b_3start_clean_age0_and_fresh_ctmc']['latent_ode_joint']['fresh_kl_mean']:.4f}",
             ],
             "\\midrule",
             [
@@ -1603,11 +1620,35 @@ def build_tables() -> None:
             ],
             [
                 "",
+                "LTC ODE",
+                f"{r6['ecoli_r6_complete_neural_odes']['states_params']['ltc_ode']['states']} ({r6['ecoli_r6_complete_neural_odes']['states_params']['ltc_ode']['params']})",
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["ltc_ode_joint"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["ltc_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["ltc_ode_fresh_only"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["ltc_ode_fresh_only"]["aged_kl_sd"]),
+                f"{r6['ecoli_r6_complete_neural_odes']['models_5fold_clean_age0']['ltc_ode_joint']['fresh_kl']:.4f}",
+            ],
+            [
+                "",
+                "S4D ODE",
+                f"{r6['ecoli_r6_complete_neural_odes']['states_params']['s4d_ode']['states']} ({r6['ecoli_r6_complete_neural_odes']['states_params']['s4d_ode']['params']})",
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["s4d_ode_joint"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["s4d_ode_joint"]["aged_kl_sd"]),
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["s4d_ode_fresh_only"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["s4d_ode_fresh_only"]["aged_kl_sd"]),
+                f"{r6['ecoli_r6_complete_neural_odes']['models_5fold_clean_age0']['s4d_ode_joint']['fresh_kl']:.4f}",
+            ],
+            [
+                "",
+                "Neural-CME$(t)$",
+                f"{r6['ecoli_r6_complete_neural_odes']['states_params']['neural_cme']['states']} ({r6['ecoli_r6_complete_neural_odes']['states_params']['neural_cme']['params']})",
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["neural_cme_joint"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["neural_cme_joint"]["aged_kl_sd"]),
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["neural_cme_fresh_only"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["neural_cme_fresh_only"]["aged_kl_sd"]),
+                f"{r6['ecoli_r6_complete_neural_odes']['models_5fold_clean_age0']['neural_cme_joint']['fresh_kl']:.4f}",
+            ],
+            [
+                "",
                 "Latent ODE",
                 "9 (285)",
-                fmt_pm(ec_m["latent_ode_joint"]["aged_kl"], ec_m["latent_ode_joint"]["aged_kl_sd"], bold=True),
-                fmt_pm(ec_m["latent_ode_fresh_only"]["aged_kl"], ec_m["latent_ode_fresh_only"]["aged_kl_sd"]),
-                f"\\textbf{{{ec_m['latent_ode_joint']['fresh_kl']:.4f}}}",
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["latent_ode_joint"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["latent_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["latent_ode_fresh_only"]["aged_kl"], r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]["latent_ode_fresh_only"]["aged_kl_sd"]),
+                f"\\textbf{{{r6['ecoli_r6_complete_neural_odes']['models_5fold_clean_age0']['latent_ode_joint']['fresh_kl']:.4f}}}",
             ],
         ],
     )
@@ -1642,7 +1683,7 @@ def build_tables() -> None:
                 f"{hdk['state_counts']['edge_memory_drn_states_K6']} ({hdk['state_counts']['edge_memory_drn_params_K6']})",
                 fmt_pm(hdk_cv["edge_memory_drn_joint"]["aged_kl_mean"], hdk_cv["edge_memory_drn_joint"]["aged_kl_sd"]),
                 fmt_pm(hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_mean"], hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
-                f"\\textbf{{{hch['edge_memory_drn_fresh_only']['aged_kl']:.3f}}} (\\textbf{{.{int(round(1000*c7['edge_memory_drn_multihop_aged_kl'])):03d}}}/\\textbf{{.{int(round(1000*c14['edge_memory_drn_multihop_aged_kl'])):03d}}})",
+                f"\\textbf{{{hch['edge_memory_drn_fresh_only']['aged_kl']:.3f}}} (.{int(round(1000*c7['edge_memory_drn_multihop_aged_kl'])):03d}/.{int(round(1000*c14['edge_memory_drn_multihop_aged_kl'])):03d})",
             ],
             [
                 "(4,576)",
@@ -1650,7 +1691,7 @@ def build_tables() -> None:
                 f"{hdk_r5['hyper_pos_sens_states']} ({hdk_r5['hyper_pos_sens_params']})",
                 fmt_pm(hr5["hyper_pos_sens_joint"]["aged_kl_mean"], hr5["hyper_pos_sens_joint"]["aged_kl_sd"]),
                 fmt_pm(hr5["hyper_pos_sens_fresh_only"]["aged_kl_mean"], hr5["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
-                f"{hch_r5['hyper_pos_sens_fresh_only']['aged_kl']:.3f} (---)",
+                f"{hch_r5['hyper_pos_sens_fresh_only']['aged_kl']:.3f} (\\textbf{{.{int(round(1000*r6['helpdesk_r6_hyper_pos_coarsening'][2]['hyper_pos_sens_aged_kl'])):03d}}}/\\textbf{{.{int(round(1000*r6['helpdesk_r6_hyper_pos_coarsening'][3]['hyper_pos_sens_aged_kl'])):03d}}})",
             ],
             [
                 "",
@@ -1751,11 +1792,88 @@ def build_tables() -> None:
             ],
             [
                 "",
+                "Neural-CME$(t)$ ($L_2$)",
+                f"{r6b['influenza_r6b_neural_cme']['states']} ({r6b['influenza_r6b_neural_cme']['params']})",
+                f"\\textbf{{{r6b['influenza_r6b_neural_cme']['full_fit']['mean_kl_nats']:.4f}}}",
+                f"{r6b['influenza_r6b_neural_cme']['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']:.4f} / {r6b['influenza_r6b_neural_cme']['days_1to9_to_10to14_best_l2']['test']['mean_kl_nats']:.4f}",
+                f"{r6b['influenza_r6b_neural_cme']['days_1to8_to_9to14_best_l2']['test']['count_rmse_boys']:.1f} boys",
+            ],
+            [
+                "",
                 "Latent ODE ($L_2$)",
                 f"{mfe_full['latent_ode']['states']} ({mfe_full['latent_ode']['params_count']})",
-                f"\\textbf{{{mfe_full['latent_ode']['mean_kl_nats']:.4f}}}",
+                f"{mfe_full['latent_ode']['mean_kl_nats']:.4f}",
                 f"{mfe_reg['days_1to8_to_9to14']['test']['mean_kl_nats']:.4f} / {mfe_reg['days_1to9_to_10to14']['test']['mean_kl_nats']:.4f}",
                 f"{mfe_reg['days_1to8_to_9to14']['test']['count_rmse_boys']:.1f} boys",
+            ],
+        ],
+    )
+
+
+    # Main-Text Table 3: Compact Cross-Domain Real-World Summary (all 5 domains vs CTMC & Best Neural ODE)
+    ec_r6 = r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]
+    hp_c14 = r6["helpdesk_r6_hyper_pos_coarsening"][3]["hyper_pos_sens_aged_kl"]
+    sl_r6 = r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]
+    inf_cme = r6b["influenza_r6b_neural_cme"]
+    write_tex_table(
+        "tab4_real_world_summary.tex",
+        "lrrrrr",
+        [
+            "Domain (Task)",
+            "Full DRN $\\downarrow$",
+            "Univ. Pos/Hyp $\\downarrow$",
+            "CTMC $\\downarrow$",
+            "Best Neural $\\downarrow$",
+            "vs.\\ Neural",
+        ],
+        [
+            [
+                "Helpdesk (0-shot $\\ge 7\\,$d)",
+                fmt_pm(hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_mean"], hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
+                fmt_pm(hr5["hyper_pos_sens_fresh_only"]["aged_kl_mean"], hr5["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
+                f"{hdk_cv['ctmc']['aged_kl_mean']:.4f}",
+                f"{hr5['ltc_ode_fresh_only']['aged_kl_mean']:.4f} (LTC)",
+                f"\\textbf{{{hr5['ltc_ode_fresh_only']['aged_kl_mean']/hdk_cv['edge_memory_drn_fresh_only']['aged_kl_mean']:.1f}$\\times$}}",
+            ],
+            [
+                "Helpdesk (Chrono / 14d)",
+                f"\\textbf{{{hch['edge_memory_drn_fresh_only']['aged_kl']:.3f}}} (.{int(round(1000*c14['edge_memory_drn_multihop_aged_kl'])):03d})",
+                f"{hch_r5['hyper_pos_sens_fresh_only']['aged_kl']:.3f} (\\textbf{{.{int(round(1000*hp_c14)):03d}}})",
+                f"{hch['ctmc']['aged_kl']:.3f} (.{int(round(1000*c14['ctmc_panel_kl'])):03d})",
+                f"{hch_r5['ltc_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c14_r5['ltc_ode_aged_kl_clean_age0'])):03d})",
+                f"\\textbf{{{hch_r5['ltc_ode_fresh_only']['aged_kl']/hch['edge_memory_drn_fresh_only']['aged_kl']:.1f}$\\times$/{c14_r5['ltc_ode_aged_kl_clean_age0']/hp_c14:.1f}$\\times$}}",
+            ],
+            [
+                "Influenza (Days 9--14)",
+                f"\\textbf{{{mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.4f}}}",
+                "---",
+                f"{mfe_ex8['markov_seicr']['test']['mean_kl_nats']:.4f}",
+                f"{inf_cme['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']:.4f} (CME)",
+                f"\\textbf{{{inf_cme['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']/mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.1f}$\\times$}}",
+            ],
+            [
+                "Hematop. (Pool / D7)",
+                f"\\textbf{{{h_ex['compiled_drn']['day7_kl']:.4f}}} (.{int(round(1000*hd_d7['compiled_drn']['kl_mean'])):03d})",
+                f"{h_r5_p7['universal_pos_sens_fullcone']['day7_kl']:.4f} (.{int(round(1000*h_r5_d7['universal_pos_sens_fullcone']['kl_mean'])):03d})",
+                f"{h_ex['ctmc']['day7_kl']:.4f} (.{int(round(1000*hd_d7['ctmc']['kl_mean'])):03d})",
+                f"{h_r5_p7['ltc_ode']['day7_kl']:.4f} (\\textbf{{.{int(round(1000*hd_d7['latent_ode']['kl_mean'])):03d}}})",
+                f"\\textbf{{{h_r5_p7['ltc_ode']['day7_kl']/h_ex['compiled_drn']['day7_kl']:.1f}$\\times$}}/{hd_d7['latent_ode']['kl_mean']/hd_d7['compiled_drn']['kl_mean']:.2f}$\\times$",
+            ],
+            [
+                "Sleep-EDF (0-shot $\\ge 5\\,$min)",
+                fmt_pm(ems["edge_memory_drn_fresh_only"]["aged_kl_mean"], ems["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
+                fmt_pm(sl_hp_m["hyper_pos_sens_fresh_only"]["aged_kl_mean"], sl_hp_m["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
+                f"{sl_r6['ctmc_fresh_only']['aged_kl_mean']:.4f}",
+                f"{sl_r6['neural_cme_fresh_only']['aged_kl_mean']:.4f} (CME)",
+                f"\\textbf{{{sl_r6['neural_cme_fresh_only']['aged_kl_mean']/ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.2f}$\\times$}}",
+            ],
+            [
+                "\\emph{E.\\ coli} (0-shot $\\ge 12\\,$min)",
+                fmt_pm(ec_m["drn_fresh_only"]["aged_kl"], ec_m["drn_fresh_only"]["aged_kl_sd"], bold=True),
+                "---",
+                f"{ec_m['ctmc']['aged_kl']:.4f}",
+                f"{ec_r6['s4d_ode_fresh_only']['aged_kl']:.4f} (S4D)",
+                f"\\textbf{{{ec_r6['s4d_ode_fresh_only']['aged_kl']/ec_m['drn_fresh_only']['aged_kl']:.1f}$\\times$}}",
             ],
         ],
     )
@@ -1768,7 +1886,7 @@ def main() -> None:
     build_fig4()
     build_fig5()
     build_tables()
-    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 12 LaTeX tables.")
+    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 13 LaTeX tables.")
 
 
 if __name__ == "__main__":

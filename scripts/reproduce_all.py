@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 34 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 36 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -113,6 +113,8 @@ def verify_headline_numbers() -> dict:
     bio_r5 = json.loads((ARCH / "bio_influenza_r5_complete.json").read_text(encoding="utf-8"))
     sp_r5 = json.loads((ARCH / "sparse_r5_converged.json").read_text(encoding="utf-8"))
     hdk_r5 = json.loads((ARCH / "helpdesk_r5_complete.json").read_text(encoding="utf-8"))
+    r6 = json.loads((ARCH / "r6_uniformity_closure.json").read_text(encoding="utf-8"))
+    r6b = json.loads((ARCH / "r6_integrity_fixes.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -225,6 +227,19 @@ def verify_headline_numbers() -> dict:
         hdk_r5["chronological_split_3start_clean_age0"]["models"][f"{m}_fresh_only"]["aged_kl"]
         for m in ("ltc_ode", "s4d_ode", "neural_cme", "latent_ode")
     ) > 0.50
+    assert min(
+        r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"][f"{m}_fresh_only"]["aged_kl"]
+        for m in ("ltc_ode", "s4d_ode", "neural_cme", "latent_ode")
+    ) > 0.40
+    assert r6["helpdesk_r6_hyper_pos_coarsening"][3]["hyper_pos_sens_aged_kl"] < 0.05
+    assert r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ctmc_fresh_only"]["aged_kl_mean"] > 0.10
+    assert r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["neural_cme_shifted_t_plus_a"]["aged_kl_mean"] > 0.10
+    assert r6b["influenza_r6b_neural_cme"]["days_1to8_to_9to14_best_l2"]["test"]["mean_kl_nats"] > 0.03
+
+    hdk_r5_cv = hdk_r5["cv_5fold_clean_age0"]
+    hdk_r5_ch = hdk_r5["chronological_split_3start_clean_age0"]["models"]
+    slp_r6b = r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]
+    ec_r6_m = r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]
 
     return {
         "cyclic_primary_joint_hits_of_280": {
@@ -247,27 +262,34 @@ def verify_headline_numbers() -> dict:
         },
         "real_continuous_zeroshot_aged_kl": {
             "ecoli_drn": ec_zs_drn,
-            "ecoli_lode": ec_zs_lode,
+            "ecoli_lode_clean_age0": ec_r6_m["latent_ode_fresh_only"]["aged_kl"],
+            "ecoli_s4d_clean_age0": ec_r6_m["s4d_ode_fresh_only"]["aged_kl"],
             "sleep_edge_memory_drn": em_zs,
+            "sleep_ctmc_strict_fresh_only": slp_r6b["ctmc_fresh_only"]["aged_kl_mean"],
         },
         "sleep_edge_memory_joint_aged_kl": em_joint_aged,
         "hematopoiesis_day7_extrapolation_kl": hem_day7_drn,
         "sleep_5node_state_compression": sl_comp,
         "persistent_carry_targets": list(rt6["targets"].keys()),
         "real_visit_gains_nats": {"sleep_n2": n2_gain, "ecoli_si": ecoli_si},
-        "helpdesk_zeroshot_aged_kl": {
+        "helpdesk_zeroshot_aged_kl_clean_age0": {
             "edge_memory_drn": hdk_em_zs,
+            "hyper_pos_sens": round(float(hdk_r5_cv["hyper_pos_sens_fresh_only"]["aged_kl_mean"]), 4),
             "universal_pos_sens": hdk_ups_zs,
-            "ltc_ode": hdk_ltc_zs,
-            "s4d_ode": hdk_s4d_zs,
-            "latent_ode": hdk_lo_zs,
-            "neural_cme": hdk_cme_zs,
+            "ltc_ode": round(float(hdk_r5_cv["ltc_ode_fresh_only"]["aged_kl_mean"]), 4),
+            "s4d_ode": round(float(hdk_r5_cv["s4d_ode_fresh_only"]["aged_kl_mean"]), 4),
+            "latent_ode": round(float(hdk_r5_cv["latent_ode_fresh_only"]["aged_kl_mean"]), 4),
+            "neural_cme": round(float(hdk_r5_cv["neural_cme_fresh_only"]["aged_kl_mean"]), 4),
             "chrono_edge_memory_drn": round(float(hdk_ch["edge_memory_drn_fresh_only"]["aged_kl"]), 4),
-            "chrono_ltc_ode": round(float(hdk_ch["ltc_ode_fresh_only"]["aged_kl"]), 4),
+            "chrono_ltc_ode": round(float(hdk_r5_ch["ltc_ode_fresh_only"]["aged_kl"]), 4),
         },
-        "sleep_extended_zeroshot_aged_kl": {
-            "ltc_ode": slp_ltc_zs,
-            "s4d_ode": slp_s4d_zs,
+        "sleep_3start_clean_age0_zeroshot_aged_kl": {
+            "ctmc_strict_fresh_only": slp_r6b["ctmc_fresh_only"]["aged_kl_mean"],
+            "ltc_ode": slp_r6b["ltc_ode_fresh_only"]["aged_kl_mean"],
+            "s4d_ode": slp_r6b["s4d_ode_fresh_only"]["aged_kl_mean"],
+            "neural_cme": slp_r6b["neural_cme_fresh_only"]["aged_kl_mean"],
+            "neural_cme_shifted_t_plus_a": slp_r6b["neural_cme_shifted_t_plus_a"]["aged_kl_mean"],
+            "latent_ode": slp_r6b["latent_ode_fresh_only"]["aged_kl_mean"],
         },
         "hematopoiesis_donor_heldout_day7_kl": {
             "compiled_drn": hem_d7_drn,
@@ -276,6 +298,7 @@ def verify_headline_numbers() -> dict:
         "mean_field_influenza_day9to14_kl": {
             "mean_field_drn": mfe_drn_ex8,
             "markov_seicr": mfe_mkv_ex8,
+            "neural_cme": round(float(r6b["influenza_r6b_neural_cme"]["days_1to8_to_9to14_best_l2"]["test"]["mean_kl_nats"]), 4),
             "kurtz_slope": mfe_slope,
         },
         "sparse_drn_v1024": {
@@ -283,7 +306,8 @@ def verify_headline_numbers() -> dict:
             "sparse_operator_mb": round(sp_1024["sparse_operator_mb"], 3),
             "peak_total_rss_mb": rss_1024["peak_total_rss_mb"],
             "grad_warm_ms": round(sp_1024["grad_warm_ms"], 1),
-            "e2e_v64_kl_reduction_vs_ctmc": e2e_v64["kl_reduction_vs_ctmc"],
+            "e2e_v64_kl_reduction_vs_ctmc": sp_r5["v64_converged_256param"]["kl_reduction_vs_ctmc"],
+            "e2e_v256_kl_reduction_vs_ctmc": sp_r5["v256_e2e_1024param"]["kl_reduction_vs_ctmc"],
         },
     }
 

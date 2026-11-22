@@ -8,6 +8,7 @@ the best of 3 random starts solely by training penalized likelihood (zero test l
 
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import sys
 from time import perf_counter
@@ -25,7 +26,7 @@ if str(ROOT / "src") not in sys.path:
 
 from diff_renewal.baselines import make_baseline_engine  # noqa: E402
 
-NM_ROOT = Path("/usr/local/google/home/apelissier/non-markovian-diffrax")
+NM_ROOT = Path(os.environ.get("DRN_DATA_ROOT", str(ROOT.parent / "non-markovian-diffrax")))
 HORIZON = 4.5
 PERIOD = 0.25
 TRAIN_TIMES = np.array([0.5, 1.0, 1.5, 2.0, 3.0, 4.0])

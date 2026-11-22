@@ -34,8 +34,8 @@ diff-renewal-network/
 │   └── diagnostics.py    # Coarsened/efficient Fisher matrices & adjoint sensitivity residuals
 ├── scripts/
 │   ├── verify_theory.py                        # Symbolic (SymPy) & numerical proof audit
-│   ├── reproduce_all.py                        # SHA-256 audit of 34 archives + ODE replays
-│   ├── build_paper_assets.py                   # Rebuilds all 5 vector figures & 12 LaTeX tables
+│   ├── reproduce_all.py                        # SHA-256 audit of 36 archives + ODE replays
+│   ├── build_paper_assets.py                   # Rebuilds all 5 vector figures & 13 LaTeX tables
 │   ├── run_positive_sensitivity_reduction.py   # 400-dataset Pos-Sens 33 cyclic benchmark
 │   ├── run_graph_scaling_benchmark.py          # V=4..48, d=2..4 scaling & 48-param Gamma recovery
 │   ├── run_sparse_large_graph_scaling.py       # Matrix-free SparseDRN V=16..1,024 benchmark
@@ -52,10 +52,12 @@ diff-renewal-network/
 │   ├── run_helpdesk_extended_baselines.py      # Helpdesk LTC, S4D, Univ. Pos-Sens & Chrono split
 │   ├── run_mean_field_epidemic_benchmark.py    # 1978 Influenza MeanFieldDRN & Kurtz O(M^-1/2)
 │   ├── run_r5_bio_and_influenza_complete.py    # Complete LTC/S4D Bio+Influenza & Hyper-Pos-Sens
-│   └── run_r5_helpdesk_complete.py             # Equalized 3-start clean age=0 Helpdesk & Coarsening
+│   ├── run_r5_helpdesk_complete.py             # Equalized 3-start clean age=0 Helpdesk & Coarsening
+│   ├── run_r6_uniformity_closure.py            # Complete E. coli neural ODEs & Hyper-Pos coarsening
+│   └── run_r6_integrity_fixes.py               # Sleep fresh CTMC / 3-start age=0, Influenza CME, Plain-ME
 ├── examples/
 │   └── minimal_renewal_network.py  # Compact runnable marked-race & gradient example
-├── results/archived/     # 34 SHA-256-fingerprinted benchmark archives across all paper studies
+├── results/archived/     # 36 SHA-256-fingerprinted benchmark archives across all paper studies
 ├── tests/                # Pytest unit and end-to-end reproducibility suite
 ├── pyproject.toml
 └── requirements.txt
