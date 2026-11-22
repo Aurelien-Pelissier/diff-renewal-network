@@ -230,36 +230,61 @@ def paired_day_bootstrap(y_true: np.ndarray, day_ids: np.ndarray, p_ref: np.ndar
     }
 
 
-def run_deep_2layer_mamba_defi(df: pd.DataFrame, feat_mat: np.ndarray, log_age_std: np.ndarray, y_vec: np.ndarray, mask_train: np.ndarray) -> tuple[np.ndarray, int, float]:
-    """Upgrade #5b: High-capacity 2-layer AdamW Mamba (~15k params, H=32, mini-batched) on DeFi pool sequences."""
-    sX, sdt, sy, sm, sorig = build_pool_sequences(df, feat_mat, log_age_std, y_vec, mask_train)
+def run_deep_2layer_mamba_defi(
+    df: pd.DataFrame,
+    feat_mat: np.ndarray,
+    log_age_std: np.ndarray,
+    y_vec: np.ndarray,
+    mask_jan: np.ndarray,
+    mask_feb: np.ndarray,
+    mask_full: np.ndarray,
+) -> tuple[np.ndarray, int, float, dict]:
+    """Upgrade #5b: Properly tuned 2-layer AdamW Mamba (6,643 params, H=32) on DeFi pool sequences.
+
+    Strict zero-leakage tuning: selects (lr, weights-only wd, early-stop step) on February
+    validation after training on January, with global gradient-norm clipping (1.0), then refits
+    on Jan+Feb across 2 seeds.
+    """
+    sX, sdt, sy, sm_jan, sorig = build_pool_sequences(df, feat_mat, log_age_std, y_vec, mask_jan)
+    _, _, _, sm_feb, _ = build_pool_sequences(df, feat_mat, log_age_std, y_vec, mask_feb)
+    _, _, _, sm_full, _ = build_pool_sequences(df, feat_mat, log_age_std, y_vec, mask_full)
     d_in = sX.shape[-1]
     H = 32
-    tr_seq = np.where(sm.sum(axis=1) > 0)[0]
-    X_tr_np, dt_tr_np, y_tr_np, m_tr_np = sX[tr_seq], sdt[tr_seq], sy[tr_seq], sm[tr_seq]
+    jan_seq = np.where(sm_jan.sum(axis=1) > 0)[0]
+    feb_seq = np.where(sm_feb.sum(axis=1) > 0)[0]
+    full_seq = np.where(sm_full.sum(axis=1) > 0)[0]
+
+    X_jan, dt_jan, y_jan, m_jan = sX[jan_seq], sdt[jan_seq], sy[jan_seq], sm_jan[jan_seq]
+    X_feb_j = jnp.asarray(sX[feb_seq])
+    dt_feb_j = jnp.asarray(sdt[feb_seq])
+    y_feb_np = sy[feb_seq]
+    m_feb_np = sm_feb[feb_seq]
+    X_full, dt_full, y_full, m_full = sX[full_seq], sdt[full_seq], sy[full_seq], sm_full[full_seq]
 
     def init_m(seed: int):
         r = np.random.default_rng(seed)
         return {
             "log_a1": jnp.asarray(np.linspace(np.log(0.1), np.log(3.0), H)),
-            "w_dt1": jnp.asarray(r.normal(0, 0.1, (d_in, H))),
+            "w_dt1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
             "b_dt1": jnp.full(H, -1.0),
-            "w_b1": jnp.asarray(r.normal(0, 0.1, (d_in, H))),
-            "w_c1": jnp.asarray(r.normal(0, 0.1, (d_in, H))),
-            "w_z1": jnp.asarray(r.normal(0, 0.1, (d_in, H))),
+            "w_b1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
+            "w_c1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
+            "w_z1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
             "b_z1": jnp.zeros(H),
             "log_a2": jnp.asarray(np.linspace(np.log(0.1), np.log(3.0), H)),
-            "w_dt2": jnp.asarray(r.normal(0, 0.1, (H, H))),
+            "w_dt2": jnp.asarray(r.normal(0, 0.08, (H, H))),
             "b_dt2": jnp.full(H, -1.0),
-            "w_b2": jnp.asarray(r.normal(0, 0.1, (H, H))),
-            "w_c2": jnp.asarray(r.normal(0, 0.1, (H, H))),
-            "w_z2": jnp.asarray(r.normal(0, 0.1, (H, H))),
+            "w_b2": jnp.asarray(r.normal(0, 0.08, (H, H))),
+            "w_c2": jnp.asarray(r.normal(0, 0.08, (H, H))),
+            "w_z2": jnp.asarray(r.normal(0, 0.08, (H, H))),
             "b_z2": jnp.zeros(H),
-            "w_o": jnp.asarray(r.normal(0, 0.08, (H + d_in, 1))),
+            "w_o": jnp.asarray(r.normal(0, 0.05, (H + d_in, 1))),
             "b_o": jnp.array([-1.6]),
         }
 
-    n_params = sum(int(v.size) for v in init_m(17).values())
+    p_ref = init_m(17)
+    n_params = sum(int(v.size) for v in p_ref.values())
+    wd_mask = {k: (0.0 if (k.startswith("b_") or k.startswith("log_")) else 1.0) for k in p_ref}
 
     def fwd_batch(p, X_b, dt_b):
         na1 = -jnp.exp(jnp.clip(p["log_a1"], -3.0, 2.5))
@@ -289,48 +314,86 @@ def run_deep_2layer_mamba_defi(df: pd.DataFrame, feat_mat: np.ndarray, log_age_s
         _, probs_t = jax.lax.scan(step, (jnp.zeros((B, H)), jnp.zeros((B, H))), (X_t, dt_t))
         return jnp.clip(jnp.swapaxes(probs_t, 0, 1), 1e-7, 1.0 - 1e-7)
 
+    fwd_jit = jax.jit(fwd_batch)
+
     @jax.jit
-    def adamw_step(p, m_s, v_s, X_b, dt_b, y_b, m_b, it, lr):
+    def adamw_step(p, m_s, v_s, X_b, dt_b, y_b, m_b, it, lr, wd):
         def loss(pr):
             q = fwd_batch(pr, X_b, dt_b)
             nll = -(y_b * jnp.log(q) + (1.0 - y_b) * jnp.log(1.0 - q))
             return jnp.sum(nll * m_b) / jnp.maximum(jnp.sum(m_b), 1.0)
 
         val, g = jax.value_and_grad(loss)(p)
-        b1, b2, eps, wd = 0.9, 0.999, 1e-8, 0.02
+        gnorm = jnp.sqrt(sum(jnp.sum(gi * gi) for gi in jax.tree.leaves(g)) + 1e-12)
+        gscale = jnp.minimum(1.0, 1.0 / gnorm)
+        g = jax.tree.map(lambda gi: gi * gscale, g)
+        b1, b2, eps = 0.9, 0.999, 1e-8
         mn = jax.tree.map(lambda m, gi: b1 * m + (1 - b1) * gi, m_s, g)
         vn = jax.tree.map(lambda v, gi: b2 * v + (1 - b2) * gi * gi, v_s, g)
         bc1, bc2 = 1 - b1 ** (it + 1), 1 - b2 ** (it + 1)
-        pn = jax.tree.map(lambda pi, mi, vi: pi * (1 - lr * wd) - lr * (mi / bc1) / (jnp.sqrt(vi / bc2) + eps), p, mn, vn)
+        pn = {
+            k: p[k] * (1.0 - lr * wd * wd_mask[k]) - lr * (mn[k] / bc1) / (jnp.sqrt(vn[k] / bc2) + eps)
+            for k in p
+        }
         return pn, mn, vn, val
 
     t0 = perf_counter()
-    p = init_m(41)
-    ms = jax.tree.map(jnp.zeros_like, p)
-    vs = jax.tree.map(jnp.zeros_like, p)
-    rng = np.random.default_rng(41)
-    n_tr = len(X_tr_np)
-    mb = min(256, n_tr)
-    n_it = 240
-    for it in range(n_it):
-        idx = rng.integers(0, n_tr, size=mb)
-        lr = 0.001 + 0.5 * (0.015 - 0.001) * (1.0 + np.cos(np.pi * it / n_it))
-        p, ms, vs, _ = adamw_step(
-            p, ms, vs,
-            jnp.asarray(X_tr_np[idx]), jnp.asarray(dt_tr_np[idx]), jnp.asarray(y_tr_np[idx]), jnp.asarray(m_tr_np[idx]),
-            it, lr,
-        )
-    dt = round(perf_counter() - t0, 2)
+    # 1. Strict Feb-validation selection of (lr, wd, best_step)
+    best_cfg = (3e-3, 5e-2, 80)
+    best_val_nll = 1e9
+    max_tune = 180
+    mb_jan = min(256, len(X_jan))
+    denom_feb = float(max(m_feb_np.sum(), 1.0))
+    for lr_c in (1e-3, 3e-3):
+        for wd_c in (1e-2, 5e-2, 2e-1):
+            p = init_m(17)
+            ms = jax.tree.map(jnp.zeros_like, p)
+            vs = jax.tree.map(jnp.zeros_like, p)
+            rng = np.random.default_rng(17)
+            for it in range(max_tune):
+                idx = rng.integers(0, len(X_jan), size=mb_jan)
+                lr_t = (0.1 * lr_c) + 0.5 * (lr_c - 0.1 * lr_c) * (1.0 + np.cos(np.pi * it / max_tune))
+                p, ms, vs, _ = adamw_step(
+                    p, ms, vs,
+                    jnp.asarray(X_jan[idx]), jnp.asarray(dt_jan[idx]), jnp.asarray(y_jan[idx]), jnp.asarray(m_jan[idx]),
+                    it, lr_t, wd_c,
+                )
+                if (it + 1) % 15 == 0 or it == max_tune - 1:
+                    qv = np.asarray(fwd_jit(p, X_feb_j, dt_feb_j))
+                    vnll = float(-np.sum(m_feb_np * (y_feb_np * np.log(qv) + (1.0 - y_feb_np) * np.log(1.0 - qv))) / denom_feb)
+                    if vnll < best_val_nll:
+                        best_val_nll = vnll
+                        best_cfg = (lr_c, wd_c, it + 1)
 
-    fwd_jit = jax.jit(fwd_batch)
-    preds_flat = np.full(len(df), 0.5, dtype=np.float64)
-    bs = 1024
-    for i0 in range(0, len(sX), bs):
-        q = np.asarray(fwd_jit(p, jnp.asarray(sX[i0 : i0 + bs]), jnp.asarray(sdt[i0 : i0 + bs])))
-        idx = sorig[i0 : i0 + bs]
-        valid = idx >= 0
-        preds_flat[idx[valid]] = q[valid]
-    return preds_flat, n_params, dt
+    lr_star, wd_star, steps_star = best_cfg
+    # 2. Refit on full Jan+Feb across 2 seeds (probability ensemble for low variance)
+    mb_full = min(256, len(X_full))
+    preds_accum = np.zeros(len(df), dtype=np.float64)
+    refit_seeds = (17, 41)
+    for sd in refit_seeds:
+        p = init_m(sd)
+        ms = jax.tree.map(jnp.zeros_like, p)
+        vs = jax.tree.map(jnp.zeros_like, p)
+        rng = np.random.default_rng(sd)
+        for it in range(steps_star):
+            idx = rng.integers(0, len(X_full), size=mb_full)
+            lr_t = (0.1 * lr_star) + 0.5 * (lr_star - 0.1 * lr_star) * (1.0 + np.cos(np.pi * it / steps_star))
+            p, ms, vs, _ = adamw_step(
+                p, ms, vs,
+                jnp.asarray(X_full[idx]), jnp.asarray(dt_full[idx]), jnp.asarray(y_full[idx]), jnp.asarray(m_full[idx]),
+                it, lr_t, wd_star,
+            )
+        preds_s = np.full(len(df), 0.5, dtype=np.float64)
+        bs = 1024
+        for i0 in range(0, len(sX), bs):
+            q = np.asarray(fwd_jit(p, jnp.asarray(sX[i0 : i0 + bs]), jnp.asarray(sdt[i0 : i0 + bs])))
+            idx = sorig[i0 : i0 + bs]
+            valid = idx >= 0
+            preds_s[idx[valid]] = q[valid]
+        preds_accum += preds_s / len(refit_seeds)
+    dt = round(perf_counter() - t0, 2)
+    meta = {"best_lr": lr_star, "best_wd": wd_star, "best_steps": int(steps_star), "feb_val_logloss": round(float(best_val_nll), 5)}
+    return np.clip(preds_accum, 1e-7, 1.0 - 1e-7), n_params, dt, meta
 
 
 def build_multi_horizon_quiet_targets(df: pd.DataFrame, k_steps: tuple[int, ...] = (1, 2, 3, 6, 12)):
@@ -403,6 +466,71 @@ def main() -> None:
 
     out = {"dataset": {"total_rows": len(df), "test_rows": int(is_test.sum())}}
 
+    if "--only-deep-mamba" in sys.argv:
+        existing = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+        for reg_name, train_mask_dev, train_jan, train_feb in [
+            ("regime_a_zeroshot_deep_age", is_dev & (age_all <= 15.0), is_jan & (age_all <= 15.0), is_feb & (age_all <= 15.0)),
+            ("regime_b_temporal_drift", is_dev, is_jan, is_feb),
+        ]:
+            print(f"\n=== [only-deep-mamba] {reg_name} ===", flush=True)
+            la_mu_r = float(la_raw[train_mask_dev].mean())
+            la_sd_r = float(max(la_raw[train_mask_dev].std(), 1e-6))
+            la_r = (la_raw - la_mu_r) / la_sd_r
+            p_nc_params, _, _, _ = fit_tab_val_tuned(
+                "neural_clock_m4",
+                X_std[train_jan], age_all[train_jan], la_r[train_jan], y_sale[train_jan],
+                X_std[train_feb], age_all[train_feb], la_r[train_feb], y_sale[train_feb],
+                X_std[train_mask_dev], age_all[train_mask_dev], la_r[train_mask_dev], y_sale[train_mask_dev],
+                dt=HORIZON_MIN,
+            )
+            p_nc_te = np.asarray(predict_tab("neural_clock_m4", p_nc_params, jnp.asarray(X_std[is_test]), jnp.asarray(age_all[is_test]), jnp.asarray(la_r[is_test]), HORIZON_MIN))
+            p_m2_all, n_p_m2, sec_m2, meta_m2 = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, train_jan, train_feb, train_mask_dev)
+            p_m2_te = p_m2_all[is_test]
+            a_te, y_te = age_all[is_test], y_sale[is_test]
+            existing[reg_name]["deep_2layer_mamba_adamw"] = {
+                "params": n_p_m2, "seconds": sec_m2, **meta_m2,
+                "all": metrics_dict(y_te, p_m2_te),
+                "le15": metrics_dict(y_te[a_te <= 15.0], p_m2_te[a_te <= 15.0]),
+                "15_60": metrics_dict(y_te[(a_te > 15.0) & (a_te <= 60.0)], p_m2_te[(a_te > 15.0) & (a_te <= 60.0)]),
+                "gt60": metrics_dict(y_te[a_te > 60.0], p_m2_te[a_te > 60.0]),
+            }
+            existing[reg_name]["paired_day_bootstrap"]["deep_2layer_mamba_adamw_minus_neural_clock_m4"] = paired_day_bootstrap(
+                y_te, days_all[is_test], p_nc_te, p_m2_te
+            )
+            b = existing[reg_name]["paired_day_bootstrap"]["deep_2layer_mamba_adamw_minus_neural_clock_m4"]
+            print(
+                f"  deep_2L_mamba ({meta_m2}): all={existing[reg_name]['deep_2layer_mamba_adamw']['all']['logloss']:.5f} "
+                f"gt60={existing[reg_name]['deep_2layer_mamba_adamw']['gt60']['logloss']:.4f} | "
+                f"diff_vs_M4={b['mean_diff_alt_minus_ref']:+.5f} p={b['p_value']:.4f}",
+                flush=True,
+            )
+
+        k_steps = (1, 2, 3, 6, 12)
+        y_mh, v_mh = build_multi_horizon_quiet_targets(df, k_steps=k_steps)
+        y10, v10 = y_mh[10], v_mh[10]
+        for split_tag, age_gate in [("all_age_train_dt10", np.ones(len(df), dtype=bool)), ("young_le15_train_dt10", age_all <= 15.0)]:
+            tr_all = is_dev & v10 & age_gate
+            tr_jan = is_jan & v10 & age_gate
+            tr_feb = is_feb & v10 & age_gate
+            la_mu_r = float(la_raw[tr_all].mean())
+            la_sd_r = float(max(la_raw[tr_all].std(), 1e-6))
+            la_r = (la_raw - la_mu_r) / la_sd_r
+            p_m2_10, _, _, meta_mh = run_deep_2layer_mamba_defi(df, X_std, la_r, y10, tr_jan, tr_feb, tr_all)
+            for k in k_steps:
+                dt_m = 10 * k
+                te_m = is_test & v_mh[dt_m]
+                yk = y_mh[dt_m][te_m]
+                p_m2_k = np.clip(1.0 - (1.0 - p_m2_10[te_m]) ** k, 1e-7, 1.0 - 1e-7)
+                existing["multi_horizon_zeroshot_transfer"][split_tag][f"dt_{dt_m}m"]["deep_2layer_mamba_compounded"] = metrics_dict(yk, p_m2_k)
+            print(
+                f"  [MH {split_tag}] ({meta_mh}) dt10={existing['multi_horizon_zeroshot_transfer'][split_tag]['dt_10m']['deep_2layer_mamba_compounded']['logloss']:.4f} "
+                f"dt120={existing['multi_horizon_zeroshot_transfer'][split_tag]['dt_120m']['deep_2layer_mamba_compounded']['logloss']:.4f}",
+                flush=True,
+            )
+        OUT_PATH.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        print(f"Updated DeFi deep_2layer_mamba_adamw in {OUT_PATH}", flush=True)
+        return
+
     # =========================================================================
     # PART A: Upgraded M=4 Multi-Scale Conditional Neural Clock + Day Bootstrap + Deep 2L-Mamba
     # =========================================================================
@@ -444,20 +572,20 @@ def main() -> None:
                 flush=True,
             )
 
-        # High-capacity 2-layer AdamW Mamba (~26k params)
-        p_m2_all, n_p_m2, sec_m2 = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, train_mask_dev)
+        # Properly tuned high-capacity 2-layer AdamW Mamba (6,643 params, Feb-val LR/WD/early-stop + grad-clip)
+        p_m2_all, n_p_m2, sec_m2, meta_m2 = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, train_jan, train_feb, train_mask_dev)
         p_m2_te = p_m2_all[is_test]
         preds_te["deep_2layer_mamba_adamw"] = p_m2_te
         a_te, y_te = age_all[is_test], y_sale[is_test]
         reg_res["deep_2layer_mamba_adamw"] = {
-            "params": n_p_m2, "seconds": sec_m2,
+            "params": n_p_m2, "seconds": sec_m2, **meta_m2,
             "all": metrics_dict(y_te, p_m2_te),
             "le15": metrics_dict(y_te[a_te <= 15.0], p_m2_te[a_te <= 15.0]),
             "15_60": metrics_dict(y_te[(a_te > 15.0) & (a_te <= 60.0)], p_m2_te[(a_te > 15.0) & (a_te <= 60.0)]),
             "gt60": metrics_dict(y_te[a_te > 60.0], p_m2_te[a_te > 60.0]),
         }
         print(
-            f"  {'deep_2L_mamba':16s} ({n_p_m2}p, AdamW): all={reg_res['deep_2layer_mamba_adamw']['all']['logloss']:.5f} "
+            f"  {'deep_2L_mamba':16s} ({n_p_m2}p, AdamW, {meta_m2}): all={reg_res['deep_2layer_mamba_adamw']['all']['logloss']:.5f} "
             f"gt60={reg_res['deep_2layer_mamba_adamw']['gt60']['logloss']:.4f}",
             flush=True,
         )
@@ -539,8 +667,8 @@ def main() -> None:
             )
             fitted[kind] = (params, n_p, best_r)
 
-        # Also train Deep 2L-Mamba strictly on dt=10m
-        p_m2_10, n_p_m2, _ = run_deep_2layer_mamba_defi(df, X_std, la_r, y10, tr_all)
+        # Also train properly tuned Deep 2L-Mamba strictly on dt=10m
+        p_m2_10, n_p_m2, _, _ = run_deep_2layer_mamba_defi(df, X_std, la_r, y10, tr_jan, tr_feb, tr_all)
 
         split_out = {}
         for k in k_steps:

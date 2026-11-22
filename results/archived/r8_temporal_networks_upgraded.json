@@ -217,14 +217,22 @@
       "layers": 2,
       "hidden": 64,
       "fresh_only": {
-        "fresh_kl": 4.15726243301686,
-        "aged_kl": 1.2294128940816011,
-        "seconds": 1553.79
+        "fresh_kl": 0.11488053567590654,
+        "aged_kl": 1.49373922687905,
+        "best_lr": 0.01,
+        "best_wd": 0.0001,
+        "best_steps": 220,
+        "internal_val_kl": 0.14889,
+        "seconds": 739.46
       },
       "joint": {
-        "fresh_kl": 4.260324896445666,
-        "aged_kl": 0.7185083995050461,
-        "seconds": 2031.86
+        "fresh_kl": 0.12361923657177855,
+        "aged_kl": 0.1721963880955475,
+        "best_lr": 0.01,
+        "best_wd": 0.0001,
+        "best_steps": 220,
+        "internal_val_kl": 0.17982,
+        "seconds": 1543.28
       }
     }
   },

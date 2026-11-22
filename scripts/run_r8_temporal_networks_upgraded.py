@@ -353,6 +353,7 @@ def fit_talbot_model(rollout_both, th0, eval_nodes, age, fr_tr, ag_tr, fr_te, ag
 
 
 def run_deep_adamw_mamba_mooc(
+    trajs_tr: list[tuple[np.ndarray, np.ndarray]],
     n_nodes: int,
     edges: list[tuple[int, int]],
     horizons: np.ndarray,
@@ -362,51 +363,81 @@ def run_deep_adamw_mamba_mooc(
     ag_tr: np.ndarray,
     fr_te: np.ndarray,
     ag_te: np.ndarray,
+    absorbing_node: int | None = None,
 ) -> dict:
-    """Upgrade #5a: Reviewer-proof HIGH-CAPACITY 2-layer Mamba (~100k params, H=64, AdamW + cosine)."""
+    """Upgrade #5a: Properly tuned high-capacity 2-layer Mamba (~136k params, H=64, AdamW + grad-clip + val early stopping).
+
+    Uses exact horizon-aligned segments (matching 1-layer Mamba), exact absorbing-node flux
+    masking, weights-only decoupled AdamW, global gradient-norm clipping (1.0), and an internal
+    85/15 training-user validation split to select (lr, wd, best_step) with zero test leakage.
+    """
     src_idx = jnp.asarray([u for u, _ in edges], dtype=jnp.int32)
     dst_idx = jnp.asarray([v for _, v in edges], dtype=jnp.int32)
     n_edges = len(edges)
-    H = 64  # 2-layer stacked selective SSM -> >100k parameters!
-    n_steps = 64
-    t_grid = np.linspace(0.0, float(horizons[-1]), n_steps + 1)
-    dt_step = float(horizons[-1]) / n_steps
-    sample_idx = jnp.asarray([int(np.argmin(np.abs(t_grid - h))) for h in horizons], dtype=jnp.int32)
-    eval_init = jnp.eye(n_nodes, dtype=jnp.float64)[eval_nodes]
-    fr_j = jnp.asarray(fr_tr)
-    ag_j = jnp.asarray(ag_tr)
-    n_fr = float(np.maximum(fr_tr.sum(), 1.0))
-    n_ag = float(np.maximum(ag_tr.sum(), 1.0))
+    is_abs = np.zeros(n_nodes, dtype=bool)
+    if absorbing_node is not None:
+        is_abs[absorbing_node] = True
+    edge_active = jnp.asarray([0.0 if is_abs[u] else 1.0 for u, _ in edges], dtype=jnp.float64)
 
-    # Build 2-layer Mamba parameter PyTree (~109k params!)
+    # Exact horizon-aligned substeps (zero timestamp rounding mismatch at t=0.25h!)
+    seg_dts = np.diff(np.concatenate([[0.0], horizons]))
+    t_max = float(horizons[-1])
+    seg_steps = [max(3, int(np.ceil(sd / (t_max / 48.0)))) for sd in seg_dts]
+    step_dts = []
+    sample_idx_list = []
+    cur = 0
+    for sd, ns in zip(seg_dts, seg_steps):
+        step_dts.extend([float(sd / ns)] * ns)
+        cur += ns
+        sample_idx_list.append(cur)
+    step_dts_j = jnp.asarray(step_dts, dtype=jnp.float64)
+    sample_idx = jnp.asarray(sample_idx_list, dtype=jnp.int32)
+
+    H = 64  # 2-layer stacked selective SSM -> 136,331 parameters
+    eval_init = jnp.eye(n_nodes, dtype=jnp.float64)[eval_nodes]
+    eval_nodes_np = np.asarray(eval_nodes)
+
+    # Leak-free internal 85/15 user split of trajs_tr for LR/WD/early-stopping selection
+    rng_sp = np.random.default_rng(123)
+    perm = rng_sp.permutation(len(trajs_tr))
+    n_val = max(1, int(0.15 * len(trajs_tr)))
+    val_tr = [trajs_tr[i] for i in perm[:n_val]]
+    sub_tr = [trajs_tr[i] for i in perm[n_val:]]
+    fr_sub, ag_sub, _ = extract_general_snapshots(sub_tr, n_nodes, horizons, aged_thresh, absorbing_node)
+    fr_val, ag_val, _ = extract_general_snapshots(val_tr, n_nodes, horizons, aged_thresh, absorbing_node)
+    fr_sub, ag_sub = fr_sub[eval_nodes_np], ag_sub[eval_nodes_np]
+    fr_val, ag_val = fr_val[eval_nodes_np], ag_val[eval_nodes_np]
+
     def init_params(seed: int):
         r = np.random.default_rng(seed)
         return {
-            "enc_w": jnp.asarray(r.normal(0, 0.12, (n_nodes + 1, H))),
+            "enc_w": jnp.asarray(r.normal(0, 0.08, (n_nodes + 1, H))),
             "enc_b": jnp.zeros(H),
             # Layer 1
             "log_a1": jnp.asarray(np.linspace(np.log(0.05), np.log(5.0), H)),
-            "w_dt1": jnp.asarray(r.normal(0, 0.10, (n_nodes, H))),
+            "w_dt1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
             "b_dt1": jnp.full(H, -1.0),
-            "w_b1": jnp.asarray(r.normal(0, 0.10, (n_nodes, H))),
-            "w_c1": jnp.asarray(r.normal(0, 0.10, (n_nodes, H))),
-            "w_z1": jnp.asarray(r.normal(0, 0.10, (n_nodes, H))),
+            "w_b1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
+            "w_c1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
+            "w_z1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
             "b_z1": jnp.zeros(H),
-            # Layer 2 (takes Layer-1 output -> H)
+            # Layer 2
             "log_a2": jnp.asarray(np.linspace(np.log(0.05), np.log(5.0), H)),
-            "w_dt2": jnp.asarray(r.normal(0, 0.10, (H, H))),
+            "w_dt2": jnp.asarray(r.normal(0, 0.08, (H, H))),
             "b_dt2": jnp.full(H, -1.0),
-            "w_b2": jnp.asarray(r.normal(0, 0.10, (H, H))),
-            "w_c2": jnp.asarray(r.normal(0, 0.10, (H, H))),
-            "w_z2": jnp.asarray(r.normal(0, 0.10, (H, H))),
+            "w_b2": jnp.asarray(r.normal(0, 0.08, (H, H))),
+            "w_c2": jnp.asarray(r.normal(0, 0.08, (H, H))),
+            "w_z2": jnp.asarray(r.normal(0, 0.08, (H, H))),
             "b_z2": jnp.zeros(H),
-            # Edge flux head: H -> n_edges (64 * 1355 = 86,720 params alone!)
-            "w_o": jnp.asarray(r.normal(0, 0.05, (H, n_edges))),
-            "b_o": jnp.full(n_edges, -2.0),
+            # Edge flux head: H -> n_edges (86,720 params)
+            "w_o": jnp.asarray(r.normal(0, 0.02, (H, n_edges))),
+            "b_o": jnp.full(n_edges, -3.0),
         }
 
     p0_sample = init_params(17)
     n_params = sum(int(v.size) for v in p0_sample.values())
+    # Weights-only decay mask (never decay biases or log-rates)
+    wd_mask = {k: (0.0 if (k.startswith("b_") or k.endswith("_b") or k.startswith("log_")) else 1.0) for k in p0_sample}
 
     def rollout(p, age_val: float):
         a_col = jnp.full((eval_init.shape[0], 1), age_val, dtype=jnp.float64)
@@ -415,22 +446,21 @@ def run_deep_adamw_mamba_mooc(
         na1 = -jnp.exp(jnp.clip(p["log_a1"], -4.0, 3.0))
         na2 = -jnp.exp(jnp.clip(p["log_a2"], -4.0, 3.0))
 
-        def step(carry, _):
+        def step(carry, dt_step):
             prob, h1, h2 = carry
-            # Layer 1 selective SSM
             d1 = jax.nn.softplus(prob @ p["w_dt1"] + p["b_dt1"]) * dt_step
             ab1 = jnp.exp(d1 * na1[None, :])
             bb1 = ((ab1 - 1.0) / na1[None, :]) * jnp.tanh(prob @ p["w_b1"])
             h1_n = ab1 * h1 + bb1
             y1 = jnp.tanh(prob @ p["w_c1"]) * h1_n * jax.nn.silu(prob @ p["w_z1"] + p["b_z1"])
-            # Layer 2 selective SSM + residual
+
             d2 = jax.nn.softplus(y1 @ p["w_dt2"] + p["b_dt2"]) * dt_step
             ab2 = jnp.exp(d2 * na2[None, :])
             bb2 = ((ab2 - 1.0) / na2[None, :]) * jnp.tanh(y1 @ p["w_b2"])
             h2_n = ab2 * h2 + bb2
             y2 = y1 + jnp.tanh(y1 @ p["w_c2"]) * h2_n * jax.nn.silu(y1 @ p["w_z2"] + p["b_z2"])
 
-            rates = 1e-4 + 8.0 * jax.nn.sigmoid(y2 @ p["w_o"] + p["b_o"])
+            rates = jnp.exp(jnp.clip(p["b_o"] + y2 @ p["w_o"], -8.0, 3.0)) * edge_active
             tot_out = jax.vmap(lambda r: jax.ops.segment_sum(r, src_idx, num_segments=n_nodes))(rates)
             frac_leave = 1.0 - jnp.exp(-jnp.minimum(tot_out * dt_step, 50.0))
             scale = frac_leave / jnp.maximum(tot_out, 1e-30)
@@ -441,62 +471,95 @@ def run_deep_adamw_mamba_mooc(
             p_new = p_new / jnp.sum(p_new, axis=-1, keepdims=True)
             return (p_new, h1_n, h2_n), p_new
 
-        _, traj = jax.lax.scan(step, (eval_init, h1_0, h2_0), None, length=n_steps)
+        _, traj = jax.lax.scan(step, (eval_init, h1_0, h2_0), step_dts_j)
         full = jnp.concatenate([eval_init[None], traj], axis=0)
         return jnp.swapaxes(full[sample_idx], 0, 1)
+
+    roll_jit = jax.jit(rollout)
 
     res_out = {"params": int(n_params), "layers": 2, "hidden": H}
     for mode, joint in [("fresh_only", False), ("joint", True)]:
         @jax.jit
-        def step_adamw(params, m_st, v_st, step_i, lr):
+        def step_adamw(params, m_st, v_st, fr_b, ag_b, n_f, n_a, step_i, lr, wd):
             def loss(p):
                 pf = rollout(p, 0.0)
-                lf = -jnp.sum(fr_j * jnp.log(jnp.clip(pf, 1e-12, 1.0))) / n_fr
+                lf = -jnp.sum(fr_b * jnp.log(jnp.clip(pf, 1e-12, 1.0))) / n_f
                 if joint:
                     pa = rollout(p, 1.0)
-                    la = -jnp.sum(ag_j * jnp.log(jnp.clip(pa, 1e-12, 1.0))) / n_ag
+                    la = -jnp.sum(ag_b * jnp.log(jnp.clip(pa, 1e-12, 1.0))) / n_a
                     return 0.5 * (lf + la)
                 return lf
 
             val, grads = jax.value_and_grad(loss)(params)
-            b1, b2, eps, wd = 0.9, 0.999, 1e-8, 1e-3
+            # Global L2 gradient-norm clipping at 1.0
+            gnorm = jnp.sqrt(sum(jnp.sum(g * g) for g in jax.tree.leaves(grads)) + 1e-12)
+            gscale = jnp.minimum(1.0, 1.0 / gnorm)
+            grads = jax.tree.map(lambda g: g * gscale, grads)
+            b1, b2, eps = 0.9, 0.999, 1e-8
             m_new = jax.tree.map(lambda m, g: b1 * m + (1.0 - b1) * g, m_st, grads)
             v_new = jax.tree.map(lambda v, g: b2 * v + (1.0 - b2) * (g * g), v_st, grads)
             bc1 = 1.0 - b1 ** (step_i + 1)
             bc2 = 1.0 - b2 ** (step_i + 1)
-            p_new = jax.tree.map(
-                lambda p, m, v: p * (1.0 - lr * wd) - lr * (m / bc1) / (jnp.sqrt(v / bc2) + eps),
-                params, m_new, v_new,
-            )
+            p_new = {
+                k: params[k] * (1.0 - lr * wd * wd_mask[k]) - lr * (m_new[k] / bc1) / (jnp.sqrt(v_new[k] / bc2) + eps)
+                for k in params
+            }
             return p_new, m_new, v_new, val
 
-        best = None
         t0 = perf_counter()
-        n_iters = 260
+        fr_sub_j, ag_sub_j = jnp.asarray(fr_sub), jnp.asarray(ag_sub)
+        nf_s, na_s = float(max(fr_sub.sum(), 1.0)), float(max(ag_sub.sum(), 1.0))
+
+        # Select (lr, wd, best_step) strictly on internal 15% user validation split
+        best_cfg = (3e-3, 1e-3, 180)
+        best_val_kl = 1e9
+        max_tune = 220
+        for lr_c in (1e-3, 3e-3, 1e-2):
+            for wd_c in (1e-4, 1e-3):
+                p = init_params(STARTS[0])
+                m_st = jax.tree.map(jnp.zeros_like, p)
+                v_st = jax.tree.map(jnp.zeros_like, p)
+                for it in range(max_tune):
+                    lr_t = (0.1 * lr_c) + 0.5 * (lr_c - 0.1 * lr_c) * (1.0 + np.cos(np.pi * it / max_tune))
+                    p, m_st, v_st, _ = step_adamw(p, m_st, v_st, fr_sub_j, ag_sub_j, nf_s, na_s, it, lr_t, wd_c)
+                    if (it + 1) % 20 == 0 or it == max_tune - 1:
+                        vf = weighted_kl(np.asarray(roll_jit(p, 0.0)), fr_val)
+                        v_score = 0.5 * (vf + weighted_kl(np.asarray(roll_jit(p, 1.0)), ag_val)) if joint else vf
+                        if v_score < best_val_kl:
+                            best_val_kl = v_score
+                            best_cfg = (lr_c, wd_c, it + 1)
+
+        lr_star, wd_star, steps_star = best_cfg
+        fr_full_j, ag_full_j = jnp.asarray(fr_tr), jnp.asarray(ag_tr)
+        nf_f, na_f = float(max(fr_tr.sum(), 1.0)), float(max(ag_tr.sum(), 1.0))
+        best = None
         for sd in STARTS:
             p = init_params(sd)
             m_st = jax.tree.map(jnp.zeros_like, p)
             v_st = jax.tree.map(jnp.zeros_like, p)
             last_v = 1e9
-            for it in range(n_iters):
-                # Cosine schedule 3e-2 -> 1e-3
-                lr = 0.001 + 0.5 * (0.03 - 0.001) * (1.0 + np.cos(np.pi * it / n_iters))
-                p, m_st, v_st, val = step_adamw(p, m_st, v_st, it, lr)
+            for it in range(steps_star):
+                lr_t = (0.1 * lr_star) + 0.5 * (lr_star - 0.1 * lr_star) * (1.0 + np.cos(np.pi * it / steps_star))
+                p, m_st, v_st, val = step_adamw(p, m_st, v_st, fr_full_j, ag_full_j, nf_f, na_f, it, lr_t, wd_star)
                 last_v = float(val)
             if best is None or last_v < best[0]:
                 best = (last_v, p)
         dt = perf_counter() - t0
         p_best = best[1]
-        pred_fr = np.asarray(rollout(p_best, 0.0))
+        pred_fr = np.asarray(roll_jit(p_best, 0.0))
         # Clean age=0 evaluation for fresh_only (eliminating untrained age weight noise), age=1.0 for joint
-        pred_ag = np.asarray(rollout(p_best, 1.0 if joint else 0.0))
+        pred_ag = np.asarray(roll_jit(p_best, 1.0 if joint else 0.0))
         res_out[mode] = {
             "fresh_kl": weighted_kl(pred_fr, fr_te),
             "aged_kl": weighted_kl(pred_ag, ag_te),
+            "best_lr": lr_star,
+            "best_wd": wd_star,
+            "best_steps": int(steps_star),
+            "internal_val_kl": round(float(best_val_kl), 5),
             "seconds": round(dt, 2),
         }
         print(
-            f"[MOOC Deep 2L-Mamba AdamW ({n_params:,}p)] {mode:10s}: "
+            f"[MOOC Deep 2L-Mamba AdamW ({n_params:,}p, lr={lr_star}, wd={wd_star}, steps={steps_star})] {mode:10s}: "
             f"fresh={res_out[mode]['fresh_kl']:.4f} aged={res_out[mode]['aged_kl']:.4f} ({dt:.1f}s)",
             flush=True,
         )
@@ -766,15 +829,37 @@ def run_benchmark_for_dataset(name: str, trajs_tr, trajs_te, n_nodes: int, horiz
         )
     res["coarsening_r8"] = coars_drn
 
-    # 6. High-capacity 2-layer AdamW Mamba (~109k params) on MOOC!
+    # 6. High-capacity 2-layer AdamW Mamba (136,331 params) on MOOC!
     if run_deep_mamba:
         res["deep_2layer_mamba_adamw"] = run_deep_adamw_mamba_mooc(
-            n_nodes, edges, horizons, aged_thresh, eval_nodes, fr_tr, ag_tr, fr_te, ag_te
+            trajs_tr, n_nodes, edges, horizons, aged_thresh, eval_nodes, fr_tr, ag_tr, fr_te, ag_te, absorbing_node=absorbing_node
         )
     return res
 
 
 def main() -> None:
+    if "--only-deep-mamba" in sys.argv:
+        mo_tr, mo_te, _, mo_abs = load_mooc()
+        horizons = np.array([0.25, 1.0, 4.0, 12.0, 24.0, 48.0])
+        aged_thresh = 6.0
+        n_nodes = 98
+        fr_tr_all, ag_tr_all, edge_cnt = extract_general_snapshots(mo_tr, n_nodes, horizons, aged_thresh, mo_abs)
+        fr_te_all, ag_te_all, _ = extract_general_snapshots(mo_te, n_nodes, horizons, aged_thresh, mo_abs)
+        edges = [(int(u), int(v)) for u in range(n_nodes) for v in range(n_nodes) if u != v and edge_cnt[u, v] >= 10]
+        eval_nodes_np = np.where((fr_te_all.sum(axis=(1, 2)) > 0) & (ag_te_all.sum(axis=(1, 2)) > 0))[0]
+        eval_nodes = jnp.asarray(eval_nodes_np, dtype=jnp.int32)
+        m2_res = run_deep_adamw_mamba_mooc(
+            mo_tr, n_nodes, edges, horizons, aged_thresh, eval_nodes,
+            fr_tr_all[eval_nodes_np], ag_tr_all[eval_nodes_np],
+            fr_te_all[eval_nodes_np], ag_te_all[eval_nodes_np],
+            absorbing_node=mo_abs,
+        )
+        out = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+        out["mooc_v98_r8"]["deep_2layer_mamba_adamw"] = m2_res
+        OUT_PATH.write_text(json.dumps(out, indent=2), encoding="utf-8")
+        print(f"Updated MOOC deep_2layer_mamba_adamw in {OUT_PATH}", flush=True)
+        return
+
     t0 = perf_counter()
     # Calibrate data-free Universal 1D Pos-Sens clock ONCE (certified on k in [1.4, 7.8])
     psi_univ, cert = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=200, k_min=1.4, k_max=7.8)
