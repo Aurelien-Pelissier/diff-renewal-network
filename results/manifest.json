@@ -1,6 +1,6 @@
 {
   "description": "SHA-256 provenance manifest for all archived Differentiable Renewal Network benchmark summaries.",
-  "count": 36,
+  "count": 40,
   "files": {
     "results/archived/bio_influenza_r5_complete.json": {
       "bytes": 3703,
@@ -77,6 +77,22 @@
     "results/archived/r6_uniformity_closure.json": {
       "bytes": 2285,
       "sha256": "9af80f8055743e2d9ec40a4820ba1e3f615239373200f7d5f915b20a342396f5"
+    },
+    "results/archived/r7_defi_neural_clock.json": {
+      "bytes": 26092,
+      "sha256": "a7f6eb8a4ba6dc166f2250d198ec6b660e0e850ada34ef65fdd6911bce546acd"
+    },
+    "results/archived/r7_mamba_thp_baselines.json": {
+      "bytes": 4059,
+      "sha256": "1e969fe61bc656a914eea01ceb7cc53706b54f7d708ec4408a996f45cdeb88f1"
+    },
+    "results/archived/r7_temporal_networks.json": {
+      "bytes": 9859,
+      "sha256": "27a45cf386c3ba0e25177190efd8d4273ce0b71c9fe8628288d367350b5266b6"
+    },
+    "results/archived/r7_theory_bt_separation.json": {
+      "bytes": 20309,
+      "sha256": "62b3d2175c7d50ae3ebc739452085c6b9a633e134bb5b26f25ba2d964872c7bd"
     },
     "results/archived/real_continuous_benchmarks.json": {
       "bytes": 2850,

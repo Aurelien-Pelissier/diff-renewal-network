@@ -153,7 +153,7 @@ def export_figure(
     plt.close(fig)
 
     pdf_path = OUT_FIG_LATEX / f"{stem}.pdf"
-    if SKILL_SCRIPTS.exists():
+    if SKILL_SCRIPTS is not None and SKILL_SCRIPTS.exists():
         for script_name, extra in [
             ("audit_pdf_text.py", []),
             (
@@ -663,28 +663,33 @@ def build_fig3() -> None:
 def build_fig4() -> None:
     mnb = load_archived("modern_neural_baselines.json")
     rt = load_archived("renewal_transfer_summary.json")
+    r7m = load_archived("r7_mamba_thp_baselines.json")["synthetic_mamba"]
 
-    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.46))
-    fig.subplots_adjust(left=0.108, right=0.98, top=0.695, bottom=0.195, wspace=0.39)
+    fig, axes = plt.subplots(1, 2, figsize=(TEXTWIDTH_IN, 2.52))
+    fig.subplots_adjust(left=0.108, right=0.98, top=0.68, bottom=0.195, wspace=0.39)
 
     studies = [
         ("primary", "PH truth"),
         ("lognormal", "Lognormal"),
     ]
     models = [
-        ("neural_phase", "Neural clock", PALETTE["navy"], -0.275),
-        ("mean_shape", "Moment PH", PALETTE["teal"], -0.165),
-        ("ltc_ode_3start", "LTC", PALETTE["violet"], -0.055),
-        ("s4d_ode_3start", "S4D", PALETTE["amber"], 0.055),
-        ("latent_ode_3start", "Latent ODE", PALETTE["crimson"], 0.165),
-        ("neural_cme_3start", "Neural-CME", PALETTE["slate"], 0.275),
+        ("neural_phase", "Neural clock", PALETTE["navy"], -0.30),
+        ("mean_shape", "Moment PH", PALETTE["teal"], -0.20),
+        ("mamba_3start", "Mamba", PALETTE["royal"], -0.10),
+        ("ltc_ode_3start", "LTC", PALETTE["violet"], 0.00),
+        ("s4d_ode_3start", "S4D", PALETTE["amber"], 0.10),
+        ("latent_ode_3start", "Latent ODE", PALETTE["crimson"], 0.20),
+        ("neural_cme_3start", "Neural-CME", PALETTE["slate"], 0.30),
     ]
     x_pos = np.arange(len(studies))
     axes[0].axhline(0.005, color=PALETTE["slate"], ls="--", lw=0.75)
     for mkey, mlabel, col, dx in models:
         meds, lows, highs = [], [], []
         for skey, _ in studies:
-            stat = mnb[skey][mkey]["metrics"]["balanced_kl"]
+            if mkey == "mamba_3start":
+                stat = r7m[skey]["balanced_kl"]
+            else:
+                stat = mnb[skey][mkey]["metrics"]["balanced_kl"]
             med = float(stat["median"])
             meds.append(med)
             lows.append(med - float(stat["q25"]))
@@ -694,10 +699,10 @@ def build_fig4() -> None:
             x_pos + dx,
             np.asarray(meds) - y_base,
             bottom=y_base,
-            width=0.102,
+            width=0.092,
             color=col,
             edgecolor=PALETTE["ink"],
-            linewidth=0.45,
+            linewidth=0.42,
             label=mlabel,
         )
         axes[0].errorbar(
@@ -706,8 +711,8 @@ def build_fig4() -> None:
             yerr=[lows, highs],
             fmt="none",
             ecolor=PALETTE["ink"],
-            elinewidth=0.7,
-            capsize=1.4,
+            elinewidth=0.65,
+            capsize=1.2,
         )
     axes[0].set_yscale("log")
     axes[0].set_xticks(x_pos, [lbl for _, lbl in studies])
@@ -718,13 +723,14 @@ def build_fig4() -> None:
         loc="lower center",
         bbox_to_anchor=(0.5, 1.02),
         ncol=2,
-        handlelength=0.85,
-        columnspacing=0.45,
-        handletextpad=0.22,
-        labelspacing=0.16,
-        borderpad=0.05,
+        fontsize=6.6,
+        handlelength=0.80,
+        columnspacing=0.40,
+        handletextpad=0.20,
+        labelspacing=0.14,
+        borderpad=0.04,
     )
-    add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=24.0)
+    add_panel_tag(axes[0], "a", x_pt=-24.0, y_pt=28.0)
 
     budgets = [400, 2000, 8000]
     arms_cfg = [
@@ -755,7 +761,7 @@ def build_fig4() -> None:
         labelspacing=0.18,
         borderpad=0.05,
     )
-    add_panel_tag(axes[1], "b", x_pt=-24.0, y_pt=24.0)
+    add_panel_tag(axes[1], "b", x_pt=-24.0, y_pt=28.0)
 
     export_figure(fig, "fig4_neural_clocks_and_transfer")
 
@@ -985,6 +991,165 @@ def build_fig5() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Figure 6: Theorem 6 Near-Cancellation BT Distortion, MOOC V=98, & DeFi Multi-Pool
+# ---------------------------------------------------------------------------
+def build_fig6() -> None:
+    r7t = load_archived("r7_theory_bt_separation.json")
+    r7n = load_archived("r7_temporal_networks.json")
+    r7d = load_archived("r7_defi_neural_clock.json")
+
+    fig, axes = plt.subplots(2, 2, figsize=(TEXTWIDTH_IN, 3.65))
+    fig.subplots_adjust(
+        left=0.12, right=0.975, top=0.855, bottom=0.115, hspace=0.74, wspace=0.48
+    )
+
+    # Panel a: Theorem 6 Quantitative delta-near-cancellation & BT distortion ratio
+    ax_a = axes[0, 0]
+    sw_k4 = [r for r in r7t["symmetric_cycles"]["K4"]["sweep"] if r["delta"] <= 0.03]
+    sw_ht = [r for r in r7t["heterogeneous_common_zero"]["sweep"] if r["delta"] <= 0.03]
+    d_k4 = [r["delta"] for r in sw_k4]
+    d_ht = [r["delta"] for r in sw_ht]
+    ax_a.plot(d_k4, [r["ratio_frozen"] for r in sw_k4], marker="o", ms=3.0, lw=1.4, color=PALETTE["navy"], label="K4 BT-fz")
+    ax_a.plot(d_k4, [r["ratio_rebal"] for r in sw_k4], marker="s", ms=2.9, lw=1.35, ls="--", color=PALETTE["teal"], label="K4 BT-reb")
+    ax_a.plot(d_ht, [r["ratio_frozen"] for r in sw_ht], marker="^", ms=3.0, lw=1.35, ls="-.", color=PALETTE["crimson"], label="Het BT-fz")
+    ax_a.plot(d_k4, [r["fwd_hinf"] for r in sw_k4], marker="d", ms=2.8, lw=1.25, ls=":", color=PALETTE["amber"], label="K4 H-inf")
+    ax_a.set_xscale("log")
+    ax_a.set_yscale("log")
+    ax_a.set_xlim(6e-6, 5e-2)
+    ax_a.set_ylim(1e-7, 1.5e7)
+    ax_a.set_xticks([1e-5, 1e-4, 1e-3, 1e-2])
+    ax_a.set_yticks([1e-6, 1e-2, 1e2, 1e6])
+    ax_a.minorticks_off()
+    ax_a.set_xlabel(r"Near-cancellation gap $\delta$")
+    ax_a.set_ylabel("Ratio / H-inf err.")
+    ax_a.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        fontsize=6.8,
+        handlelength=1.0,
+        columnspacing=0.45,
+        handletextpad=0.20,
+        labelspacing=0.14,
+        borderpad=0.04,
+    )
+    add_panel_tag(ax_a, "a", x_pt=-32.0, y_pt=22.0)
+
+    # Panel b: MOOC (V=98, 411k events) — 0-shot aged (>=6h) & supervised joint aged KL
+    ax_b = axes[0, 1]
+    mr = r7n["mooc_v98"]["results"]
+    x_m = np.arange(2)
+    mooc_bars = [
+        ("SpDRN", [mr["sparse_hyper_drn_fresh_only"]["aged_kl"], mr["sparse_hyper_drn_joint"]["aged_kl"]], PALETTE["navy"], -0.32),
+        ("CTMC", [mr["ctmc_fresh_only"]["aged_kl"], mr["ctmc_joint"]["aged_kl"]], PALETTE["slate"], -0.192),
+        ("Mamba", [mr["mamba_fresh_only"]["aged_kl"], mr["mamba_joint"]["aged_kl"]], PALETTE["royal"], -0.064),
+        ("S4D", [mr["s4d_fresh_only"]["aged_kl"], mr["s4d_joint"]["aged_kl"]], PALETTE["amber"], 0.064),
+        ("LTC", [mr["ltc_fresh_only"]["aged_kl"], mr["ltc_joint"]["aged_kl"]], PALETTE["violet"], 0.192),
+        ("LODE", [mr["latent_ode_fresh_only"]["aged_kl"], mr["latent_ode_joint"]["aged_kl"]], PALETTE["crimson"], 0.32),
+    ]
+    for lbl, vals, col, dx in mooc_bars:
+        ax_b.bar(x_m + dx, vals, width=0.118, color=col, edgecolor=PALETTE["ink"], linewidth=0.42, label=lbl)
+    ax_b.axhline(mr["oracle_fresh_rollout_aged_kl"], color=PALETTE["slate"], ls="--", lw=0.75)
+    ax_b.set_xticks(x_m, ["0-shot (>=6h)", "Joint (sup.)"])
+    ax_b.set_xlim(-0.50, 1.50)
+    ax_b.set_ylim(0.0, 2.15)
+    ax_b.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0], ["0", "0.5", "1.0", "1.5", "2.0"])
+    ax_b.set_xlabel("MOOC ($V{=}98$, 411k events)")
+    ax_b.set_ylabel("Aged KL (nats)")
+    ax_b.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=3,
+        fontsize=6.4,
+        handlelength=0.75,
+        columnspacing=0.35,
+        handletextpad=0.18,
+        labelspacing=0.14,
+        borderpad=0.04,
+    )
+    add_panel_tag(ax_b, "b", x_pt=-32.0, y_pt=22.0)
+
+    # Panel c: MOOC (V=98) multi-hop coarsening sweep dt in {1, 6, 12, 24}h
+    ax_c = axes[1, 0]
+    mc = mr["coarsening"]
+    dts_m = ["dt_1.0", "dt_6.0", "dt_12.0", "dt_24.0"]
+    xm_c = np.arange(len(dts_m))
+    for lbl, key, col, mk, ls in [
+        ("SpDRN", "sparse_drn_aged_kl", PALETTE["navy"], "o", "-"),
+        ("Mamba", "mamba_aged_kl", PALETTE["royal"], "^", "--"),
+        ("CTMC", "ctmc_aged_kl", PALETTE["amber"], "s", ":"),
+        ("1-j TPP", "single_jump_tpp_aged_kl", PALETTE["crimson"], "d", "-."),
+    ]:
+        ax_c.plot(xm_c, [mc[d][key] for d in dts_m], marker=mk, ls=ls, color=col, ms=3.3, lw=1.4, label=lbl)
+    ax_c.set_yscale("log")
+    ax_c.set_xticks(xm_c, ["1h", "6h", "12h", "24h"])
+    ax_c.set_xlim(-0.25, 3.25)
+    ax_c.set_ylim(0.22, 22.0)
+    ax_c.set_yticks([0.3, 1.0, 4.0, 15.0], ["0.3", "1.0", "4.0", "15"])
+    ax_c.minorticks_off()
+    ax_c.set_xlabel(r"Panel interval $\Delta t$ (MOOC)")
+    ax_c.set_ylabel("Aged KL (nats)")
+    ax_c.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=2,
+        fontsize=6.6,
+        handlelength=1.0,
+        columnspacing=0.45,
+        handletextpad=0.20,
+        labelspacing=0.14,
+        borderpad=0.04,
+    )
+    add_panel_tag(ax_c, "c", x_pt=-32.0, y_pt=20.0)
+
+    # Panel d: DeFi Multi-Pool (183,881 opps, 16 on-chain panels) — Regimes A & B log-loss
+    ax_d = axes[1, 1]
+    ra = r7d["regime_a_zeroshot_deep_age_sale"]
+    rb = r7d["regime_b_temporal_drift_sale"]
+    x_d = np.arange(2)
+    defi_bars = [
+        ("N-Clock", [ra["neural_clock"]["all"]["logloss"], rb["neural_clock"]["all"]["logloss"]], PALETTE["navy"], -0.32),
+        ("MLP+age", [ra["mlp_age"]["all"]["logloss"], rb["mlp_age"]["all"]["logloss"]], PALETTE["teal"], -0.192),
+        ("LTC", [ra["ltc_seq"]["all"]["logloss"], rb["ltc_seq"]["all"]["logloss"]], PALETTE["violet"], -0.064),
+        ("S4D", [ra["s4d_seq"]["all"]["logloss"], rb["s4d_seq"]["all"]["logloss"]], PALETTE["amber"], 0.064),
+        ("Markov", [ra["markov_clock"]["all"]["logloss"], rb["markov_clock"]["all"]["logloss"]], PALETTE["slate"], 0.192),
+        ("Mamba", [ra["mamba_ssm"]["all"]["logloss"], rb["mamba_ssm"]["all"]["logloss"]], PALETTE["crimson"], 0.32),
+    ]
+    y0_d = 0.29
+    for lbl, vals, col, dx in defi_bars:
+        ax_d.bar(
+            x_d + dx,
+            np.asarray(vals) - y0_d,
+            bottom=y0_d,
+            width=0.118,
+            color=col,
+            edgecolor=PALETTE["ink"],
+            linewidth=0.42,
+            label=lbl,
+        )
+    ax_d.set_xticks(x_d, ["0-shot age", "5-mo. drift"])
+    ax_d.set_xlim(-0.50, 1.50)
+    ax_d.set_ylim(y0_d, 0.445)
+    ax_d.set_yticks([0.30, 0.34, 0.38, 0.42], [".30", ".34", ".38", ".42"])
+    ax_d.set_xlabel("DeFi Multi-Pool (164k test)")
+    ax_d.set_ylabel("Held-out NLL (nats)")
+    ax_d.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=3,
+        fontsize=6.4,
+        handlelength=0.75,
+        columnspacing=0.35,
+        handletextpad=0.18,
+        labelspacing=0.14,
+        borderpad=0.04,
+    )
+    add_panel_tag(ax_d, "d", x_pt=-32.0, y_pt=20.0)
+
+    export_figure(fig, "fig6_bt_and_largescale_networks")
+
+
+# ---------------------------------------------------------------------------
 # Build Main-Text and Appendix Tables
 # ---------------------------------------------------------------------------
 def build_tables() -> None:
@@ -1003,6 +1168,10 @@ def build_tables() -> None:
     hdk_r5 = load_archived("helpdesk_r5_complete.json")
     r6 = load_archived("r6_uniformity_closure.json")
     r6b = load_archived("r6_integrity_fixes.json")
+    r7t = load_archived("r7_theory_bt_separation.json")
+    r7m = load_archived("r7_mamba_thp_baselines.json")
+    r7d = load_archived("r7_defi_neural_clock.json")
+    r7n = load_archived("r7_temporal_networks.json")
     slp_ext = load_archived("sleep_extended_baselines.json")
     mfe = load_archived("mean_field_epidemic_summary.json")
     spg = load_archived("sparse_large_graph_scaling.json")
@@ -1186,6 +1355,15 @@ def build_tables() -> None:
             f"{mnb['primary']['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
             f"{mnb['lognormal']['mean_shape']['metrics']['balanced_kl']['median']:.5f}",
             f"{100*mnb['primary']['mean_shape']['metrics']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
+            "---",
+            "---",
+        ],
+        [
+            "Mamba SSM (3-start)",
+            f"{r7m['synthetic_mamba']['params']}",
+            f"{r7m['synthetic_mamba']['primary']['balanced_kl']['median']:.5f}",
+            f"{r7m['synthetic_mamba']['lognormal']['balanced_kl']['median']:.5f}",
+            f"{100*r7m['synthetic_mamba']['primary']['pulse_effect_rmse']['median']:.2f}\\,\\text{{pp}}",
             "---",
             "---",
         ],
@@ -1571,6 +1749,14 @@ def build_tables() -> None:
             ],
             [
                 "",
+                "Mamba SSM",
+                f"15 ({r7m['sleep_mamba']['params']})",
+                fmt_pm(r7m["sleep_mamba"]["cv5"]["joint"]["aged_kl_mean"], r7m["sleep_mamba"]["cv5"]["joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(r7m["sleep_mamba"]["cv5"]["fresh_only"]["aged_kl_mean"], r7m["sleep_mamba"]["cv5"]["fresh_only"]["aged_kl_sd"]),
+                f"{r7m['sleep_mamba']['cv5']['joint']['fresh_kl_mean']:.4f}",
+            ],
+            [
+                "",
                 "LTC ODE",
                 f"11 ({slp_ext['ltc_ode_params']})",
                 fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ltc_ode_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["ltc_ode_joint"]["aged_kl_sd"]),
@@ -1597,7 +1783,7 @@ def build_tables() -> None:
                 "",
                 "Latent ODE",
                 "11 (540)",
-                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_joint"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_joint"]["aged_kl_sd"]),
                 fmt_pm(r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_fresh_only"]["aged_kl_mean"], r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]["latent_ode_fresh_only"]["aged_kl_sd"]),
                 f"{r6b['sleep_r6b_3start_clean_age0_and_fresh_ctmc']['latent_ode_joint']['fresh_kl_mean']:.4f}",
             ],
@@ -1727,6 +1913,22 @@ def build_tables() -> None:
             ],
             [
                 "",
+                "Neural Hawkes (THP)",
+                f"--- ({r7m['helpdesk_mamba_and_thp']['coarsening']['dt_7.0']['params']})",
+                "---",
+                "---",
+                f"--- ({r7m['helpdesk_mamba_and_thp']['coarsening']['dt_7.0']['thp_forecast_kl']:.3f}/{r7m['helpdesk_mamba_and_thp']['coarsening']['dt_14.0']['thp_forecast_kl']:.3f})",
+            ],
+            [
+                "",
+                "Mamba SSM",
+                f"15 ({r7m['helpdesk_mamba_and_thp']['params']})",
+                fmt_pm(r7m["helpdesk_mamba_and_thp"]["cv5"]["joint"]["aged_kl_mean"], r7m["helpdesk_mamba_and_thp"]["cv5"]["joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(r7m["helpdesk_mamba_and_thp"]["cv5"]["fresh_only"]["aged_kl_mean"], r7m["helpdesk_mamba_and_thp"]["cv5"]["fresh_only"]["aged_kl_sd"]),
+                f"{r7m['helpdesk_mamba_and_thp']['chrono_70_30']['aged_kl']:.3f} (.{int(round(1000*r7m['helpdesk_mamba_and_thp']['coarsening']['dt_7.0']['mamba_aged_kl'])):03d}/.{int(round(1000*r7m['helpdesk_mamba_and_thp']['coarsening']['dt_14.0']['mamba_aged_kl'])):03d})",
+            ],
+            [
+                "",
                 "LTC ODE",
                 f"11 ({hdk_ext['ltc_ode_params']})",
                 fmt_pm(hr5["ltc_ode_joint"]["aged_kl_mean"], hr5["ltc_ode_joint"]["aged_kl_sd"]),
@@ -1737,7 +1939,7 @@ def build_tables() -> None:
                 "",
                 "S4D ODE",
                 f"15 ({hdk_ext['s4d_ode_params']})",
-                fmt_pm(hr5["s4d_ode_joint"]["aged_kl_mean"], hr5["s4d_ode_joint"]["aged_kl_sd"], bold=True),
+                fmt_pm(hr5["s4d_ode_joint"]["aged_kl_mean"], hr5["s4d_ode_joint"]["aged_kl_sd"]),
                 fmt_pm(hr5["s4d_ode_fresh_only"]["aged_kl_mean"], hr5["s4d_ode_fresh_only"]["aged_kl_sd"]),
                 f"{hch_r5['s4d_ode_fresh_only']['aged_kl']:.3f} (.{int(round(1000*c7_r5['s4d_ode_aged_kl_clean_age0'])):03d}/.{int(round(1000*c14_r5['s4d_ode_aged_kl_clean_age0'])):03d})",
             ],
@@ -1776,6 +1978,14 @@ def build_tables() -> None:
             ],
             [
                 "",
+                "Mamba SSM ($L_2$)",
+                f"9 ({r7m['influenza_mamba']['params']})",
+                f"{r7m['influenza_mamba']['full_days_1to14']['mean_kl_nats']:.4f}",
+                f"{r7m['influenza_mamba']['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']:.4f} / {r7m['influenza_mamba']['days_1to9_to_10to14_best_l2']['test']['mean_kl_nats']:.4f}",
+                f"{r7m['influenza_mamba']['days_1to8_to_9to14_best_l2']['test']['count_rmse_boys']:.1f} boys",
+            ],
+            [
+                "",
                 "LTC ODE ($L_2$)",
                 f"{bio_r5['influenza_r5']['ltc_ode']['states']} ({bio_r5['influenza_r5']['ltc_ode']['params']})",
                 f"{bio_r5['influenza_r5']['ltc_ode']['full_fit']['mean_kl_nats']:.4f}",
@@ -1810,25 +2020,53 @@ def build_tables() -> None:
     )
 
 
-    # Main-Text Table 3: Compact Cross-Domain Real-World Summary (all 5 domains vs CTMC & Best Neural ODE)
+    # Main-Text Table 3: Compact Cross-Domain Real-World Summary (all 8 real domains!)
     ec_r6 = r6["ecoli_r6_complete_neural_odes"]["models_5fold_clean_age0"]
     hp_c14 = r6["helpdesk_r6_hyper_pos_coarsening"][3]["hyper_pos_sens_aged_kl"]
     sl_r6 = r6b["sleep_r6b_3start_clean_age0_and_fresh_ctmc"]
     inf_cme = r6b["influenza_r6b_neural_cme"]
+    mo_r = r7n["mooc_v98"]["results"]
+    so_r = r7n["stackoverflow_v22"]["results"]
+    df_ra = r7d["regime_a_zeroshot_deep_age_sale"]
+    df_rb = r7d["regime_b_temporal_drift_sale"]
     write_tex_table(
         "tab4_real_world_summary.tex",
         "lrrrrr",
         [
             "Domain (Task)",
             "Full DRN $\\downarrow$",
-            "Univ. Pos/Hyp $\\downarrow$",
+            "Univ. Cl. $\\downarrow$",
             "CTMC $\\downarrow$",
             "Best Neural $\\downarrow$",
             "vs.\\ Neural",
         ],
         [
             [
-                "Helpdesk (0-shot $\\ge 7\\,$d)",
+                "MOOC $V{=}98$ (0-shot)",
+                f"\\textbf{{{mo_r['sparse_hyper_drn_fresh_only']['aged_kl']:.4f}}}",
+                "---",
+                f"{mo_r['ctmc_fresh_only']['aged_kl']:.4f}",
+                f"{mo_r['ltc_fresh_only']['aged_kl']:.4f} (LTC)",
+                f"\\textbf{{{mo_r['ltc_fresh_only']['aged_kl']/mo_r['sparse_hyper_drn_fresh_only']['aged_kl']:.1f}$\\times$}}",
+            ],
+            [
+                "MOOC (Joint / 24h)",
+                f"\\textbf{{{mo_r['sparse_hyper_drn_joint']['aged_kl']:.3f}}} (\\textbf{{{mo_r['coarsening']['dt_24.0']['sparse_drn_aged_kl']:.3f}}})",
+                "---",
+                f"{mo_r['ctmc_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['ctmc_aged_kl']:.3f})",
+                f"{mo_r['s4d_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['mamba_aged_kl']:.3f})",
+                f"\\textbf{{{mo_r['s4d_joint']['aged_kl']/mo_r['sparse_hyper_drn_joint']['aged_kl']:.1f}$\\times$/{mo_r['coarsening']['dt_24.0']['mamba_aged_kl']/mo_r['coarsening']['dt_24.0']['sparse_drn_aged_kl']:.1f}$\\times$}}",
+            ],
+            [
+                "DeFi 183k (0-sh./5m)",
+                f"\\textbf{{{df_ra['neural_clock']['all']['logloss']:.3f}}} (\\textbf{{.{int(round(1000*df_rb['neural_clock']['all']['logloss'])):03d}}})",
+                "---",
+                f"{df_ra['markov_clock']['all']['logloss']:.3f} (.{int(round(1000*df_rb['markov_clock']['all']['logloss'])):03d})",
+                f"{df_ra['mlp_age']['all']['logloss']:.3f} (.{int(round(1000*df_rb['mlp_age']['all']['logloss'])):03d})",
+                "\\textbf{\\#1 / \\#1}",
+            ],
+            [
+                "Helpdesk (0-shot)",
                 fmt_pm(hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_mean"], hdk_cv["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
                 fmt_pm(hr5["hyper_pos_sens_fresh_only"]["aged_kl_mean"], hr5["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
                 f"{hdk_cv['ctmc']['aged_kl_mean']:.4f}",
@@ -1836,7 +2074,7 @@ def build_tables() -> None:
                 f"\\textbf{{{hr5['ltc_ode_fresh_only']['aged_kl_mean']/hdk_cv['edge_memory_drn_fresh_only']['aged_kl_mean']:.1f}$\\times$}}",
             ],
             [
-                "Helpdesk (Chrono / 14d)",
+                "Helpdesk (Chr./14d)",
                 f"\\textbf{{{hch['edge_memory_drn_fresh_only']['aged_kl']:.3f}}} (.{int(round(1000*c14['edge_memory_drn_multihop_aged_kl'])):03d})",
                 f"{hch_r5['hyper_pos_sens_fresh_only']['aged_kl']:.3f} (\\textbf{{.{int(round(1000*hp_c14)):03d}}})",
                 f"{hch['ctmc']['aged_kl']:.3f} (.{int(round(1000*c14['ctmc_panel_kl'])):03d})",
@@ -1844,7 +2082,7 @@ def build_tables() -> None:
                 f"\\textbf{{{hch_r5['ltc_ode_fresh_only']['aged_kl']/hch['edge_memory_drn_fresh_only']['aged_kl']:.1f}$\\times$/{c14_r5['ltc_ode_aged_kl_clean_age0']/hp_c14:.1f}$\\times$}}",
             ],
             [
-                "Influenza (Days 9--14)",
+                "Influenza (D9--14)",
                 f"\\textbf{{{mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.4f}}}",
                 "---",
                 f"{mfe_ex8['markov_seicr']['test']['mean_kl_nats']:.4f}",
@@ -1852,7 +2090,7 @@ def build_tables() -> None:
                 f"\\textbf{{{inf_cme['days_1to8_to_9to14_best_l2']['test']['mean_kl_nats']/mfe_ex8['mean_field_drn']['test']['mean_kl_nats']:.1f}$\\times$}}",
             ],
             [
-                "Hematop. (Pool / D7)",
+                "Hematop. (Pool/D7)",
                 f"\\textbf{{{h_ex['compiled_drn']['day7_kl']:.4f}}} (.{int(round(1000*hd_d7['compiled_drn']['kl_mean'])):03d})",
                 f"{h_r5_p7['universal_pos_sens_fullcone']['day7_kl']:.4f} (.{int(round(1000*h_r5_d7['universal_pos_sens_fullcone']['kl_mean'])):03d})",
                 f"{h_ex['ctmc']['day7_kl']:.4f} (.{int(round(1000*hd_d7['ctmc']['kl_mean'])):03d})",
@@ -1860,7 +2098,7 @@ def build_tables() -> None:
                 f"\\textbf{{{h_r5_p7['ltc_ode']['day7_kl']/h_ex['compiled_drn']['day7_kl']:.1f}$\\times$}}/{hd_d7['latent_ode']['kl_mean']/hd_d7['compiled_drn']['kl_mean']:.2f}$\\times$",
             ],
             [
-                "Sleep-EDF (0-shot $\\ge 5\\,$min)",
+                "Sleep-EDF (0-shot)",
                 fmt_pm(ems["edge_memory_drn_fresh_only"]["aged_kl_mean"], ems["edge_memory_drn_fresh_only"]["aged_kl_sd"], bold=True),
                 fmt_pm(sl_hp_m["hyper_pos_sens_fresh_only"]["aged_kl_mean"], sl_hp_m["hyper_pos_sens_fresh_only"]["aged_kl_sd"]),
                 f"{sl_r6['ctmc_fresh_only']['aged_kl_mean']:.4f}",
@@ -1868,12 +2106,183 @@ def build_tables() -> None:
                 f"\\textbf{{{sl_r6['neural_cme_fresh_only']['aged_kl_mean']/ems['edge_memory_drn_fresh_only']['aged_kl_mean']:.2f}$\\times$}}",
             ],
             [
-                "\\emph{E.\\ coli} (0-shot $\\ge 12\\,$min)",
+                "\\emph{E.\\ coli} (0-shot)",
                 fmt_pm(ec_m["drn_fresh_only"]["aged_kl"], ec_m["drn_fresh_only"]["aged_kl_sd"], bold=True),
                 "---",
                 f"{ec_m['ctmc']['aged_kl']:.4f}",
                 f"{ec_r6['s4d_ode_fresh_only']['aged_kl']:.4f} (S4D)",
                 f"\\textbf{{{ec_r6['s4d_ode_fresh_only']['aged_kl']/ec_m['drn_fresh_only']['aged_kl']:.1f}$\\times$}}",
+            ],
+            [
+                "StackOv. $V{=}22$ (Bnd.)",
+                f"{so_r['sparse_hyper_drn_fresh_only']['aged_kl']:.3f} (.{int(round(1000*so_r['sparse_hyper_drn_joint']['aged_kl'])):03d})",
+                "---",
+                f"{so_r['ctmc_fresh_only']['aged_kl']:.3f} (.{int(round(1000*so_r['ctmc_joint']['aged_kl'])):03d})",
+                f"\\textbf{{{so_r['s4d_fresh_only']['aged_kl']:.3f}}} (\\textbf{{.{int(round(1000*so_r['s4d_joint']['aged_kl'])):03d}}})",
+                f"{so_r['s4d_fresh_only']['aged_kl']/so_r['sparse_hyper_drn_fresh_only']['aged_kl']:.2f}$\\times$",
+            ],
+        ],
+    )
+
+    # Appendix Table A11: Theorem 6 Quantitative Near-Cancellation & Balanced-Truncation Verification
+    k4_sw = {r["delta"]: r for r in r7t["symmetric_cycles"]["K4"]["sweep"]}
+    ht_sw = {r["delta"]: r for r in r7t["heterogeneous_common_zero"]["sweep"]}
+    k6_sw = {r["delta"]: r for r in r7t["symmetric_cycles"]["K6"]["sweep"]}
+    bt_rows = []
+    for label, sw_map in [
+        ("Sym. $K{=}4$ ($12 \\to 9$)", k4_sw),
+        ("Sym. $K{=}6$ ($18 \\to 13$)", k6_sw),
+        ("Het. $[4,3,3]$ ($10 \\to 9$)", ht_sw),
+    ]:
+        for idx_d, d_val in enumerate((1e-5, 1e-4, 1e-3, 1e-2)):
+            r = sw_map[d_val]
+            bt_rows.append(
+                [
+                    label if idx_d == 0 else "",
+                    f"$10^{{{int(round(np.log10(d_val)))}}}$",
+                    f"{r['sigma_r_plus_1']:.2e}",
+                    f"{r['fwd_hinf']:.2e}",
+                    f"{r['err_rebal']:.2e} / {r['err_frozen']:.2e}",
+                    f"{r['ratio_rebal']:,.0f}$\\times$ / {r['ratio_frozen']:,.0f}$\\times$",
+                ]
+            )
+        if label != "Het. $[4,3,3]$ ($10 \\to 9$)":
+            bt_rows.append("\\midrule")
+    write_tex_table(
+        "tab_a10_bt_near_cancellation.tex",
+        "lcrrrr",
+        [
+            "Network ($D_{\\mathrm{st}} \\to d_{\\mathrm{occ}}$)",
+            "$\\delta$",
+            "$\\sigma_{r+1}$",
+            "Fwd $H_\\infty$ $\\downarrow$",
+            "Sens. $L_2$ (reb / fz)",
+            "Distortion Ratio (reb / fz)",
+        ],
+        bt_rows,
+    )
+
+    # Appendix Table A12: Large-Scale Temporal Interaction Networks (MOOC V=98, StackOverflow V=22) & DeFi Multi-Pool (183k)
+    defi_a = r7d["regime_a_zeroshot_deep_age_sale"]
+    defi_b = r7d["regime_b_temporal_drift_sale"]
+    defi_c1 = r7d["regime_c_cross_chain_base_to_bsc_young"]
+    write_tex_table(
+        "tab_a11_temporal_networks_and_defi.tex",
+        "llrrrr",
+        [
+            "Benchmark",
+            "Architecture",
+            "St. (P)",
+            "Fresh / Drift $\\downarrow$",
+            "0-Shot / Age $\\downarrow$",
+            "Joint (Coar./X) $\\downarrow$",
+        ],
+        [
+            [
+                "MOOC $V{=}98$",
+                "\\textbf{SparseHyperDRN}",
+                f"{mo_r['sparse_drn_meta']['compiled_states']} ({mo_r['sparse_drn_meta']['n_params']:,})",
+                f"\\textbf{{{mo_r['sparse_hyper_drn_fresh_only']['fresh_kl']:.4f}}}",
+                f"\\textbf{{{mo_r['sparse_hyper_drn_fresh_only']['aged_kl']:.4f}}}",
+                f"\\textbf{{{mo_r['sparse_hyper_drn_joint']['aged_kl']:.3f}}} (\\textbf{{{mo_r['coarsening']['dt_24.0']['sparse_drn_aged_kl']:.3f}}})",
+            ],
+            [
+                "(411k events,",
+                "CTMC (expm)",
+                f"98 ({mo_r['ctmc_fresh_only']['params']:,})",
+                f"{mo_r['ctmc_fresh_only']['fresh_kl']:.4f}",
+                f"{mo_r['ctmc_fresh_only']['aged_kl']:.4f}",
+                f"{mo_r['ctmc_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['ctmc_aged_kl']:.3f})",
+            ],
+            [
+                "1,355 edges,",
+                "Mamba SSM",
+                f"110 ({mo_r['mamba_fresh_only']['params']:,})",
+                f"{mo_r['mamba_fresh_only']['fresh_kl']:.4f}",
+                f"{mo_r['mamba_fresh_only']['aged_kl']:.4f}",
+                f"{mo_r['mamba_joint']['aged_kl']:.3f} ({mo_r['coarsening']['dt_24.0']['mamba_aged_kl']:.3f})",
+            ],
+            [
+                "$\\mathrm{CV}{=}5.54$)",
+                "S4D ODE",
+                f"110 ({mo_r['s4d_fresh_only']['params']:,})",
+                f"{mo_r['s4d_fresh_only']['fresh_kl']:.4f}",
+                f"{mo_r['s4d_fresh_only']['aged_kl']:.4f}",
+                f"{mo_r['s4d_joint']['aged_kl']:.3f}",
+            ],
+            [
+                "",
+                "LTC/LODE/CME",
+                "110 (9.7--13k)",
+                f"{mo_r['ltc_fresh_only']['fresh_kl']:.3f}--{mo_r['latent_ode_fresh_only']['fresh_kl']:.3f}",
+                f"{mo_r['ltc_fresh_only']['aged_kl']:.3f}--{mo_r['neural_cme_fresh_only']['aged_kl']:.3f}",
+                f"{mo_r['latent_ode_joint']['aged_kl']:.3f}--{mo_r['neural_cme_joint']['aged_kl']:.3f}",
+            ],
+            "\\midrule",
+            [
+                "StackOv. $V{=}22$",
+                "SparseHyperDRN",
+                f"{so_r['sparse_drn_meta']['compiled_states']} ({so_r['sparse_drn_meta']['n_params']})",
+                f"{so_r['sparse_hyper_drn_fresh_only']['fresh_kl']:.4f}",
+                f"{so_r['sparse_hyper_drn_fresh_only']['aged_kl']:.4f}",
+                f"{so_r['sparse_hyper_drn_joint']['aged_kl']:.3f} ({so_r['coarsening']['dt_8.0']['sparse_drn_aged_kl']:.3f})",
+            ],
+            [
+                "(143k events,",
+                "CTMC (expm)",
+                f"22 ({so_r['ctmc_fresh_only']['params']})",
+                f"{so_r['ctmc_fresh_only']['fresh_kl']:.4f}",
+                f"{so_r['ctmc_fresh_only']['aged_kl']:.4f}",
+                f"{so_r['ctmc_joint']['aged_kl']:.3f} (\\textbf{{{so_r['coarsening']['dt_8.0']['ctmc_aged_kl']:.3f}}})",
+            ],
+            [
+                "$\\mathrm{CV}{=}1.22$)",
+                "Mamba SSM",
+                f"34 ({so_r['mamba_fresh_only']['params']:,})",
+                f"{so_r['mamba_fresh_only']['fresh_kl']:.4f}",
+                f"{so_r['mamba_fresh_only']['aged_kl']:.4f}",
+                f"{so_r['mamba_joint']['aged_kl']:.3f} ({so_r['coarsening']['dt_8.0']['mamba_aged_kl']:.3f})",
+            ],
+            [
+                "",
+                "S4D/LTC/LODE/CME",
+                "34 (2.1--3.1k)",
+                f"\\textbf{{{so_r['s4d_fresh_only']['fresh_kl']:.4f}}}--{so_r['neural_cme_fresh_only']['fresh_kl']:.4f}",
+                f"\\textbf{{{so_r['s4d_fresh_only']['aged_kl']:.4f}}}--{so_r['neural_cme_fresh_only']['aged_kl']:.4f}",
+                f"\\textbf{{{so_r['s4d_joint']['aged_kl']:.3f}}}--{so_r['neural_cme_joint']['aged_kl']:.3f}",
+            ],
+            "\\midrule",
+            [
+                "DeFi 183k",
+                "\\textbf{Cond. Neural Clock}",
+                f"3 ({defi_a['neural_clock']['params']})",
+                f"\\textbf{{{defi_b['neural_clock']['all']['logloss']:.5f}}}",
+                f"\\textbf{{{defi_a['neural_clock']['all']['logloss']:.5f}}}",
+                f"\\textbf{{{defi_c1['neural_clock']['bsc_all']['logloss']:.3f}}} (\\textbf{{{defi_c1['neural_clock']['bsc_gt60']['logloss']:.3f}}})",
+            ],
+            [
+                "(BSC \\& Base,",
+                "MLP + $\\log(1{+}a)$",
+                f"--- ({defi_a['mlp_age']['params']})",
+                f"{defi_b['mlp_age']['all']['logloss']:.5f}",
+                f"{defi_a['mlp_age']['all']['logloss']:.5f}",
+                f"{defi_c1['mlp_age']['bsc_all']['logloss']:.3f} ({defi_c1['mlp_age']['bsc_gt60']['logloss']:.3f})",
+            ],
+            [
+                "Jan--Jul 2025)",
+                "Weibull / Markov",
+                f"--- ({defi_a['weibull_mlp']['params']}/{defi_a['markov_clock']['params']})",
+                f"{defi_b['weibull_mlp']['all']['logloss']:.3f} / {defi_b['markov_clock']['all']['logloss']:.3f}",
+                f"{defi_a['weibull_mlp']['all']['logloss']:.3f} / {defi_a['markov_clock']['all']['logloss']:.3f}",
+                f"{defi_c1['weibull_mlp']['bsc_all']['logloss']:.2f} / {defi_c1['markov_clock']['bsc_all']['logloss']:.3f}",
+            ],
+            [
+                "",
+                "LTC/S4D/Mamba",
+                "12 (637--931)",
+                f"{defi_b['ltc_seq']['all']['logloss']:.3f}--{defi_b['mamba_ssm']['all']['logloss']:.3f}",
+                f"{defi_a['ltc_seq']['all']['logloss']:.3f}--{defi_a['mamba_ssm']['all']['logloss']:.3f}",
+                "---",
             ],
         ],
     )
@@ -1885,8 +2294,9 @@ def main() -> None:
     build_fig3()
     build_fig4()
     build_fig5()
+    build_fig6()
     build_tables()
-    print("Successfully built 5 publication figures (PDF/SVG/PNG) and 13 LaTeX tables.")
+    print("Successfully built 6 publication figures (PDF/SVG/PNG) and 15 LaTeX tables.")
 
 
 if __name__ == "__main__":

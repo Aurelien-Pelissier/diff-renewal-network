@@ -1,7 +1,7 @@
 """Audit SHA-256 provenance and replay core Differentiable Renewal Network trajectories.
 
 Verifies:
-1. Cryptographic SHA-256 digests of all 36 archived benchmark summaries.
+1. Cryptographic SHA-256 digests of all 40 archived benchmark summaries.
 2. Live pure Erlang-16 48-vs-33 trajectory equality (< 1e-12) and rate-derivative divergence.
 3. Live JAX/Diffrax R1 mouse embryonic stem-cell (ESC -> EPI -> NPC) trajectory replay
    against the archived continuous-shape optimum (discrepancy < 1e-9).
@@ -115,6 +115,10 @@ def verify_headline_numbers() -> dict:
     hdk_r5 = json.loads((ARCH / "helpdesk_r5_complete.json").read_text(encoding="utf-8"))
     r6 = json.loads((ARCH / "r6_uniformity_closure.json").read_text(encoding="utf-8"))
     r6b = json.loads((ARCH / "r6_integrity_fixes.json").read_text(encoding="utf-8"))
+    r7t = json.loads((ARCH / "r7_theory_bt_separation.json").read_text(encoding="utf-8"))
+    r7m = json.loads((ARCH / "r7_mamba_thp_baselines.json").read_text(encoding="utf-8"))
+    r7d = json.loads((ARCH / "r7_defi_neural_clock.json").read_text(encoding="utf-8"))
+    r7n = json.loads((ARCH / "r7_temporal_networks.json").read_text(encoding="utf-8"))
 
     # Finding 1: Compression, sensitivity interpolation, and Pos-Sens 33
     joint_primary = [sens["overall"]["primary"][m]["joint"] for m in ("full48", "sym33", "sp33", "sp18")]
@@ -308,6 +312,36 @@ def verify_headline_numbers() -> dict:
             "grad_warm_ms": round(sp_1024["grad_warm_ms"], 1),
             "e2e_v64_kl_reduction_vs_ctmc": sp_r5["v64_converged_256param"]["kl_reduction_vs_ctmc"],
             "e2e_v256_kl_reduction_vs_ctmc": sp_r5["v256_e2e_1024param"]["kl_reduction_vs_ctmc"],
+        },
+        "theorem6_bt_near_cancellation": {
+            "k4_delta_1e-5_ratio_rebal": round(r7t["symmetric_cycles"]["K4"]["sweep"][0]["ratio_rebal"], 1),
+            "k4_delta_1e-5_ratio_frozen": round(r7t["symmetric_cycles"]["K4"]["sweep"][0]["ratio_frozen"], 1),
+            "het433_delta_1e-5_ratio_frozen": round(r7t["heterogeneous_common_zero"]["sweep"][0]["ratio_frozen"], 1),
+        },
+        "mamba_and_thp_baselines": {
+            "synthetic_ph_kl": round(r7m["synthetic_mamba"]["primary"]["balanced_kl"]["median"], 5),
+            "synthetic_lognormal_kl": round(r7m["synthetic_mamba"]["lognormal"]["balanced_kl"]["median"], 5),
+            "helpdesk_0shot_aged_kl": round(r7m["helpdesk_mamba_and_thp"]["cv5"]["fresh_only"]["aged_kl_mean"], 4),
+            "helpdesk_thp_14d_kl": round(r7m["helpdesk_mamba_and_thp"]["coarsening"]["dt_14.0"]["thp_forecast_kl"], 4),
+            "sleep_0shot_aged_kl": round(r7m["sleep_mamba"]["cv5"]["fresh_only"]["aged_kl_mean"], 4),
+            "influenza_day9to14_kl": round(r7m["influenza_mamba"]["days_1to8_to_9to14_best_l2"]["test"]["mean_kl_nats"], 4),
+        },
+        "mooc_v98_real_sparse_drn": {
+            "compiled_states": r7n["mooc_v98"]["results"]["sparse_drn_meta"]["compiled_states"],
+            "sparse_hyper_drn_0shot_aged_kl": round(r7n["mooc_v98"]["results"]["sparse_hyper_drn_fresh_only"]["aged_kl"], 4),
+            "sparse_hyper_drn_joint_aged_kl": round(r7n["mooc_v98"]["results"]["sparse_hyper_drn_joint"]["aged_kl"], 4),
+            "ctmc_0shot_aged_kl": round(r7n["mooc_v98"]["results"]["ctmc_fresh_only"]["aged_kl"], 4),
+            "mamba_0shot_aged_kl": round(r7n["mooc_v98"]["results"]["mamba_fresh_only"]["aged_kl"], 4),
+            "ltc_0shot_aged_kl": round(r7n["mooc_v98"]["results"]["ltc_fresh_only"]["aged_kl"], 4),
+        },
+        "defi_multipool_183k_neural_clock": {
+            "total_rows": r7d["dataset"]["total_rows"],
+            "regime_a_zeroshot_neural_clock": round(r7d["regime_a_zeroshot_deep_age_sale"]["neural_clock"]["all"]["logloss"], 5),
+            "regime_a_zeroshot_mlp_age": round(r7d["regime_a_zeroshot_deep_age_sale"]["mlp_age"]["all"]["logloss"], 5),
+            "regime_a_zeroshot_mamba": round(r7d["regime_a_zeroshot_deep_age_sale"]["mamba_ssm"]["all"]["logloss"], 5),
+            "regime_b_drift_neural_clock": round(r7d["regime_b_temporal_drift_sale"]["neural_clock"]["all"]["logloss"], 5),
+            "regime_b_drift_mlp_age": round(r7d["regime_b_temporal_drift_sale"]["mlp_age"]["all"]["logloss"], 5),
+            "regime_b_drift_mamba": round(r7d["regime_b_temporal_drift_sale"]["mamba_ssm"]["all"]["logloss"], 5),
         },
     }
 

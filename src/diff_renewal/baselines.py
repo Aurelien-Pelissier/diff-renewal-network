@@ -67,6 +67,24 @@ def init_population_baseline(kind: str, seed: int = 17):
             jax.random.normal(keys[1], (width, 6)) * 0.20,  # 6 directed off-diagonal rates on 3-node graph
             jnp.zeros(6),
         )
+    if kind == "mamba_ode":
+        # Input-dependent Selective State-Space Model (Mamba; Gu & Dao 2024):
+        # ZOH selective scan with input-dependent step Delta(x), B(x), C(x) & SiLU gate
+        latent = 12  # ~429 parameters (matched to S4D 435 / Latent ODE 387)
+        log_a = jnp.linspace(jnp.log(0.2), jnp.log(4.5), latent)
+        return (
+            jax.random.normal(keys[0], (6, latent)) * 0.35,  # initial encoder
+            jnp.zeros(latent),
+            log_a,  # diagonal negative decay A = -exp(log_a)
+            jax.random.normal(keys[1], (5, latent)) * 0.22,  # W_delta (input-dep step)
+            jnp.full(latent, -1.2),  # b_delta
+            jax.random.normal(keys[2], (5, latent)) * 0.25,  # W_B (input-dep input proj)
+            jax.random.normal(keys[3], (5, latent)) * 0.25,  # W_C (input-dep readout gate)
+            jax.random.normal(keys[4], (5, latent)) * 0.22,  # W_z (SiLU residual gate)
+            jnp.zeros(latent),
+            jax.random.normal(keys[5], (latent + 5, 3)) * 0.18,  # flux readout
+            jnp.zeros(3),
+        )
     raise ValueError(f"Unknown baseline kind: {kind}")
 
 
@@ -204,6 +222,41 @@ def predict_population_baseline(kind: str, params, plan, *, period: float = 0.25
             return (p_next, t_cur + period), p_next
 
         obs = jax.lax.scan(interval, (prep, jnp.array(0.0, dtype=prep.dtype)), schedule)[1]
+        return obs[plan.sample].transpose(1, 0, 2, 3)
+
+    if kind == "mamba_ode":
+        enc, eb, log_a, w_dt, b_dt, w_b, w_c, w_z, b_z, w_o, b_o = params
+        h0 = jnp.tanh(encoded @ enc + eb)
+        dt = period / substeps
+        neg_a = -jnp.exp(jnp.clip(log_a, -3.5, 3.0))  # negative diagonal decay
+
+        def interval(carry, u):
+            def substep(_, st):
+                p, h = st
+                x_in = jnp.concatenate((p, bcast(traits), bcast(u)), axis=-1)
+                delta = jax.nn.softplus(x_in @ w_dt + b_dt) * dt
+                a_bar = jnp.exp(delta * neg_a)
+                # Exact ZOH discretization: (exp(Delta A) - I) / A * B(x)
+                b_bar = ((a_bar - 1.0) / neg_a) * (x_in @ w_b)
+                h_next = a_bar * h + b_bar
+                # Input-dependent selective readout C(x) * h * SiLU(z(x))
+                y_sel = (x_in @ w_c) * h_next * jax.nn.silu(x_in @ w_z + b_z)
+                f_in = jnp.concatenate((y_sel, x_in), axis=-1)
+                flux = p * (0.005 + 5.0 * jax.nn.sigmoid(f_in @ w_o + b_o - 1.8))
+                # Mass-preserving midpoint update on simplex p
+                dp1 = jnp.roll(flux, 1, axis=-1) - flux
+                p_mid = jnp.clip(p + 0.5 * dt * dp1, 1e-12, 1.0)
+                p_mid = p_mid / jnp.sum(p_mid, axis=-1, keepdims=True)
+                x_mid = jnp.concatenate((p_mid, bcast(traits), bcast(u)), axis=-1)
+                f_mid = p_mid * (0.005 + 5.0 * jax.nn.sigmoid(jnp.concatenate((y_sel, x_mid), axis=-1) @ w_o + b_o - 1.8))
+                p_next = jnp.clip(p + dt * (jnp.roll(f_mid, 1, axis=-1) - f_mid), 1e-12, 1.0)
+                p_next = p_next / jnp.sum(p_next, axis=-1, keepdims=True)
+                return (p_next, h_next)
+
+            st_next = jax.lax.fori_loop(0, substeps, substep, carry)
+            return st_next, st_next[0]
+
+        obs = jax.lax.scan(interval, (prep, h0), schedule)[1]
         return obs[plan.sample].transpose(1, 0, 2, 3)
 
     raise ValueError(kind)

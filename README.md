@@ -4,11 +4,11 @@ Clean, standalone, and reproducible JAX/Diffrax implementation accompanying the 
 
 ## Overview
 
-Many physical, operations-queueing, epidemiological, and biological processes remember elapsed residence time in a state, from IT ticketing workflows and epidemic incubation cascades to embryonic stem-cell differentiation, bacterial division lineages, and human sleep stages. **Differentiable Renewal Networks** enable exact gradient-based parameter inference, positivity- and sensitivity-preserving state compression, incoming-edge semi-Markov neural clocks, nonlinear mean-field contagion/congestion ODEs, matrix-free $O(V + KE)$ scaling, and Fisher experimental design from coarse population snapshots:
+Many temporal interaction, financial-market, operations-queueing, epidemiological, and biological processes remember elapsed residence time in a state, from MOOC student workflows, on-chain DeFi liquidity pools, and IT ticketing queues to epidemic incubation cascades, embryonic stem-cell differentiation, bacterial division lineages, and human sleep stages. **Differentiable Renewal Networks** enable exact gradient-based parameter inference, positivity- and sensitivity-preserving state compression, incoming-edge semi-Markov neural clocks, nonlinear mean-field contagion/congestion ODEs, matrix-free $O(V + KE)$ scaling, and Fisher experimental design from coarse population snapshots:
 
-1. **Exact Mixed- & Hyper-Erlang Marked-Race Compilation (`diff_renewal.race`, `diff_renewal.sparse_network`)**: Compiles $d$ competing common-rate mixed-Erlang clocks ($K^d \to 1 + \sum_e (K_e - 1)$, Proposition 1) and multi-rate $\mathrm{CV} > 1$ Hyper-Erlang mixtures ($(MK)^d \to M^d(1 + d(K - 1))$, Proposition 2; $1{,}074.4\times$ state reduction at $d=4, K=16$), plus a matrix-free sparse block-operator solver (`SparseDRN`) scaling exact reverse-mode Diffrax gradients to $V = 1{,}024$ nodes ($31{,}744$ compiled states, $4{,}096$ parameters in $0.97\,\mathrm{MB}$ operator storage / $644\,\mathrm{MB}$ peak autodiff RSS / $452\,\mathrm{ms}$, matching dense compilation to $2.8 \times 10^{-14}$, recovering means to $1.33\%$ and shapes to $9.77\%$ across $V=64$ / $256$ parameters with $3{,}838\times$ lower KL than a CTMC, and training end-to-end at $V=256$ / $1{,}024$ parameters).
-2. **Positivity-Preserving & Topology-Agnostic Model Reduction (`diff_renewal.reduction`)**: Implements stationary-profile symmetry continuations, two-sided Laplace resolvent sensitivity interpolation (Baur et al., 2011), Fisher-calibrated positive Coxian reduction (`Pos-Sens 33`, $0/400$ negative probabilities vs. $400/400$ for signed projections), a scale-equivariant 1D universal `Pos-Sens` clock compressor certified over the full cone $k \in [1.4, 7.8]$ ($\sup |\tilde{S} - S| = 0.00385$), and a two-branch `Universal Hyper-Pos-Sens` ($K_r + 1$ states/active node) extending universal reduction to $\mathrm{CV} > 1$ bursty workflows alongside sharp Aldous–Shepp impossibility lower bounds (Theorem 5) and generalized heterogeneous sensitivity-pole theory (Theorem 3, $d_{\mathrm{sens}} = \sum_i n_i$).
-3. **Conditional Neural Clocks, Incoming-Edge Semi-Markov Fibres, Nonlinear Mean-Field ODEs, and Modern Baselines (`diff_renewal.neural_clock`, `diff_renewal.semi_markov`, `diff_renewal.mean_field`, `diff_renewal.baselines`)**: Conditional neural clocks with exact Poisson-tail survivor conditioning, incoming-transition lifted two-scale Hyper-Erlang networks (`EdgeMemoryHyperDRN`), nonlinear McKean–Vlasov mean-field renewal networks (`MeanFieldDRN`) with verified Kurtz $O(M^{-1/2})$ convergence, and multi-start continuous-time baselines (`Latent ODE`, `LTC / CfC`, `S4D`, Time-Inhomogeneous `Neural-CME`, and monotone cumulative-hazard `Neural Competing-Risks`).
+1. **Exact Mixed- & Hyper-Erlang Marked-Race Compilation (`diff_renewal.race`, `diff_renewal.sparse_network`)**: Compiles $d$ competing common-rate mixed-Erlang clocks ($K^d \to 1 + \sum_e (K_e - 1)$, Proposition 1) and multi-rate $\mathrm{CV} > 1$ Hyper-Erlang mixtures ($(MK)^d \to M^d(1 + d(K - 1))$, Proposition 2; $1{,}074.4\times$ state reduction at $d=4, K=16$), plus matrix-free sparse block-operator solvers (`SparseDRN` & `SparseHyperDRN`) scaling exact reverse-mode Diffrax gradients to $V = 1{,}024$ synthetic nodes ($31{,}744$ compiled states, $4{,}096$ parameters in $0.97\,\mathrm{MB}$ operator storage / $644\,\mathrm{MB}$ peak autodiff RSS / $452\,\mathrm{ms}$, matching dense compilation to $2.8 \times 10^{-14}$) and real large-$V$ temporal graphs (**MOOC $V=98$, $411{,}749$ events, $1{,}355$ sparse edges**: $68.7\times$ sparse memory compression, $6.6\times$--$7.2\times$ lower zero-shot aged KL and $5.0\times$--$6.5\times$ lower joint aged KL than exact CTMC and all five neural ODE/SSM baselines).
+2. **Positivity-Preserving, Quantitative Near-Cancellation, & Topology-Agnostic Model Reduction (`diff_renewal.reduction`)**: Implements stationary-profile symmetry continuations, two-sided Laplace resolvent sensitivity interpolation (Baur et al., 2011), exact Kato Riesz-projection balanced-truncation analysis verifying Theorem 6 ($O(\delta)$ forward $H_\infty$ error alongside $\Omega(1)$ sensitivity floor and up to $4.10 \times 10^6\times$ $\Omega(\delta^{-1})$ gradient distortion blow-up), Fisher-calibrated positive Coxian reduction (`Pos-Sens 33`, $0/400$ negative probabilities vs. $400/400$ for signed projections), a scale-equivariant 1D universal `Pos-Sens` clock compressor certified over $k \in [1.4, 7.8]$ ($\sup |\tilde{S} - S| = 0.00385$), and a two-branch `Universal Hyper-Pos-Sens` ($K_r + 1$ states/active node) extending universal reduction to $\mathrm{CV} > 1$ bursty workflows alongside sharp Aldous–Shepp impossibility lower bounds (Theorem 5) and generalized heterogeneous sensitivity-pole theory (Theorem 3, $d_{\mathrm{sens}} = \sum_i n_i$).
+3. **Conditional Neural Clocks, Incoming-Edge Semi-Markov Fibres, Nonlinear Mean-Field ODEs, and Modern Baselines (`diff_renewal.neural_clock`, `diff_renewal.semi_markov`, `diff_renewal.mean_field`, `diff_renewal.baselines`)**: Conditional neural clocks with exact analytical survivor conditioning (ranking #1 on both zero-shot deep-age extrapolation and 5-month temporal drift across 183,881 real on-chain BSC/Base DeFi liquidity opportunities), incoming-transition lifted two-scale Hyper-Erlang networks (`EdgeMemoryHyperDRN`), nonlinear McKean–Vlasov mean-field renewal networks (`MeanFieldDRN`) with verified Kurtz $O(M^{-1/2})$ convergence, and multi-start continuous-time baselines (`Mamba / Selective-SSM`, `Latent ODE`, `LTC / CfC`, `S4D`, Time-Inhomogeneous `Neural-CME`, monotone cumulative-hazard `Neural Competing-Risks`, and continuous-time `Neural Hawkes / THP`).
 4. **Scenario-Robust Fisher Experimental Design (`diff_renewal.design`, `diff_renewal.diagnostics`)**: Two-stage pilot-and-follow-up A-optimal snapshot allocation over preparations, observation times, and observed traits with nuisance-parameter accounting and integer largest-remainder rounding.
 
 ## Repository Structure
@@ -26,16 +26,16 @@ diff-renewal-network/
 │   ├── traits.py         # Persistent individual trait regressions & custom-JVP shape matching
 │   ├── neural_clock.py   # Conditional neural waiting-time clocks & survivor phase conditioning
 │   ├── semi_markov.py    # Incoming-edge lifted two-scale Hyper-Erlang semi-Markov DRN
-│   ├── baselines.py      # Multi-start Latent ODE, LTC, S4D, & Time-Inhomogeneous Neural-CME
+│   ├── baselines.py      # Multi-start Mamba/Selective-SSM, Latent ODE, LTC, S4D, & Neural-CME
 │   ├── memory.py         # Augmented exponential-kernel solver & static-preserving cutoffs
 │   ├── capping.py        # Rate-preserving phase capping & path-TV / latent-Fisher bounds
 │   ├── observations.py   # Count-weighted multinomial negative log likelihood
 │   ├── design.py         # Convex scenario-averaged A-optimal Fisher allocation & rounding
 │   └── diagnostics.py    # Coarsened/efficient Fisher matrices & adjoint sensitivity residuals
 ├── scripts/
-│   ├── verify_theory.py                        # Symbolic (SymPy) & numerical proof audit
-│   ├── reproduce_all.py                        # SHA-256 audit of 36 archives + ODE replays
-│   ├── build_paper_assets.py                   # Rebuilds all 5 vector figures & 13 LaTeX tables
+│   ├── verify_theory.py                        # Symbolic (SymPy) & numerical proof audit (all 7 theorems)
+│   ├── reproduce_all.py                        # SHA-256 audit of 40 archives + ODE replays
+│   ├── build_paper_assets.py                   # Rebuilds all 6 vector figures & 15 LaTeX tables
 │   ├── run_positive_sensitivity_reduction.py   # 400-dataset Pos-Sens 33 cyclic benchmark
 │   ├── run_graph_scaling_benchmark.py          # V=4..48, d=2..4 scaling & 48-param Gamma recovery
 │   ├── run_sparse_large_graph_scaling.py       # Matrix-free SparseDRN V=16..1,024 benchmark
@@ -54,10 +54,14 @@ diff-renewal-network/
 │   ├── run_r5_bio_and_influenza_complete.py    # Complete LTC/S4D Bio+Influenza & Hyper-Pos-Sens
 │   ├── run_r5_helpdesk_complete.py             # Equalized 3-start clean age=0 Helpdesk & Coarsening
 │   ├── run_r6_uniformity_closure.py            # Complete E. coli neural ODEs & Hyper-Pos coarsening
-│   └── run_r6_integrity_fixes.py               # Sleep fresh CTMC / 3-start age=0, Influenza CME, Plain-ME
+│   ├── run_r6_integrity_fixes.py               # Sleep fresh CTMC / 3-start age=0, Influenza CME, Plain-ME
+│   ├── run_r7_theory_bt_separation.py          # Theorem 6 exact Balanced-Truncation & off-symmetry MLE
+│   ├── run_r7_mamba_and_thp_baselines.py       # Mamba/Selective-SSM & Neural Hawkes (THP) benchmarks
+│   ├── run_r7_defi_neural_clock.py             # 183,881-opp multi-chain DeFi Conditional Neural Clock
+│   └── run_r7_temporal_networks.py             # Real large-V MOOC (V=98, 411k) & StackOverflow (V=22)
 ├── examples/
 │   └── minimal_renewal_network.py  # Compact runnable marked-race & gradient example
-├── results/archived/     # 36 SHA-256-fingerprinted benchmark archives across all paper studies
+├── results/archived/     # 40 SHA-256-fingerprinted benchmark archives across all paper studies
 ├── tests/                # Pytest unit and end-to-end reproducibility suite
 ├── pyproject.toml
 └── requirements.txt
@@ -75,8 +79,11 @@ python scripts/build_paper_assets.py
 
 ## Public Empirical Datasets
 
-All real-world evaluations analyze publicly released, checksum-verified datasets spanning **operations/systems engineering, epidemiology, and biology**:
+All real-world evaluations analyze publicly released, checksum-verified datasets spanning **temporal interaction networks, on-chain DeFi markets, operations/systems engineering, epidemiology, and biology**:
 
+- **MOOC Student Interaction Temporal Network ($V = 98$: 97 course activities + absorbing Dropout)**: 7,047 students, 411,749 interactions, 1,355 sparse edges ($\mathrm{CV} = 5.54$) from Kumar et al. (*KDD*, 2019; JODIE benchmark).
+- **StackOverflow Badge Award Temporal Network ($V = 22$, near-memoryless boundary case)**: 2,203 users, 142,777 badge events ($\mathrm{CV} = 1.22$, 31% self-loops; official EasyTPP splits) from Mei & Eisner (*NeurIPS*, 2017).
+- **Multi-Chain DeFi Quiet-Pool Liquidity Panels (BSC & Base, Jan--Jul 2025)**: 16 on-chain panels across 35 pools and 5 token pairs (183,881 opportunities; 164,376 unseen Mar--Jul test opportunities), SHA-256 pinned in `results/archived/r7_defi_neural_clock.json`.
 - **IT Helpdesk software-support queueing workflow (`Assign -> Active <-> Wait -> Resolved -> Closed`)**: 4,580 tickets (21,348 timestamped events, MD5 `a91d74377c55be5cbdfda05dae69db30`) from Polato (4TU.ResearchData, 2017; DOI `10.4121/uuid:0c60edf1-6f83-4e75-9367-4c63b3e9d5bb`).
 - **1978 English Boarding School H1N1 Influenza Outbreak (`S -> E -> In-Bed -> Convalescent -> R`)**: Daily multi-compartment prevalence snapshots ($N = 763$ boys, 14 days) from Anonymous (*BMJ*, 1978, 1(6112):587).
 - **Primary human hematopoietic branching lineage hierarchy (`HSC -> MPP -> {MLP, CMP} -> {GMP, MEP} -> Mature`)**: 78 FACS snapshots across 10 healthy bone-marrow donor cultures over Days 1--7 from Bast et al. (*iScience*, 2021).

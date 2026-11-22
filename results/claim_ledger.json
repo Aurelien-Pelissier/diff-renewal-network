@@ -1,6 +1,6 @@
 {
   "status": "PASSED",
-  "verified_archive_files": 36,
+  "verified_archive_files": 40,
   "erlang16_replay": {
     "nominal_max_error": 1.2656542480726785e-14,
     "rate_sensitivity_defect": 0.2619669022259721
@@ -89,6 +89,36 @@
       "grad_warm_ms": 451.9,
       "e2e_v64_kl_reduction_vs_ctmc": 3838.0,
       "e2e_v256_kl_reduction_vs_ctmc": 260.7
+    },
+    "theorem6_bt_near_cancellation": {
+      "k4_delta_1e-5_ratio_rebal": 40080.0,
+      "k4_delta_1e-5_ratio_frozen": 419251.4,
+      "het433_delta_1e-5_ratio_frozen": 4098690.9
+    },
+    "mamba_and_thp_baselines": {
+      "synthetic_ph_kl": 0.05232,
+      "synthetic_lognormal_kl": 0.08871,
+      "helpdesk_0shot_aged_kl": 0.249,
+      "helpdesk_thp_14d_kl": 2.3044,
+      "sleep_0shot_aged_kl": 0.0878,
+      "influenza_day9to14_kl": 0.273
+    },
+    "mooc_v98_real_sparse_drn": {
+      "compiled_states": 490,
+      "sparse_hyper_drn_0shot_aged_kl": 0.2708,
+      "sparse_hyper_drn_joint_aged_kl": 0.1515,
+      "ctmc_0shot_aged_kl": 1.876,
+      "mamba_0shot_aged_kl": 1.9445,
+      "ltc_0shot_aged_kl": 1.7999
+    },
+    "defi_multipool_183k_neural_clock": {
+      "total_rows": 183881,
+      "regime_a_zeroshot_neural_clock": 0.34526,
+      "regime_a_zeroshot_mlp_age": 0.35096,
+      "regime_a_zeroshot_mamba": 0.4287,
+      "regime_b_drift_neural_clock": 0.31901,
+      "regime_b_drift_mlp_age": 0.32287,
+      "regime_b_drift_mamba": 0.37521
     }
   }
 }

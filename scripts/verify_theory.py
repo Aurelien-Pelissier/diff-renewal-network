@@ -708,6 +708,66 @@ def main() -> None:
             "hyper_pos_sens_metzler_col_sum_err": col_err,
         }
 
+    def _verify_theorem6_quantitative_bt() -> dict:
+        """Verify Theorem 6: Quantitative delta-near-cancellation & Balanced-Truncation
+        gradient distortion (exact Riesz projection analyticity, O(delta) H_inf forward error,
+        Omega(1) sensitivity floor for both frozen and re-balanced BT, Omega(delta^-1) blow-up)."""
+        from scripts.run_r7_theory_bt_separation import (
+            build_cycle_erlang,
+            build_cycle_erlang_deriv_lograte0,
+            build_heterogeneous_common_zero,
+            exact_bt_and_sensitivity,
+        )
+
+        u = np.array([1.0, -0.5, -0.5])
+        pi0 = np.ones(3) / 3.0
+        # Symmetric K=4 cycle (Full 12 -> d_occ=9, transient r=8)
+        r1 = exact_bt_and_sensitivity(
+            *build_cycle_erlang(2.0 * np.exp(1e-4 * u), 4),
+            build_cycle_erlang_deriv_lograte0(2.0 * np.exp(1e-4 * u), 4),
+            np.zeros((12, 3)),
+            8,
+            pi0,
+        )
+        r2 = exact_bt_and_sensitivity(
+            *build_cycle_erlang(2.0 * np.exp(1e-3 * u), 4),
+            build_cycle_erlang_deriv_lograte0(2.0 * np.exp(1e-3 * u), 4),
+            np.zeros((12, 3)),
+            8,
+            pi0,
+        )
+        # Check exact 10x forward scaling & ~10x amplification scaling over 10x delta step!
+        fwd_slope = float(np.log10(r2["fwd_hinf"] / r1["fwd_hinf"]))
+        ratio_slope_reb = float(np.log10(r2["ratio_rebal"] / r1["ratio_rebal"]))
+        ratio_slope_fz = float(np.log10(r2["ratio_frozen"] / r1["ratio_frozen"]))
+        assert r1["comm_err"] < 1e-12 and r2["comm_err"] < 1e-12
+        assert abs(fwd_slope - 1.0) < 0.01
+        assert abs(ratio_slope_reb + 1.0) < 0.01
+        assert abs(ratio_slope_fz + 1.0) < 0.01
+        assert r1["err_rebal"] > 0.01 and r1["err_frozen"] > 0.11
+
+        # Heterogeneous non-symmetric [4,3,3] common-zero network (D=10 -> d_occ=9, r=8)
+        A_h, B_h, C_h, R_h = build_heterogeneous_common_zero(delta_zero=1e-4, perturb_node0_shape=0.0)
+        Ap_h, Bp_h, _, _ = build_heterogeneous_common_zero(delta_zero=1e-4, perturb_node0_shape=1e-7)
+        Am_h, Bm_h, _, _ = build_heterogeneous_common_zero(delta_zero=1e-4, perturb_node0_shape=-1e-7)
+        wR, vR = np.linalg.eig(R_h)
+        pi_h = np.real(vR[:, np.argmin(np.abs(wR - 1.0))])
+        pi_h /= np.sum(pi_h)
+        rh = exact_bt_and_sensitivity(A_h, B_h, C_h, (Ap_h - Am_h) / 2e-7, (Bp_h - Bm_h) / 2e-7, 8, pi_h)
+        assert rh["comm_err"] < 1e-12 and rh["ratio_rebal"] > 3000.0 and rh["ratio_frozen"] > 4e5
+
+        return {
+            "k4_delta_1e-4_fwd_hinf": r1["fwd_hinf"],
+            "k4_delta_1e-4_err_rebal": round(r1["err_rebal"], 6),
+            "k4_delta_1e-4_err_frozen": round(r1["err_frozen"], 6),
+            "k4_delta_1e-4_ratio_rebal": round(r1["ratio_rebal"], 1),
+            "k4_delta_1e-4_ratio_frozen": round(r1["ratio_frozen"], 1),
+            "k4_fwd_log10_slope": round(fwd_slope, 5),
+            "k4_ratio_rebal_log10_slope": round(ratio_slope_reb, 5),
+            "het433_delta_1e-4_ratio_rebal": round(rh["ratio_rebal"], 1),
+            "het433_delta_1e-4_ratio_frozen": round(rh["ratio_frozen"], 1),
+        }
+
     report = {
         "status": "PASSED",
         "proposition_1_marked_race": _verify_marked_race_diffrax(),
@@ -725,7 +785,8 @@ def main() -> None:
         "proposition_2_and_universal_pos_sens": _verify_hyper_race_and_universal_pos_sens(),
         "multiplicity_sharpness_aldous_shepp_and_mean_field": _verify_multiplicity_sharpness_and_converse(),
         "heterogeneous_theorem3_and_hyper_pos_sens": _verify_heterogeneous_theorem3_and_hyper_pos(),
-        "theorem_6_two_preparation_rank": 2,
+        "theorem_6_quantitative_bt_distortion": _verify_theorem6_quantitative_bt(),
+        "theorem_7_two_preparation_rank": 2,
         "proposition_3_lag2_covariance": cov_lag2,
     }
 
