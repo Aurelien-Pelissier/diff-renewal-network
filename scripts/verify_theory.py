@@ -13,7 +13,8 @@ Verifies:
   cycle, Fréchet vs. Duhamel defect integral, and Baur et al. two-sided interpolation).
 - Theorems 4 & 5: Positivity-preserving Fisher bias bound (Pos-Sens) and sharp
   Aldous-Shepp Markov-positivity W2 cone lower bound.
-- Theorem 6: Constructive two-preparation exponential-snapshot Laplace inversion.
+- Theorem 6: Near-cancellation sensitivity distortion for reduced models.
+- Theorem 7: Constructive two-preparation exponential-snapshot Laplace inversion.
 """
 
 import json

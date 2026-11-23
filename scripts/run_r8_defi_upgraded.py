@@ -173,8 +173,12 @@ def fit_tab_val_tuned(kind, X_tr, age_tr, la_tr, y_tr, X_val, age_val, la_val, y
                 w1, _, w2 = p_tup[0], p_tup[1], p_tup[2]
                 p = predict_tab(kind, p_tup, Xj, aj, laj, dt)
                 nll = -jnp.mean(yj * jnp.log(p) + (1.0 - yj) * jnp.log(1.0 - p))
-                # Penalize weights (w1, w2) ONLY, never rate/log-odds biases or global timescale anchors!
+                # Penalize weights (w1, w2) only; for M=4 clock, add tiny 1e-4 anchor shrinkage
+                # so slow anchors remain finite when deep ages are completely unobserved
                 w_pen = (jnp.sum(w1**2) + jnp.sum(w2**2)) / float(w1.size + w2.size)
+                if kind == "neural_clock_m4":
+                    sh0 = jnp.array([-5.5, -3.5, -2.0, -0.5, 0.0, 0.0, 0.0, -0.5])
+                    w_pen = w_pen + 1e-4 * jnp.mean((p_tup[4] - sh0) ** 2)
                 return nll + reg * w_pen
 
             return jax.value_and_grad(loss)(z)
@@ -410,7 +414,9 @@ def build_multi_horizon_quiet_targets(df: pd.DataFrame, k_steps: tuple[int, ...]
     chains = df["chain"].to_numpy()
     targets = df["target"].to_numpy()
     starts = df["start"].to_numpy(dtype=np.int64)
-    ages = df["age_clean"].to_numpy(dtype=np.float64)
+    # CRITICAL: Use UNCLIPPED raw quiet age (max ~2,792 min, 0 NaNs), NOT age_clean clipped at 1,440 min,
+    # so pools surviving past 1,440 - dt_m min are never falsely labeled as swap breaks!
+    ages = df["age"].to_numpy(dtype=np.float64)
 
     # Fast hash map: (chain, target, start) -> age
     lookup = {}
@@ -465,6 +471,121 @@ def main() -> None:
     y_sale = df["sale"].to_numpy(dtype=np.float64)
 
     out = {"dataset": {"total_rows": len(df), "test_rows": int(is_test.sum())}}
+
+    if "--only-m4-refit" in sys.argv:
+        # Fast refit of neural_clock_m4 + bootstraps against freshly saved non-M4 baselines
+        existing = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+        # Part A: regime_a & regime_b (refit M4 + tabular baselines to compute exact paired bootstraps vs M4)
+        for reg_name, train_mask_dev, train_jan, train_feb in [
+            ("regime_a_zeroshot_deep_age", is_dev & (age_all <= 15.0), is_jan & (age_all <= 15.0), is_feb & (age_all <= 15.0)),
+            ("regime_b_temporal_drift", is_dev, is_jan, is_feb),
+        ]:
+            print(f"\n=== [only-m4-refit] {reg_name} ===", flush=True)
+            la_mu_r = float(la_raw[train_mask_dev].mean())
+            la_sd_r = float(max(la_raw[train_mask_dev].std(), 1e-6))
+            la_r = (la_raw - la_mu_r) / la_sd_r
+            preds_te = {}
+            for kind in ("neural_clock_m4", "mlp_age", "weibull_mlp", "markov_clock"):
+                params, n_p, best_r, sec = fit_tab_val_tuned(
+                    kind,
+                    X_std[train_jan], age_all[train_jan], la_r[train_jan], y_sale[train_jan],
+                    X_std[train_feb], age_all[train_feb], la_r[train_feb], y_sale[train_feb],
+                    X_std[train_mask_dev], age_all[train_mask_dev], la_r[train_mask_dev], y_sale[train_mask_dev],
+                    dt=HORIZON_MIN,
+                )
+                p_te = np.asarray(predict_tab(kind, params, jnp.asarray(X_std[is_test]), jnp.asarray(age_all[is_test]), jnp.asarray(la_r[is_test]), HORIZON_MIN))
+                preds_te[kind] = p_te
+                if kind == "neural_clock_m4":
+                    a_te, y_te = age_all[is_test], y_sale[is_test]
+                    existing[reg_name][kind] = {
+                        "params": n_p, "reg": best_r, "seconds": sec,
+                        "all": metrics_dict(y_te, p_te),
+                        "le15": metrics_dict(y_te[a_te <= 15.0], p_te[a_te <= 15.0]),
+                        "15_60": metrics_dict(y_te[(a_te > 15.0) & (a_te <= 60.0)], p_te[(a_te > 15.0) & (a_te <= 60.0)]),
+                        "gt60": metrics_dict(y_te[a_te > 60.0], p_te[a_te > 60.0]),
+                    }
+                    print(f"  M4-Clock ({n_p}p, reg={best_r}): all={existing[reg_name][kind]['all']['logloss']:.5f} gt60={existing[reg_name][kind]['gt60']['logloss']:.4f}", flush=True)
+            for alt in ("mlp_age", "weibull_mlp", "markov_clock"):
+                existing[reg_name]["paired_day_bootstrap"][f"{alt}_minus_neural_clock_m4"] = paired_day_bootstrap(
+                    y_sale[is_test], days_all[is_test], preds_te["neural_clock_m4"], preds_te[alt]
+                )
+            # Re-run M2 with exact saved best_cfg (fast: 2 seeds only, no grid search!) for exact paired bootstrap
+            m2_meta = existing[reg_name]["deep_2layer_mamba_adamw"]
+            p_m2_all, _, _, _ = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, train_jan, train_feb, train_mask_dev)
+            existing[reg_name]["paired_day_bootstrap"]["deep_2layer_mamba_adamw_minus_neural_clock_m4"] = paired_day_bootstrap(
+                y_sale[is_test], days_all[is_test], preds_te["neural_clock_m4"], p_m2_all[is_test]
+            )
+            b_m2 = existing[reg_name]["paired_day_bootstrap"]["deep_2layer_mamba_adamw_minus_neural_clock_m4"]
+            print(f"  [Day-Bootstrap 2L-Mamba - M4] diff={b_m2['mean_diff_alt_minus_ref']:+.5f} p={b_m2['p_value']:.4f}", flush=True)
+
+        # Cross-chain M4 refit
+        is_bsc = df["chain"].to_numpy() == "BSC"
+        is_base = ~is_bsc
+        for cname, src_m, tgt_m in [
+            ("regime_c_base_to_bsc_young", is_base & is_dev & (age_all <= 15.0), is_bsc & is_test),
+            ("regime_c_bsc_to_base_young", is_bsc & is_dev & (age_all <= 15.0), is_base & is_test),
+        ]:
+            la_mu_r = float(la_raw[src_m].mean())
+            la_sd_r = float(max(la_raw[src_m].std(), 1e-6))
+            la_r = (la_raw - la_mu_r) / la_sd_r
+            params, n_p, best_r, sec = fit_tab_val_tuned(
+                "neural_clock_m4",
+                X_std[src_m & is_jan], age_all[src_m & is_jan], la_r[src_m & is_jan], y_sale[src_m & is_jan],
+                X_std[src_m & is_feb], age_all[src_m & is_feb], la_r[src_m & is_feb], y_sale[src_m & is_feb],
+                X_std[src_m], age_all[src_m], la_r[src_m], y_sale[src_m], dt=HORIZON_MIN,
+            )
+            p_t = np.asarray(predict_tab("neural_clock_m4", params, jnp.asarray(X_std[tgt_m]), jnp.asarray(age_all[tgt_m]), jnp.asarray(la_r[tgt_m]), HORIZON_MIN))
+            a_t, y_t = age_all[tgt_m], y_sale[tgt_m]
+            existing[cname]["neural_clock_m4"] = {"params": n_p, "reg": best_r, "all": metrics_dict(y_t, p_t), "gt60": metrics_dict(y_t[a_t > 60.0], p_t[a_t > 60.0])}
+            print(f"  [{cname}] M4-Clock: all={existing[cname]['neural_clock_m4']['all']['logloss']:.5f} gt60={existing[cname]['neural_clock_m4']['gt60']['logloss']:.4f}", flush=True)
+
+        # Part B: Multi-horizon M4 + tabular bootstraps
+        k_steps = (1, 2, 3, 6, 12)
+        y_mh, v_mh = build_multi_horizon_quiet_targets(df, k_steps=k_steps)
+        y10, v10 = y_mh[10], v_mh[10]
+        for split_tag, age_gate in [("all_age_train_dt10", np.ones(len(df), dtype=bool)), ("young_le15_train_dt10", age_all <= 15.0)]:
+            tr_all = is_dev & v10 & age_gate
+            tr_jan = is_jan & v10 & age_gate
+            tr_feb = is_feb & v10 & age_gate
+            la_mu_r = float(la_raw[tr_all].mean())
+            la_sd_r = float(max(la_raw[tr_all].std(), 1e-6))
+            la_r = (la_raw - la_mu_r) / la_sd_r
+            fitted = {}
+            for kind in ("neural_clock_m4", "mlp_age", "weibull_mlp"):
+                params, n_p, best_r, _ = fit_tab_val_tuned(
+                    kind, X_std[tr_jan], age_all[tr_jan], la_r[tr_jan], y10[tr_jan],
+                    X_std[tr_feb], age_all[tr_feb], la_r[tr_feb], y10[tr_feb],
+                    X_std[tr_all], age_all[tr_all], la_r[tr_all], y10[tr_all], dt=10.0,
+                )
+                fitted[kind] = params
+            p_m2_10, _, _, _ = run_deep_2layer_mamba_defi(df, X_std, la_r, y10, tr_jan, tr_feb, tr_all)
+            for k in k_steps:
+                dt_m = 10 * k
+                te_m = is_test & v_mh[dt_m]
+                yk = y_mh[dt_m][te_m]
+                Xk, ak, lak, dk = jnp.asarray(X_std[te_m]), jnp.asarray(age_all[te_m]), jnp.asarray(la_r[te_m]), days_all[te_m]
+                p_nc = np.asarray(predict_tab("neural_clock_m4", fitted["neural_clock_m4"], Xk, ak, lak, float(dt_m)))
+                p_wb = np.asarray(predict_tab("weibull_mlp", fitted["weibull_mlp"], Xk, ak, lak, float(dt_m)))
+                p_mlp10 = np.asarray(predict_tab("mlp_age", fitted["mlp_age"], Xk, ak, lak, 10.0))
+                p_mlp_comp = np.clip(1.0 - (1.0 - p_mlp10) ** k, 1e-7, 1.0 - 1e-7)
+                surv_chain = np.ones(len(yk), dtype=np.float64)
+                for j in range(k):
+                    a_shift = age_all[te_m] + 10.0 * j
+                    la_shift = (np.log1p(a_shift) - la_mu_r) / la_sd_r
+                    pj = np.asarray(predict_tab("mlp_age", fitted["mlp_age"], Xk, jnp.asarray(a_shift), jnp.asarray(la_shift), 10.0))
+                    surv_chain *= (1.0 - pj)
+                p_mlp_chain = np.clip(1.0 - surv_chain, 1e-7, 1.0 - 1e-7)
+                p_m2_k = np.clip(1.0 - (1.0 - p_m2_10[te_m]) ** k, 1e-7, 1.0 - 1e-7)
+                slot = existing["multi_horizon_zeroshot_transfer"][split_tag][f"dt_{dt_m}m"]
+                slot["neural_clock_m4"] = metrics_dict(yk, p_nc)
+                slot["boot_mlp_comp_minus_nc"] = paired_day_bootstrap(yk, dk, p_nc, p_mlp_comp)
+                slot["boot_mlp_chain_minus_nc"] = paired_day_bootstrap(yk, dk, p_nc, p_mlp_chain)
+                slot["boot_weibull_minus_nc"] = paired_day_bootstrap(yk, dk, p_nc, p_wb)
+                slot["boot_m2_minus_nc"] = paired_day_bootstrap(yk, dk, p_nc, p_m2_k)
+                print(f"  [{split_tag} dt={dt_m:3d}m] M4={slot['neural_clock_m4']['logloss']:.4f} MLP-cp={slot['mlp_age_compounded']['logloss']:.4f} 2LM={slot['deep_2layer_mamba_compounded']['logloss']:.4f}", flush=True)
+        OUT_PATH.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        print(f"Updated M4-Clock with sh_pen=1e-4 in {OUT_PATH} in {perf_counter()-t0:.1f}s.", flush=True)
+        return
 
     if "--only-deep-mamba" in sys.argv:
         existing = json.loads(OUT_PATH.read_text(encoding="utf-8"))
@@ -635,6 +756,16 @@ def main() -> None:
                 "gt60": metrics_dict(y_t[a_t > 60.0], p_te[a_t > 60.0]),
             }
             print(f"  {kind:16s}: all={c_res[kind]['all']['logloss']:.5f} gt60={c_res[kind]['gt60']['logloss']:.4f}", flush=True)
+        # Also evaluate Feb-val-tuned Deep 2L-Mamba on BOTH cross-chain directions for full apples-to-apples parity!
+        p_m2_c, n_p_m2c, sec_m2c, meta_m2c = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, s_jan, s_feb, src_m)
+        p_m2_ct = p_m2_c[tgt_m]
+        a_t, y_t = age_all[tgt_m], y_sale[tgt_m]
+        c_res["deep_2layer_mamba_adamw"] = {
+            "params": n_p_m2c, "seconds": sec_m2c, **meta_m2c,
+            "all": metrics_dict(y_t, p_m2_ct),
+            "gt60": metrics_dict(y_t[a_t > 60.0], p_m2_ct[a_t > 60.0]),
+        }
+        print(f"  {'deep_2L_mamba':16s}: all={c_res['deep_2layer_mamba_adamw']['all']['logloss']:.5f} gt60={c_res['deep_2layer_mamba_adamw']['gt60']['logloss']:.4f}", flush=True)
         out[cname] = c_res
 
     # =========================================================================
@@ -713,6 +844,7 @@ def main() -> None:
                 "boot_mlp_comp_minus_nc": paired_day_bootstrap(yk, dk, p_nc, p_mlp_comp),
                 "boot_mlp_chain_minus_nc": paired_day_bootstrap(yk, dk, p_nc, p_mlp_chain),
                 "boot_weibull_minus_nc": paired_day_bootstrap(yk, dk, p_nc, p_wb),
+                "boot_m2_minus_nc": paired_day_bootstrap(yk, dk, p_nc, p_m2_k),
             }
             split_out[f"dt_{dt_m}m"] = h_res
             print(

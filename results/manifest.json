@@ -1,6 +1,6 @@
 {
   "description": "SHA-256 provenance manifest for all archived Differentiable Renewal Network benchmark summaries.",
-  "count": 40,
+  "count": 43,
   "files": {
     "results/archived/bio_influenza_r5_complete.json": {
       "bytes": 3703,
@@ -94,6 +94,18 @@
       "bytes": 20309,
       "sha256": "62b3d2175c7d50ae3ebc739452085c6b9a633e134bb5b26f25ba2d964872c7bd"
     },
+    "results/archived/r8_defi_upgraded.json": {
+      "bytes": 45052,
+      "sha256": "02787cff3e4fcd5d874ca6431131396eb7765c88715c84ff1c5cb493d89170b2"
+    },
+    "results/archived/r8_real_bt_failure.json": {
+      "bytes": 9825,
+      "sha256": "43e3a32eb4ff5d581d98ff5bfdecfd32e9783a6104c8c1d510ef1b4bc67d9acf"
+    },
+    "results/archived/r8_temporal_networks_upgraded.json": {
+      "bytes": 14985,
+      "sha256": "0d502f2b443850956e92ca41a73ee418d850506205bd3fdb60c5729a70f37cc4"
+    },
     "results/archived/real_continuous_benchmarks.json": {
       "bytes": 2850,
       "sha256": "25375c936ab52041a54835cf57a04ccb8591c007f8d467bf9d9cac905e484ed6"
@@ -161,18 +173,6 @@
     "results/archived/zeroshot_age0_control.json": {
       "bytes": 1220,
       "sha256": "66b9dd2c9f303a3cca0541e441dcf0d2937b92ee4fcd479b6bc7d579d177969f"
-    },
-    "results/archived/r8_temporal_networks_upgraded.json": {
-      "bytes": 6709,
-      "sha256": "f6295655d3b9baebad59406898bbcab14613873609051c31ca161d59994310b2"
-    },
-    "results/archived/r8_defi_upgraded.json": {
-      "bytes": 41256,
-      "sha256": "48608302329e8b6c2067f6bf1787572cf404a995ebcf40a9f61804b2c51940b9"
-    },
-    "results/archived/r8_real_bt_failure.json": {
-      "bytes": 6467,
-      "sha256": "78b75807f42a3bbef14a601eb799aaa86441b22fd646fa69ee1f76c7fd7e2978"
     }
   }
 }
