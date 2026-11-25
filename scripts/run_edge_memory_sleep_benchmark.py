@@ -278,10 +278,16 @@ def main() -> None:
         f_te, a_te, _ = build_sleep_snapshots(subj_seqs, te_subjs, obs_epochs)
         fc_j, ac_j = jnp.asarray(f_tr), jnp.asarray(a_tr)
 
+        def _wrap_vg(fn, *extra):
+            def _obj(z):
+                v, g = fn(jnp.asarray(z), *extra)
+                return float(v), np.asarray(g, float)
+            return _obj
+
         rng_init = np.random.default_rng(700 + f_idx)
         p0_init = rng_init.normal(0.0, 0.08, size=n_params)
         res_fo = minimize(
-            lambda z: (float(vg_fo(jnp.asarray(z), fc_j)[0]), np.asarray(vg_fo(jnp.asarray(z), fc_j)[1], float)),
+            _wrap_vg(vg_fo, fc_j),
             p0_init,
             jac=True,
             method="L-BFGS-B",
@@ -289,10 +295,7 @@ def main() -> None:
         )
         t0 = perf_counter()
         res_j = minimize(
-            lambda z: (
-                float(vg_joint(jnp.asarray(z), fc_j, ac_j)[0]),
-                np.asarray(vg_joint(jnp.asarray(z), fc_j, ac_j)[1], float),
-            ),
+            _wrap_vg(vg_joint, fc_j, ac_j),
             res_fo.x,
             jac=True,
             method="L-BFGS-B",
@@ -302,20 +305,14 @@ def main() -> None:
 
         w0_c = rng_init.normal(0.0, 0.18, size=cme_dim)
         res_cme_fo = minimize(
-            lambda z: (
-                float(vg_cme_fo(jnp.asarray(z), fc_j)[0]),
-                np.asarray(vg_cme_fo(jnp.asarray(z), fc_j)[1], float),
-            ),
+            _wrap_vg(vg_cme_fo, fc_j),
             w0_c,
             jac=True,
             method="L-BFGS-B",
             options={"maxiter": 200},
         )
         res_cme_j = minimize(
-            lambda z: (
-                float(vg_cme_j(jnp.asarray(z), fc_j, ac_j)[0]),
-                np.asarray(vg_cme_j(jnp.asarray(z), fc_j, ac_j)[1], float),
-            ),
+            _wrap_vg(vg_cme_j, fc_j, ac_j),
             w0_c,
             jac=True,
             method="L-BFGS-B",
@@ -344,7 +341,9 @@ def main() -> None:
         pf_j, pa_j, _ = predict_em_drn(jnp.asarray(res_j.x))
         em_fo_scores.append(score_pair(pf_fo, pa_fo))
         em_joint_scores.append(score_pair(pf_j, pa_j))
-        cme_fo_scores.append(score_pair(*predict_sleep_cme(jnp.asarray(res_cme_fo.x))))
+        pf_cme_fo, _ = predict_sleep_cme(jnp.asarray(res_cme_fo.x))
+        # Clean age=0 evaluation for fresh_only Neural-CME
+        cme_fo_scores.append(score_pair(pf_cme_fo, pf_cme_fo))
         cme_j_scores.append(score_pair(*predict_sleep_cme(jnp.asarray(res_cme_j.x))))
         print(
             f"Sleep fold {f_idx} | EdgeMemoryDRN: 0-shot aged={em_fo_scores[-1]['aged_kl']:.5f}, joint={em_joint_scores[-1]['fresh_kl']:.5f}/{em_joint_scores[-1]['aged_kl']:.5f} | NeuralCME: 0-shot={cme_fo_scores[-1]['aged_kl']:.5f}, joint={cme_j_scores[-1]['fresh_kl']:.5f}/{cme_j_scores[-1]['aged_kl']:.5f}",

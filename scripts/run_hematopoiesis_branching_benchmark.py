@@ -100,8 +100,10 @@ def main() -> None:
     init_hsc = jnp.zeros(7).at[0].set(1.0)
     n_edges = len(EDGES)
 
-    # Calibrate 1D Universal Pos-Sens clock ONCE across k in [1.4, 7.5] (completely data-free!)
-    psi_univ, univ_cert = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=250)
+    # Calibrate 1D Universal Pos-Sens clock ONCE across full cone k in [1.4, 7.8] (completely data-free!)
+    psi_univ, univ_cert = calibrate_universal_pos_clock(
+        stages_red=8, stages_full=16, maxiter=250, k_min=1.4, k_max=7.8
+    )
 
     k_stages = 16
     naive_states = network_state_size(EDGES, 7, k_stages)
@@ -219,10 +221,13 @@ def main() -> None:
 
     def fit_model(vg_fn, x0_list, counts_np, maxiter=220):
         c_j = jnp.asarray(counts_np)
+        def _obj_h(z):
+            v, g = vg_fn(jnp.asarray(z), c_j)
+            return float(v), np.asarray(g, float)
         best = None
         for x0 in x0_list:
             res = minimize(
-                lambda z: (float(vg_fn(jnp.asarray(z), c_j)[0]), np.asarray(vg_fn(jnp.asarray(z), c_j)[1], float)),
+                _obj_h,
                 x0,
                 jac=True,
                 method="L-BFGS-B",
@@ -318,7 +323,7 @@ def main() -> None:
         "state_dimensions": {
             "naive_tensor_k16": naive_states,
             "compiled_race_k16": compact_states,
-            "universal_pos_sens_kr6": univ_states,
+            "universal_pos_sens_kr8": univ_states,
         },
         "universal_clock_1d_certificate": univ_cert,
         "donor_5fold_cv_mean": {

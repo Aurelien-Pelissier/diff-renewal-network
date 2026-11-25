@@ -49,18 +49,25 @@ def _shape_center(shape, stages: int, width: float):
         below = _center_shape(mid, stages, width) < shape
         return jnp.where(below, mid, lo), jnp.where(below, hi, mid)
 
-    lo, hi = jax.lax.fori_loop(
-        0, 60, step, (jnp.ones_like(shape), jnp.full_like(shape, stages - 1.0))
-    )
+    lo_init = jnp.ones_like(shape)
+    # Allow center to reach stages + 1.5 so shape smoothly approaches stages (e.g., 10.5 for K=11)
+    hi_init = jnp.full_like(shape, float(stages) + 1.5)
+    lo, hi = jax.lax.fori_loop(0, 64, step, (lo_init, hi_init))
     return (lo + hi) / 2.0
 
 
 @_shape_center.defjvp
 def _shape_center_jvp(stages: int, width: float, primals, tangents):
     (shape,), (dshape,) = primals, tangents
+    lo_val = jnp.ones_like(shape)
+    hi_val = jnp.full_like(shape, float(stages) + 1.5)
+    s_lo = _center_shape(lo_val, stages, width)
+    s_hi = _center_shape(hi_val, stages, width)
     center = _shape_center(shape, stages, width)
     derivative = jax.grad(_center_shape, argnums=0)(center, stages, width)
-    return center, dshape / derivative
+    in_bounds = (shape > s_lo) & (shape < s_hi)
+    safe_deriv = jnp.where(in_bounds, jnp.maximum(derivative, 1e-12), 1.0)
+    return center, jnp.where(in_bounds, dshape / safe_deriv, 0.0)
 
 
 def moment_matched_logits(shapes):

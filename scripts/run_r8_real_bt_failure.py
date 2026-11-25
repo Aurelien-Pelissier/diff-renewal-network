@@ -122,16 +122,22 @@ def eval_exact_bt_order(A_tr, B_tr, C_tr, dA_list, dB_list, pre, r: int, ts: np.
     Pi = V1 @ W1T
     U_c, _, _ = svd(np.eye(n_tr) - Pi)
     V2 = U_c[:, : n_tr - r]
-    T_inv = np.linalg.inv(np.hstack([V1, V2]))
-    W2T = T_inv[r:, :]
-    M11 = W1T @ M @ V1
-    M22 = W2T @ M @ V2
+    T_mat = np.hstack([V1, V2])
+    sylv_invertible = bool(float(s1[-1]) > 1e-13 and np.linalg.cond(T_mat) < 1e12)
+    if sylv_invertible:
+        try:
+            T_inv = np.linalg.inv(T_mat)
+            W2T = T_inv[r:, :]
+            M11 = W1T @ M @ V1
+            M22 = W2T @ M @ V2
+        except np.linalg.LinAlgError:
+            sylv_invertible = False
 
     Cf_blk = np.hstack([C_tr, np.zeros_like(C_tr)])
     Cr_fz_blk = np.hstack([Cr, np.zeros_like(Cr)])
 
     fz_errs, reb_errs, rel_fz_errs, rel_reb_errs = [], [], [], []
-    max_sylv_res = 0.0
+    max_sylv_res = 0.0 if sylv_invertible else float("inf")
     for dA, dB, dM in zip(dA_list, dB_list, dM_list):
         # Full analytical sensitivity
         Mf = np.block([[A_tr, dA], [np.zeros((n_tr, n_tr)), A_tr]])
@@ -149,43 +155,48 @@ def eval_exact_bt_order(A_tr, B_tr, C_tr, dA_list, dB_list, pre, r: int, ts: np.
         fz_errs.append(ef)
         rel_fz_errs.append(ef / max(jf_norm, 1e-12))
 
-        # Re-balanced BT exact analytical Sylvester Riesz-projection sensitivity!
-        X12 = solve_sylvester(M11, -M22, +(W1T @ dM @ V2))
-        X21 = solve_sylvester(M22, -M11, -(W2T @ dM @ V1))
-        dPi = V1 @ X12 @ W2T + V2 @ X21 @ W1T
-        sres = float(np.max(np.abs((M @ dPi - dPi @ M) - (Pi @ dM - dM @ Pi))))
-        max_sylv_res = max(max_sylv_res, sres)
+        if sylv_invertible:
+            # Re-balanced BT exact analytical Sylvester Riesz-projection sensitivity!
+            X12 = solve_sylvester(M11, -M22, +(W1T @ dM @ V2))
+            X21 = solve_sylvester(M22, -M11, -(W2T @ dM @ V1))
+            dPi = V1 @ X12 @ W2T + V2 @ X21 @ W1T
+            sres = float(np.max(np.abs((M @ dPi - dPi @ M) - (Pi @ dM - dM @ Pi))))
+            max_sylv_res = max(max_sylv_res, sres)
 
-        dV1 = dPi @ V1
-        dW1T = W1T @ dPi @ (np.eye(n_tr) - Pi)
-        dAr_reb = dW1T @ A_tr @ V1 + W1T @ dA @ V1 + W1T @ A_tr @ dV1
-        dBr_reb = dW1T @ B_tr + W1T @ dB
-        dCr_reb = C_tr @ dV1
+            dV1 = dPi @ V1
+            dW1T = W1T @ dPi @ (np.eye(n_tr) - Pi)
+            dAr_reb = dW1T @ A_tr @ V1 + W1T @ dA @ V1 + W1T @ A_tr @ dV1
+            dBr_reb = dW1T @ B_tr + W1T @ dB
+            dCr_reb = C_tr @ dV1
 
-        Mr_reb = np.block([[Ar, dAr_reb], [np.zeros((r, r)), Ar]])
-        v0r_reb = np.concatenate([dBr_reb[:, x0_col], Br[:, x0_col]])
-        # y = Cr x => dy = dCr x + Cr dx = [Cr, dCr] [dx; x]
-        Cr_reb_blk = np.hstack([Cr, dCr_reb])
-        Jr_reb = _rollout_uniform_expm(Mr_reb, v0r_reb, Cr_reb_blk, ts)
-        er = float(np.sqrt(np.trapz(np.sum((Jf - Jr_reb) ** 2, axis=-1), ts)))
-        reb_errs.append(er)
-        rel_reb_errs.append(er / max(jf_norm, 1e-12))
+            Mr_reb = np.block([[Ar, dAr_reb], [np.zeros((r, r)), Ar]])
+            v0r_reb = np.concatenate([dBr_reb[:, x0_col], Br[:, x0_col]])
+            # y = Cr x => dy = dCr x + Cr dx = [Cr, dCr] [dx; x]
+            Cr_reb_blk = np.hstack([Cr, dCr_reb])
+            Jr_reb = _rollout_uniform_expm(Mr_reb, v0r_reb, Cr_reb_blk, ts)
+            er = float(np.sqrt(np.trapz(np.sum((Jf - Jr_reb) ** 2, axis=-1), ts)))
+            reb_errs.append(er)
+            rel_reb_errs.append(er / max(jf_norm, 1e-12))
 
     mean_fz = float(np.mean(fz_errs))
-    mean_reb = float(np.mean(reb_errs))
+    mean_reb = float(np.mean(reb_errs)) if sylv_invertible else float("nan")
+    well_conditioned = bool(sylv_invertible and max_sylv_res < 1e-8 and float(s1[-1]) > 1e-11)
     return {
         "total_states": int(r + 1),
+        "sigma_r": float(s1[-1]),
         "sigma_r_plus_1": float(s[r]) if r < len(s) else 0.0,
         "glover_ub": float(2.0 * np.sum(s[r:])),
         "fwd_linf": fwd_linf,
         "fwd_l2": fwd_l2,
         "mean_sens_l2_err": mean_fz,
-        "rebal_mean_sens_l2_err": mean_reb,
+        "rebal_mean_sens_l2_err": mean_reb if well_conditioned else None,
+        "rebal_mean_sens_l2_err_raw": mean_reb if sylv_invertible else None,
         "mean_rel_sens_err_fz": float(np.mean(rel_fz_errs)),
-        "mean_rel_sens_err_reb": float(np.mean(rel_reb_errs)),
+        "mean_rel_sens_err_reb": float(np.mean(rel_reb_errs)) if well_conditioned else None,
         "distortion_ratio_l2": float(mean_fz / max(fwd_l2, 1e-15)),
-        "rebal_distortion_ratio_l2": float(mean_reb / max(fwd_l2, 1e-15)),
-        "max_sylvester_residual": float(max_sylv_res),
+        "rebal_distortion_ratio_l2": float(mean_reb / max(fwd_l2, 1e-15)) if well_conditioned else None,
+        "max_sylvester_residual": float(max_sylv_res) if np.isfinite(max_sylv_res) else None,
+        "sylvester_well_conditioned": well_conditioned,
         "min_prob_red": min_prob_red,
         "neg_time_entries": neg_count,
         "violates_positivity": bool(min_prob_red < -1e-9),
@@ -288,8 +299,12 @@ def run_hematopoiesis_bt_audit() -> dict:
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         -1.5, -0.2,
     ])
+    def _obj_hemato(z):
+        v, g = fit_vg(jnp.asarray(z))
+        return float(v), np.asarray(g, dtype=float)
+
     res_fit = minimize(
-        lambda z: (float(fit_vg(jnp.asarray(z))[0]), np.asarray(fit_vg(jnp.asarray(z))[1], dtype=float)),
+        _obj_hemato,
         th_init, method="L-BFGS-B", jac=True, options={"maxiter": 150},
     )
     th0 = np.asarray(res_fit.x, dtype=np.float64)
@@ -318,8 +333,9 @@ def run_hematopoiesis_bt_audit() -> dict:
         bt_sweep[f"r{r}"] = m
         print(
             f"[Real Hemato Fitted {n_tr+1}->{r+1:2d}] BT: fwd_L2={m['fwd_l2']:.2e} "
-            f"sens_fz={m['mean_sens_l2_err']:.2e} sens_reb={m['rebal_mean_sens_l2_err']:.2e} "
-            f"sylv={m['max_sylvester_residual']:.1e} minP={m['min_prob_red']:.2e} neg={m['violates_positivity']}",
+            f"sens_fz={m['mean_sens_l2_err']:.2e} sens_reb={m['rebal_mean_sens_l2_err_raw']} "
+            f"sylv={m['max_sylvester_residual']} ok={m['sylvester_well_conditioned']} "
+            f"minP={m['min_prob_red']:.2e} neg={m['violates_positivity']}",
             flush=True,
         )
 
@@ -447,8 +463,12 @@ def run_helpdesk_bt_audit() -> dict:
         0.0, 0.0, 0.0, 1.0,
         0.0, 0.0, 0.0, -1.0,
     ])
+    def _obj_hdk(z):
+        v, g = fit_vg_hdk(jnp.asarray(z))
+        return float(v), np.asarray(g, dtype=float)
+
     res_fit = minimize(
-        lambda z: (float(fit_vg_hdk(jnp.asarray(z))[0]), np.asarray(fit_vg_hdk(jnp.asarray(z))[1], dtype=float)),
+        _obj_hdk,
         th_init, method="L-BFGS-B", jac=True, options={"maxiter": 100},
     )
     th0 = np.asarray(res_fit.x, dtype=np.float64)
@@ -475,8 +495,9 @@ def run_helpdesk_bt_audit() -> dict:
         bt_sweep[f"r{r}"] = m
         print(
             f"[Real Helpdesk Fitted {n_tr+1}->{r+1:2d}] BT: fwd_L2={m['fwd_l2']:.2e} "
-            f"sens_fz={m['mean_sens_l2_err']:.2e} sens_reb={m['rebal_mean_sens_l2_err']:.2e} "
-            f"sylv={m['max_sylvester_residual']:.1e} minP={m['min_prob_red']:.2e} neg={m['violates_positivity']}",
+            f"sens_fz={m['mean_sens_l2_err']:.2e} sens_reb={m['rebal_mean_sens_l2_err_raw']} "
+            f"sylv={m['max_sylvester_residual']} ok={m['sylvester_well_conditioned']} "
+            f"minP={m['min_prob_red']:.2e} neg={m['violates_positivity']}",
             flush=True,
         )
 

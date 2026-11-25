@@ -9,8 +9,8 @@ import numpy as np
 from scipy.linalg import helmert, solve, svd
 from scipy.optimize import minimize
 
-from .phase_type import mixed_erlang_components
-from .traits import moment_matched_logits
+from .phase_type import mixed_erlang_components, smooth_erlang_logits
+from .traits import _shape_center, moment_matched_logits
 
 STAGES = 16
 K_POS_RED = 11
@@ -246,8 +246,13 @@ def calibrate_positive_33_surrogate(*, seed: int = 0, maxiter: int = 250):
 
     vg = jax.jit(jax.value_and_grad(loss_fn))
     psi0 = np.zeros(8 * K_POS_RED)
+
+    def _obj_pos33(z):
+        v, g = vg(z)
+        return float(v), np.asarray(g, dtype=float)
+
     fit = minimize(
-        lambda z: (float(vg(z)[0]), np.asarray(vg(z)[1], dtype=float)),
+        _obj_pos33,
         psi0,
         jac=True,
         method="L-BFGS-B",
@@ -333,7 +338,11 @@ def calibrate_universal_pos_clock(
 
     def full_surv_and_sens(k_val):
         def surv_fn(lk):
-            logits = moment_matched_logits(jnp.atleast_1d(jnp.exp(lk)))[0]
+            if stages_full == 16:
+                logits = moment_matched_logits(jnp.atleast_1d(jnp.exp(lk)))[0]
+            else:
+                center = _shape_center(jnp.exp(lk), stages_full, 0.5)
+                logits = smooth_erlang_logits(center, stages=stages_full, width=0.5)
             rate, entry = mixed_erlang_components(1.0, logits)
             blk = rate * (jnp.eye(stages_full, k=-1) - jnp.eye(stages_full))
             s_u = _scan_surv(blk, entry)
@@ -374,8 +383,12 @@ def calibrate_universal_pos_clock(
     w_rat_init[0] = np.linspace(-0.15, 0.15, stages_red)
     psi0 = np.r_[w_log_init.ravel(), w_rat_init.ravel()]
 
+    def _obj_univ(z):
+        v, g = vg(z)
+        return float(v), np.asarray(g, dtype=float)
+
     fit = minimize(
-        lambda z: (float(vg(z)[0]), np.asarray(vg(z)[1], dtype=float)),
+        _obj_univ,
         psi0,
         jac=True,
         method="L-BFGS-B",
@@ -423,9 +436,13 @@ def build_universal_hyper_pos_network_generator(
     slow_shapes = jnp.asarray(slow_shapes)
     fast_weights = jnp.asarray(fast_weights)
     psi_jax = jnp.asarray(psi_univ)
+    # Mask inactive sink nodes before vmap so placeholder zeros cannot poison psi_univ gradients with NaN
+    active_flags = jnp.array([any(u == i for u, _ in edges) for i in range(n_nodes)])
+    safe_slow_means = jnp.where(active_flags, slow_means, 1.0)
+    safe_slow_shapes = jnp.where(active_flags, slow_shapes, 6.0)
     stage_rates, slow_entries = jax.vmap(
         lambda m, k: universal_pos_clock(m, k, psi_jax, stages_red=stages_red)
-    )(slow_means, slow_shapes)
+    )(safe_slow_means, safe_slow_shapes)
 
     blocks = []
     entries_all = []
@@ -477,9 +494,13 @@ def build_universal_pos_network_generator(
     means = jnp.asarray(means)
     shapes = jnp.asarray(shapes)
     psi_jax = jnp.asarray(psi_univ)
+    # Mask inactive sink nodes before vmap so placeholder zeros cannot poison psi_univ gradients with NaN
+    active_flags = jnp.array([any(u == i for u, _ in edges) for i in range(n_nodes)])
+    safe_means = jnp.where(active_flags, means, 1.0)
+    safe_shapes = jnp.where(active_flags, shapes, 6.0)
     stage_rates, entries = jax.vmap(
         lambda m, k: universal_pos_clock(m, k, psi_jax, stages_red=stages_red)
-    )(means, shapes)
+    )(safe_means, safe_shapes)
     blocks = []
     for i in range(n_nodes):
         has_out = any(u == i for u, _ in edges)

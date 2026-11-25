@@ -43,6 +43,7 @@ from scripts.run_helpdesk_systems_benchmark import (  # noqa: E402
     K_RENEWAL,
     STATE_MAP,
     V_NODES,
+    _exp_euler_helpdesk_step,
     empirical_kl,
     ensure_helpdesk_csv,
     extract_snapshot_tables,
@@ -96,7 +97,7 @@ def predict_helpdesk_ltc(theta: jax.Array, horizons: jax.Array):
     wf = theta[i : i + (V_NODES + z_dim) * E_EDGES].reshape(V_NODES + z_dim, E_EDGES); i += (V_NODES + z_dim) * E_EDGES
     bf = theta[i : i + E_EDGES]
 
-    n_steps, dt = 90, 0.5
+    n_steps, dt = 180, 0.25
     h_idx = jnp.asarray(np.round(np.asarray(horizons) / dt).astype(int) - 1)
 
     def run_cohort(is_aged_flag, init_p):
@@ -104,29 +105,16 @@ def predict_helpdesk_ltc(theta: jax.Array, horizons: jax.Array):
         z0 = jnp.tanh(jnp.concatenate([init_p, age_col], axis=-1) @ enc + eb)
         y0 = jnp.concatenate([init_p, z0], axis=-1)
 
-        def rhs(y):
+        def step(y, _):
             p, z = y[:, :V_NODES], y[:, V_NODES:]
             h = jnp.tanh(y @ wh + bh)
             target = jnp.tanh(h @ wa + ba)
             tau_inv = 0.05 + 3.0 * jax.nn.sigmoid(h @ wt + bt)
-            dz = -tau_inv * (z - target)
+            a_bar = jnp.exp(-tau_inv * dt)
+            z_next = a_bar * z + (1.0 - a_bar) * target
             rates = 1e-4 + 4.0 * jax.nn.sigmoid(y @ wf + bf)
-            dp = jnp.zeros_like(p)
-            for e_i, (u, v) in enumerate(EDGES):
-                fl = rates[:, e_i] * p[:, u]
-                dp = dp.at[:, v].add(fl)
-                dp = dp.at[:, u].add(-fl)
-            return jnp.concatenate([dp, dz], axis=-1)
-
-        def step(y, _):
-            k1 = rhs(y)
-            k2 = rhs(y + 0.5 * dt * k1)
-            k3 = rhs(y + 0.5 * dt * k2)
-            k4 = rhs(y + dt * k3)
-            yn = y + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
-            pc = jnp.maximum(yn[:, :V_NODES], 1e-15)
-            pc = pc / jnp.sum(pc, axis=-1, keepdims=True)
-            return jnp.concatenate([pc, yn[:, V_NODES:]], axis=-1), pc
+            pc = _exp_euler_helpdesk_step(p, rates, dt)
+            return jnp.concatenate([pc, z_next], axis=-1), pc
 
         _, traj = jax.lax.scan(step, y0, None, length=n_steps)
         return jnp.swapaxes(traj[h_idx], 0, 1)
@@ -173,7 +161,7 @@ def predict_helpdesk_s4d(theta: jax.Array, horizons: jax.Array):
     bo = theta[i : i + E_EDGES]
 
     decay = jnp.exp(jnp.clip(log_r, -5.0, 3.0))
-    n_steps, dt = 90, 0.5
+    n_steps, dt = 180, 0.25
     h_idx = jnp.asarray(np.round(np.asarray(horizons) / dt).astype(int) - 1)
 
     def run_cohort(is_aged_flag, init_p):
@@ -181,29 +169,18 @@ def predict_helpdesk_s4d(theta: jax.Array, horizons: jax.Array):
         z0 = jnp.tanh(jnp.concatenate([init_p, age_col], axis=-1) @ enc + eb)
         y0 = jnp.concatenate([init_p, z0], axis=-1)
 
-        def rhs(y):
+        def step(y, _):
             p, z = y[:, :V_NODES], y[:, V_NODES:]
             z1, z2 = z[:, :half], z[:, half:]
-            rot = jnp.concatenate([-omega * z2, omega * z1], axis=-1)
-            dz = -decay * z + rot + (p @ wb + bb)
+            c_th = jnp.cos(omega * dt)[None, :]
+            s_th = jnp.sin(omega * dt)[None, :]
+            z_rot = jnp.concatenate([c_th * z1 - s_th * z2, s_th * z1 + c_th * z2], axis=-1)
+            a_bar = jnp.exp(-decay[None, :] * dt)
+            z_next = a_bar * z_rot + (-jnp.expm1(-decay[None, :] * dt) / decay[None, :]) * (p @ wb + bb)
             hid = jax.nn.gelu(y @ wm + bm)
             rates = 1e-4 + 4.0 * jax.nn.sigmoid(hid @ wo + bo)
-            dp = jnp.zeros_like(p)
-            for e_i, (u, v) in enumerate(EDGES):
-                fl = rates[:, e_i] * p[:, u]
-                dp = dp.at[:, v].add(fl)
-                dp = dp.at[:, u].add(-fl)
-            return jnp.concatenate([dp, dz], axis=-1)
-
-        def step(y, _):
-            k1 = rhs(y)
-            k2 = rhs(y + 0.5 * dt * k1)
-            k3 = rhs(y + 0.5 * dt * k2)
-            k4 = rhs(y + dt * k3)
-            yn = y + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
-            pc = jnp.maximum(yn[:, :V_NODES], 1e-15)
-            pc = pc / jnp.sum(pc, axis=-1, keepdims=True)
-            return jnp.concatenate([pc, yn[:, V_NODES:]], axis=-1), pc
+            pc = _exp_euler_helpdesk_step(p, rates, dt)
+            return jnp.concatenate([pc, z_next], axis=-1), pc
 
         _, traj = jax.lax.scan(step, y0, None, length=n_steps)
         return jnp.swapaxes(traj[h_idx], 0, 1)
@@ -284,8 +261,10 @@ def main():
     trajs, _ = load_ticket_trajectories(csv_path)
     h_jax = jnp.asarray(HORIZONS_DAYS, dtype=jnp.float64)
 
-    # Calibrate 1D Universal Pos-Sens clock ONCE (completely data-free!)
-    psi_univ, univ_cert = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=250)
+    # Calibrate 1D Universal Pos-Sens clock ONCE over full cone [1.4, 7.8] (completely data-free!)
+    psi_univ, univ_cert = calibrate_universal_pos_clock(
+        stages_red=8, stages_full=16, maxiter=250, k_min=1.4, k_max=7.8
+    )
     pred_univ = make_universal_pos_helpdesk(psi_univ, stages_red=8)
 
     # Exact same 5-fold ticket split as run_helpdesk_systems_benchmark.py (seed=2026)
@@ -320,6 +299,8 @@ def main():
                 if l_tr < best_loss:
                     best_loss, best_w = l_tr, w_hat
             pf, pa = pred_fn(jnp.asarray(best_w), h_jax)
+            if (not is_joint) and ("ltc" in mname or "s4d" in mname):
+                pa = pf[1:4]
             fk = empirical_kl(np.asarray(pf), f_te)
             ak = empirical_kl(np.asarray(pa), a_te)
             fold_res[mname]["fresh_kl"].append(fk)
@@ -358,6 +339,8 @@ def main():
     for mname, init_fn, pred_fn, is_joint in all_chrono:
         w_hat = fit_model(init_fn(77), pred_fn, f_tr_c, a_tr_c, joint=is_joint, maxiter=150)
         pf, pa = pred_fn(jnp.asarray(w_hat), h_jax)
+        if (not is_joint) and any(k in mname for k in ("ltc", "s4d", "neural_cme", "latent_ode")):
+            pa = pf[1:4]
         fk = empirical_kl(np.asarray(pf), f_te_c)
         ak = empirical_kl(np.asarray(pa), a_te_c)
         chrono_res[mname] = {"fresh_kl": fk, "aged_kl": ak}

@@ -96,16 +96,16 @@
       7.8
     ],
     "sup_survival_abs_error": 0.00385,
-    "cmp_to_gmp_pct": 56.4,
-    "cmp_to_mep_pct": 43.6,
-    "mpp_to_cmp_pct": 17.6
+    "cmp_to_gmp_pct": 53.4,
+    "cmp_to_mep_pct": 46.6,
+    "mpp_to_cmp_pct": 15.2
   },
   "cyclic_r6b_plain_me33_ablation_and_timings": {
     "same_machine_warm_ms": {
-      "full48": 1.589,
-      "pos33": 0.803,
-      "interp33": 0.98,
-      "plain_me33": 0.852
+      "full48": 1.568,
+      "pos33": 0.83,
+      "interp33": 0.951,
+      "plain_me33": 0.808
     },
     "defects": {
       "k6_sym_eps0": {
@@ -184,8 +184,8 @@
           "jac_max_abs": 0.124724
         },
         "plain_me33": {
-          "prob_max_abs": 0.016788,
-          "jac_max_abs": 0.048956
+          "prob_max_abs": 7e-06,
+          "jac_max_abs": 0.000564
         },
         "interp33": {
           "prob_max_abs": 9.6e-05,

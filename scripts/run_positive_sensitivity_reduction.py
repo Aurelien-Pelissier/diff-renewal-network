@@ -241,7 +241,9 @@ def main() -> None:
                 all_speedups[design].append(f_full_t["seconds"] / f_pos["seconds"])
 
             diffs = np.asarray(pos_shapes) - np.asarray(full_shapes)
-            med_diff, ci_diff = paired_bootstrap_ci(diffs, seed=hash(key) % 10000)
+            # Deterministic cross-process seed (independent of PYTHONHASHSEED)
+            det_seed = sum((idx + 1) * ord(ch) for idx, ch in enumerate(key)) % 10000
+            med_diff, ci_diff = paired_bootstrap_ci(diffs, seed=det_seed)
             cases_summary[key] = {
                 "median_shape_percent": float(np.median(pos_shapes)),
                 "median_mean_percent": float(np.median(pos_means)),

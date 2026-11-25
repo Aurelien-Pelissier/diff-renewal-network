@@ -157,9 +157,7 @@ def predict_tabular_model(kind: str, params, X: jax.Array, age: jax.Array, log_a
     h = jax.nn.gelu(X @ w1 + b1)
     out = h @ w2 + b2
     if kind == "markov_clock":
-        # Smooth softplus rate prevents clipping dead-gradients!
-        lam = jax.nn.softplus(out.squeeze(-1)) * 0.2 + 1e-6
-        # Wait: log-rate parameterization with smooth tanh bound in [-9, 1.5]
+        # Log-rate parameterization with smooth tanh bound in [-9, 1.5]
         log_lam = -3.75 + 5.25 * jnp.tanh((out.squeeze(-1) + 3.75) / 5.25)
         lam = jnp.exp(log_lam)
         return jnp.clip(1.0 - jnp.exp(-lam * dt), 1e-7, 1.0 - 1e-7)
@@ -261,9 +259,10 @@ def init_seq_model(kind: str, d_in: int, seed: int):
             jnp.array([-1.6]),
         )
     if kind == "s4d_seq":
+        half = H // 2
         return (
-            jnp.linspace(jnp.log(0.1), jnp.log(2.0), H),
-            jax.random.normal(keys[0], (H,)) * 0.15,
+            jnp.linspace(jnp.log(0.1), jnp.log(2.0), half),
+            jax.random.normal(keys[0], (half,)) * 0.15,
             jax.random.normal(keys[1], (d_in, H)) * 0.12,
             jnp.zeros(H),
             jax.random.normal(keys[2], (H + d_in, 12)) * 0.12,
@@ -308,11 +307,11 @@ def predict_seq_model(kind: str, params, seqs_X: jax.Array, seqs_dt: jax.Array):
         return jnp.swapaxes(probs, 0, 1)
 
     if kind == "s4d_seq":
-        log_a, omega, w_b, b_b, w_m, b_m, w_o, b_o = params
-        H = log_a.shape[0]
-        half = H // 2
-        decay = jnp.exp(jnp.clip(log_a, -3.5, 2.5))
-        om = omega[:half]
+        log_a_half, om, w_b, b_b, w_m, b_m, w_o, b_o = params
+        half = log_a_half.shape[0]
+        H = 2 * half
+        decay_half = jnp.exp(jnp.clip(log_a_half, -3.5, 2.5))
+        decay = jnp.concatenate([decay_half, decay_half], axis=0)
 
         def step(h, inp):
             x, dt = inp
@@ -322,7 +321,7 @@ def predict_seq_model(kind: str, params, seqs_X: jax.Array, seqs_dt: jax.Array):
             s_th = jnp.sin(om[None, :] * dt[:, None])
             h1, h2 = h[:, :half], h[:, half:]
             h_rot = jnp.concatenate([c_th * h1 - s_th * h2, s_th * h1 + c_th * h2], axis=-1)
-            h_new = a_bar * h_rot + ((1.0 - a_bar) / decay[None, :]) * drv
+            h_new = a_bar * h_rot + (-jnp.expm1(-decay[None, :] * dt[:, None]) / decay[None, :]) * drv
             hid = jax.nn.gelu(jnp.concatenate([h_new, x], axis=-1) @ w_m + b_m)
             logit = (hid @ w_o + b_o).squeeze(-1)
             return h_new, jax.nn.sigmoid(logit)
@@ -520,20 +519,32 @@ def eval_regime(
         )
 
     if include_seq:
-        seqs_X, seqs_dt, seqs_y, seqs_m, seqs_orig = build_pool_sequences(df, X_std, log_age_std, y, m_dev_full)
+        seqs_X, seqs_dt, seqs_y, seqs_m_full, seqs_orig = build_pool_sequences(df, X_std, log_age_std, y, m_dev_full)
+        _, _, _, seqs_m_jan, _ = build_pool_sequences(df, X_std, log_age_std, y, m_jan_tr)
+        _, _, _, seqs_m_feb, _ = build_pool_sequences(df, X_std, log_age_std, y, m_feb_val)
         for kind in ("mamba_ssm", "s4d_seq", "ltc_seq"):
             t0 = perf_counter()
-            p_seq, n_params = fit_sequence_with_reg(kind, seqs_X, seqs_dt, seqs_y, seqs_m, reg=2e-2)
+            # Fair Feb-validation L2 selection matching tabular models!
+            best_reg, best_vl = 2e-2, 1e9
+            for reg_c in (1e-3, 1e-2, 5e-2, 2e-1):
+                p_v_seq, _ = fit_sequence_with_reg(kind, seqs_X, seqs_dt, seqs_y, seqs_m_jan, reg=reg_c, maxiter=80)
+                p_v_flat = np.zeros(len(df), dtype=np.float64)
+                valid = seqs_orig >= 0
+                p_v_flat[seqs_orig[valid]] = p_v_seq[valid]
+                vl = compute_binary_metrics(y[m_feb_val], p_v_flat[m_feb_val])["logloss"]
+                if vl < best_vl:
+                    best_vl, best_reg = vl, reg_c
+            p_seq, n_params = fit_sequence_with_reg(kind, seqs_X, seqs_dt, seqs_y, seqs_m_full, reg=best_reg, maxiter=100)
             p_flat = np.zeros(len(df), dtype=np.float64)
             valid = seqs_orig >= 0
             p_flat[seqs_orig[valid]] = p_seq[valid]
             elapsed = perf_counter() - t0
             tr_ll = compute_binary_metrics(y[m_dev_full], p_flat[m_dev_full])["logloss"]
-            out[kind] = {"params": n_params, "reg": 2e-2, "train_logloss": tr_ll, "seconds": round(elapsed, 2)}
+            out[kind] = {"params": n_params, "reg": float(best_reg), "train_logloss": tr_ll, "seconds": round(elapsed, 2)}
             for mname, mm in test_masks.items():
                 out[kind][mname] = compute_binary_metrics(y[mm], p_flat[mm])
             print(
-                f"  [{label}:{kind:12s}] reg=2e-2 tr={tr_ll:.5f} | "
+                f"  [{label}:{kind:12s}] reg={best_reg:.0e} tr={tr_ll:.5f} | "
                 + " | ".join(f"{k}={out[kind][k]['logloss']:.5f}" for k in test_masks),
                 flush=True,
             )

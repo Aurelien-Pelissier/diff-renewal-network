@@ -137,7 +137,8 @@ def make_sparse_hyper_drn(
         # Smooth ordered rates: lam_s < lam_f via lam_f = lam_s + exp(...)
         lam_s = jnp.exp(jnp.clip(th[n_nodes : 2 * n_nodes], -7.0, 1.5)) * active_mask
         lam_f = (lam_s + jnp.exp(jnp.clip(th[:n_nodes], -6.0, max_log_fast))) * active_mask
-        c_s = (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
+        # smooth_erlang_logits uses 1-indexed stage counts [1..k_slow]
+        c_s = 1.0 + (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
         w_slow = jax.vmap(lambda c: jax.nn.softmax(smooth_erlang_logits(c, stages=k_slow, width=0.5)))(c_s)
         b_slow = w_slow[:, ::-1]
         alpha_f = jax.nn.sigmoid(th[3 * n_nodes : 4 * n_nodes]) * active_mask
@@ -243,7 +244,7 @@ def make_exact_ctmc(n_nodes: int, edges: list[tuple[int, int]], horizons: np.nda
     ts_j = jnp.asarray(horizons, dtype=jnp.float64)
 
     def rollout_batch(th, eval_nodes: jax.Array):
-        rates = jnp.exp(jnp.clip(th, -8.0, 3.0)) * edge_active
+        rates = jnp.exp(jnp.clip(th, -8.0, 5.3)) * edge_active
         gen = jnp.zeros((n_nodes, n_nodes), dtype=jnp.float64)
         gen = gen.at[dst_idx, src_idx].add(rates)
         gen = gen.at[src_idx, src_idx].add(-rates)
@@ -292,16 +293,19 @@ def make_scalable_neural_baseline(
     rank_e = 6
 
     if kind == "mamba":
+        # Pre-LayerNorm + Xavier selective SSM (avoids 5-factor vanishing core gradients!)
         shapes = [
             (n_nodes, latent), (1, latent), (latent,),
-            (latent,), (n_nodes, latent), (latent,),
-            (n_nodes, latent), (n_nodes, latent), (n_nodes, latent), (latent,),
+            (n_nodes, latent), (latent,),
+            (latent,), (latent, latent), (latent,),
+            (latent, latent), (latent,), (latent, latent), (latent,),
             (n_edges,), (latent, rank_e), (rank_e, n_edges),
         ]
     elif kind == "s4d":
+        half = latent // 2
         shapes = [
             (n_nodes, latent), (1, latent), (latent,),
-            (latent,), (latent,), (n_nodes, latent), (latent,),
+            (half,), (half,), (n_nodes, latent), (latent,),
             (n_edges,), (latent, rank_e), (rank_e, n_edges),
         ]
     elif kind == "ltc":
@@ -329,10 +333,22 @@ def make_scalable_neural_baseline(
         r = np.random.default_rng(seed)
         parts = []
         for idx, sh in enumerate(shapes):
-            if kind in ("mamba", "s4d") and idx == 3:
+            if kind == "mamba" and idx == 5:
                 parts.append(np.linspace(np.log(0.1), np.log(3.0), latent))
+            elif kind == "mamba" and idx == 7:
+                parts.append(np.full(latent, -0.5))  # b_dt
+            elif kind == "mamba" and idx == 11:
+                parts.append(np.full(latent, 1.0))  # b_z > 0 so SiLU gate is open at init
+            elif kind == "mamba" and idx in (2, 4, 9):
+                parts.append(np.zeros(sh).ravel())
+            elif kind == "s4d" and idx == 3:
+                parts.append(np.linspace(np.log(0.1), np.log(3.0), latent // 2))
             elif (kind == "neural_cme" and idx == 4) or (kind != "neural_cme" and idx == len(shapes) - 3):
                 parts.append(edge_prior_logits.copy())
+            elif kind == "mamba" and len(sh) == 2:
+                # Xavier scaling keeps Pre-LN Mamba core gradients O(1e-3), matched to S4D/LTC/Latent ODE
+                scale = 0.5 / np.sqrt(max(sh[0], 1)) if idx >= len(shapes) - 2 else 1.0 / np.sqrt(max(sh[0], 1))
+                parts.append(r.normal(0.0, scale, sh).ravel())
             else:
                 parts.append(r.normal(0.0, 0.12, sh).ravel())
         return np.concatenate(parts)
@@ -388,12 +404,17 @@ def make_scalable_neural_baseline(
                         axis=-1,
                     )
                     mod = (jax.nn.gelu(tf @ w1 + b1) @ w2) @ ve
-                    rates = jnp.exp(jnp.clip(be[None, :] + mod, -8.0, 3.0)) * edge_active[None, :]
+                    rates = jnp.exp(jnp.clip(be[None, :] + mod, -8.0, 5.3)) * edge_active[None, :]
                     return (exp_euler_step(pc, rates, h_dt), tc + h_dt), None
 
                 (p, t_cur), _ = jax.lax.scan(step, (p, t_cur), None, length=n_st)
                 preds.append(p)
             return jnp.swapaxes(jnp.stack(preds, axis=0), 0, 1)
+
+        def _ln(x):
+            return (x - jnp.mean(x, axis=-1, keepdims=True)) / jnp.sqrt(
+                jnp.var(x, axis=-1, keepdims=True) + 1e-5
+            )
 
         enc_v, enc_a, eb = ps[0], ps[1], ps[2]
         be, ue, ve = ps[-3], ps[-2], ps[-1]
@@ -406,23 +427,25 @@ def make_scalable_neural_baseline(
             def step(carry, _):
                 pc, hc = carry
                 if kind == "mamba":
-                    log_a, w_dt, b_dt, w_b, w_c, w_z, b_z = ps[3:10]
+                    w_in, b_in, log_a, w_dt, b_dt, w_b, b_b, w_z, b_z = ps[3:12]
+                    x_n = _ln(pc @ w_in + b_in)
                     neg_a = -jnp.exp(jnp.clip(log_a, -3.5, 2.5))
-                    delta = jax.nn.softplus(pc @ w_dt + b_dt) * h_dt
+                    delta = jax.nn.softplus(x_n @ w_dt + b_dt) * h_dt
                     a_bar = jnp.exp(delta * neg_a[None, :])
-                    b_bar = ((a_bar - 1.0) / neg_a[None, :]) * jnp.tanh(pc @ w_b)
+                    b_bar = (jnp.expm1(delta * neg_a[None, :]) / neg_a[None, :]) * jnp.tanh(x_n @ w_b + b_b)
                     hn = a_bar * hc + b_bar
-                    y_h = jnp.tanh(pc @ w_c) * hn * jax.nn.silu(pc @ w_z + b_z)
+                    y_h = _ln(hn) * jax.nn.silu(x_n @ w_z + b_z)
                 elif kind == "s4d":
-                    log_a, om, w_b, b_b = ps[3:7]
-                    decay = jnp.exp(jnp.clip(log_a, -3.5, 2.5))
+                    log_a_half, om, w_b, b_b = ps[3:7]
+                    decay_half = jnp.exp(jnp.clip(log_a_half, -3.5, 2.5))
+                    decay = jnp.concatenate([decay_half, decay_half], axis=0)
                     half = latent // 2
-                    c_th = jnp.cos(om[:half] * h_dt)[None, :]
-                    s_th = jnp.sin(om[:half] * h_dt)[None, :]
+                    c_th = jnp.cos(om * h_dt)[None, :]
+                    s_th = jnp.sin(om * h_dt)[None, :]
                     h1, h2 = hc[:, :half], hc[:, half:]
                     h_rot = jnp.concatenate([c_th * h1 - s_th * h2, s_th * h1 + c_th * h2], axis=-1)
                     a_bar = jnp.exp(-decay[None, :] * h_dt)
-                    hn = a_bar * h_rot + ((1.0 - a_bar) / decay[None, :]) * jnp.tanh(pc @ w_b + b_b)
+                    hn = a_bar * h_rot + (-jnp.expm1(-decay[None, :] * h_dt) / decay[None, :]) * jnp.tanh(pc @ w_b + b_b)
                     y_h = jnp.tanh(hn)
                 elif kind == "ltc":
                     wa, ba, wt, bt = ps[3:7]
@@ -436,11 +459,11 @@ def make_scalable_neural_baseline(
                     w1, b1, w2, b2 = ps[3:7]
                     inp = jnp.concatenate([pc, hc], axis=-1)
                     dh = jnp.tanh(jnp.tanh(inp @ w1 + b1) @ w2 + b2)
-                    hn = hc + jnp.minimum(h_dt, 1.0) * dh
+                    hn = hc + h_dt * dh
                     y_h = jnp.tanh(hn)
 
                 mod = (y_h @ ue) @ ve
-                rates = jnp.exp(jnp.clip(be[None, :] + mod, -8.0, 3.0)) * edge_active[None, :]
+                rates = jnp.exp(jnp.clip(be[None, :] + mod, -8.0, 5.3)) * edge_active[None, :]
                 return (exp_euler_step(pc, rates, h_dt), hn), None
 
             (p, h), _ = jax.lax.scan(step, (p, h), None, length=n_st)

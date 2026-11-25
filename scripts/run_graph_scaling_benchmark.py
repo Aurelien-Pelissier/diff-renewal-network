@@ -293,12 +293,13 @@ def run_highdim_recovery() -> list[dict]:
             # 1. Differentiable Compiled PH fit (2-start L-BFGS-B)
             t0 = perf_counter()
             best_ph = None
+            def _obj_ph(z):
+                v, g = vg_ph(jnp.asarray(z), counts_jax)
+                return float(v), np.asarray(g, dtype=float)
+
             for st0 in starts_th:
                 fit_cand = minimize(
-                    lambda z: (
-                        float(vg_ph(jnp.asarray(z), counts_jax)[0]),
-                        np.asarray(vg_ph(jnp.asarray(z), counts_jax)[1], dtype=float),
-                    ),
+                    _obj_ph,
                     st0,
                     jac=True,
                     method="L-BFGS-B",
@@ -317,11 +318,13 @@ def run_highdim_recovery() -> list[dict]:
             ph_times.append(ph_s + compile_s)
             ph_joints.append(int(r_err <= 0.05 and s_err <= 0.10))
 
-            # 2. Stochastic Simulation Search (DE + Powell with 400 particles/eval)
-            sim_rng = np.random.default_rng(5000 + 10 * v + seed)
+            # 2. Stochastic Simulation Search (DE + Powell with CRN 400 particles/eval)
+            crn_seed = 5000 + 10 * v + seed
             def mc_loss(z):
                 m_c = np.exp(z[:n_edges])
                 k_c = np.exp(z[n_edges:])
+                # Common Random Numbers (CRN) makes the objective deterministic for Powell refinement!
+                sim_rng = np.random.default_rng(crn_seed)
                 p_est = simulate_gamma_network_snapshots(
                     m_c, k_c, edges, v, prep_nodes, ts_np, 400, sim_rng
                 )

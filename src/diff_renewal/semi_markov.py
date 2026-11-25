@@ -10,8 +10,35 @@ alongside multi-stage refractory consolidation) while preserving:
 import jax
 import jax.numpy as jnp
 import jax.scipy.linalg as jl
+import numpy as np
 
 from .race import mixed_erlang_race
+
+
+def init_edge_memory_params(
+    n_nodes: int,
+    n_edges: int,
+    *,
+    stages: int = 6,
+    rank: int = 3,
+    base_mean: float = 1.0,
+    emb_scale: float = 0.08,
+    seed: int = 0,
+) -> np.ndarray:
+    """Symmetry-breaking initializer for EdgeMemoryHyperDRN.
+
+    Avoids the exact bilinear saddle point at ``f_emb = 0, e_emb = 0`` where
+    ``route_bias = f_emb @ e_emb`` produces identically zero gradients for all
+    incoming-edge embedding parameters.
+    """
+    n_fibres = n_nodes + n_edges
+    rng = np.random.default_rng(seed)
+    base_log_means = np.full(n_edges, np.log(max(float(base_mean), 1e-6)), dtype=float)
+    base_logits = np.zeros(n_edges * stages, dtype=float)
+    fibre_mod = np.zeros(3 * n_fibres, dtype=float)
+    f_emb = rng.normal(0.0, emb_scale, size=n_fibres * rank)
+    e_emb = rng.normal(0.0, emb_scale, size=rank * n_edges)
+    return np.concatenate([base_log_means, base_logits, fibre_mod, f_emb, e_emb])
 
 
 def build_edge_memory_hyper_generator(
@@ -20,6 +47,7 @@ def build_edge_memory_hyper_generator(
     n_nodes: int,
     *,
     stages: int = 6,
+    rank: int = 3,
     aged_horizon: float = 0.5,
 ):
     """Construct incoming-edge lifted two-scale Hyper-Erlang network generator.
@@ -40,6 +68,13 @@ def build_edge_memory_hyper_generator(
         read_mat: (V, M_tot) node-occupancy readout matrix.
     """
     n_edges = len(edges)
+    expected_size = edge_memory_param_size(n_nodes, n_edges, stages=stages, rank=rank)
+    params = jnp.asarray(params)
+    if params.size != expected_size:
+        raise ValueError(
+            f"Expected {expected_size} parameters for n_nodes={n_nodes}, "
+            f"n_edges={n_edges}, stages={stages}, rank={rank}; got {params.size}"
+        )
     outgoing = [tuple(e for e, (u, _) in enumerate(edges) if u == i) for i in range(n_nodes)]
     # Total fibres: 0..V-1 are initial root preparations at node v;
     # V..V+E-1 are post-transition fibres after traversing edge e_in = (u -> v).
@@ -59,8 +94,7 @@ def build_edge_memory_hyper_generator(
     fibre_mod = params[idx : idx + 3 * n_fibres].reshape(n_fibres, 3)
     idx += 3 * n_fibres
 
-    # Incoming-fibre routing bias on outgoing edges: (n_fibres, rank=3) @ (3, n_edges)
-    rank = 3
+    # Incoming-fibre routing bias on outgoing edges: (n_fibres, rank) @ (rank, n_edges)
     f_emb = params[idx : idx + n_fibres * rank].reshape(n_fibres, rank)
     idx += n_fibres * rank
     e_emb = params[idx : idx + rank * n_edges].reshape(rank, n_edges)
@@ -101,8 +135,12 @@ def build_edge_memory_hyper_generator(
             blk_s = -rs * jnp.eye(dim_s) + jnp.diag(rs * cs, k=1).T
             blk_tot = jl.block_diag(jnp.array([[-rf]]), blk_s)
             ent_tot = jnp.zeros(dim_tot, dtype=params.dtype).at[0].set(pf).at[1].set(1.0 - pf)
-            surv_tot = jl.expm(aged_horizon * blk_tot) @ ent_tot
-            surv_tot = surv_tot / jnp.maximum(jnp.sum(surv_tot), 1e-15)
+            # Shift by min exit rate to prevent expm underflow at arbitrarily large aged_horizon
+            min_r = jnp.minimum(rf, rs)
+            blk_shifted = blk_tot + min_r * jnp.eye(dim_tot, dtype=params.dtype)
+            surv_tot = jl.expm(aged_horizon * blk_shifted) @ ent_tot
+            surv_tot = jnp.maximum(surv_tot, 0.0)
+            surv_tot = surv_tot / jnp.maximum(jnp.sum(surv_tot), 1e-300)
             fast_p = jax.nn.softmax(route_bias[fi, grp_idx])
             flx = jnp.concatenate([(rf * fast_p)[:, None], rs * causes_s], axis=1)
             return blk_tot, ent_tot, surv_tot, flx

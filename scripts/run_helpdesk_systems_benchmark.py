@@ -42,6 +42,7 @@ from diff_renewal import (  # noqa: E402
     build_edge_memory_hyper_generator,
     compact_network_state_size,
     edge_memory_param_size,
+    init_edge_memory_params,
     mixed_erlang_race,
     network_state_size,
 )
@@ -201,8 +202,6 @@ def predict_ctmc(theta: jax.Array, horizons: jax.Array):
         return jl.expm(h * gen)
 
     mats = jax.vmap(one_h)(horizons)  # (H, V, V) where col u -> row v
-    # Return (4, H, V) for fresh starts 0..3 and (3, H, V) for aged starts 1..3
-    fresh = jnp.swapaxes(mats[:, :, :4], 0, 2)  # (4, V, H) -> wait: mats[:, v, u]
     # mats has shape (H, V_dst, V_src) -> transpose to (V_src, H, V_dst)
     all_p = jnp.transpose(mats, (2, 0, 1))
     return all_p[:4], all_p[1:4]
@@ -283,11 +282,10 @@ K_EDGE = 6
 
 
 def init_edge_memory_drn(seed: int = 0, stages: int = K_EDGE) -> np.ndarray:
-    n_p = edge_memory_param_size(V_NODES, E_EDGES, stages=stages)
-    w = np.zeros(n_p, dtype=float)
-    # Match Renewal DRN timescale initialization (8-day mean for slow refractory branch)
-    w[:E_EDGES] = np.log(8.0)
-    return w
+    """Symmetry-breaking initializer avoiding the bilinear f_emb @ e_emb = 0 saddle."""
+    return init_edge_memory_params(
+        V_NODES, E_EDGES, stages=stages, base_mean=8.0, emb_scale=0.08, seed=seed
+    )
 
 
 def predict_edge_memory_drn(theta: jax.Array, horizons: jax.Array, stages: int = K_EDGE):
@@ -323,7 +321,28 @@ def init_helpdesk_neural_cme(seed: int = 0):
     )
 
 
-def predict_helpdesk_neural_cme(theta: jax.Array, horizons: jax.Array):
+_HDK_SRC = jnp.asarray([u for u, _ in EDGES], dtype=jnp.int32)
+_HDK_DST = jnp.asarray([v for _, v in EDGES], dtype=jnp.int32)
+
+
+def _exp_euler_helpdesk_step(p: jax.Array, rates: jax.Array, dt: float) -> jax.Array:
+    """Unconditionally positive, simplex-conserving exponential-Euler flux update."""
+    # rates: (B, E) or (E,)
+    if rates.ndim == 1:
+        rates_b = jnp.broadcast_to(rates[None, :], (p.shape[0], E_EDGES))
+    else:
+        rates_b = rates
+    tot_out = jax.vmap(lambda r: jax.ops.segment_sum(r, _HDK_SRC, num_segments=V_NODES))(rates_b)
+    frac_leave = -jnp.expm1(-jnp.minimum(tot_out * dt, 50.0))
+    scale = frac_leave / jnp.maximum(tot_out, 1e-30)
+    edge_mass = p[:, _HDK_SRC] * scale[:, _HDK_SRC] * rates_b
+    p_next = p * (1.0 - frac_leave)
+    p_next = p_next.at[:, _HDK_DST].add(edge_mass)
+    p_next = jnp.maximum(p_next, 1e-12)
+    return p_next / jnp.sum(p_next, axis=-1, keepdims=True)
+
+
+def predict_helpdesk_neural_cme(theta: jax.Array, horizons: jax.Array, *, clean_age0: bool = False):
     w_dim = 20
     p1 = 4 * w_dim
     w1 = theta[:p1].reshape(4, w_dim)
@@ -332,41 +351,27 @@ def predict_helpdesk_neural_cme(theta: jax.Array, horizons: jax.Array):
     w2 = theta[p2 : p2 + w_dim * E_EDGES].reshape(w_dim, E_EDGES)
     b2 = theta[p2 + w_dim * E_EDGES :]
 
-    # Integrate on uniform 0.5-day steps up to 45.0 days (90 steps) using RK4
-    n_steps = 90
-    dt = 0.5
+    # Integrate on uniform 0.25-day steps up to 45.0 days (180 steps) with unconditionally positive exp-Euler
+    n_steps = 180
+    dt = 0.25
     h_idx = jnp.asarray(np.round(np.asarray(horizons) / dt).astype(int) - 1)
 
     def run_cohort(is_aged_flag, init_p):
-        def step(carry, k):
+        def step(carry, _k):
             p, t_cur = carry
             t_mid = (t_cur + 0.5 * dt) / 45.0
             feat = jnp.array(
                 [t_mid, jnp.sin(2.0 * jnp.pi * t_mid), jnp.cos(2.0 * jnp.pi * t_mid), is_aged_flag]
             )
             rates = 1e-4 + 4.0 * jax.nn.sigmoid(jax.nn.gelu(feat @ w1 + b1) @ w2 + b2)
-
-            def rhs(p_s):
-                dp = jnp.zeros_like(p_s)
-                for e_i, (u, v) in enumerate(EDGES):
-                    fl = rates[e_i] * p_s[:, u]
-                    dp = dp.at[:, v].add(fl)
-                    dp = dp.at[:, u].add(-fl)
-                return dp
-
-            k1 = rhs(p)
-            k2 = rhs(p + 0.5 * dt * k1)
-            k3 = rhs(p + 0.5 * dt * k2)
-            k4 = rhs(p + dt * k3)
-            p_next = jnp.maximum(p + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4), 1e-15)
-            p_next = p_next / jnp.sum(p_next, axis=-1, keepdims=True)
+            p_next = _exp_euler_helpdesk_step(p, rates, dt)
             return (p_next, t_cur + dt), p_next
 
         _, traj = jax.lax.scan(step, (init_p, 0.0), jnp.arange(n_steps))
         return jnp.swapaxes(traj[h_idx], 0, 1)  # (N_starts, H, V)
 
     pf = run_cohort(0.0, jnp.eye(V_NODES)[:4])
-    pa = run_cohort(1.0, jnp.eye(V_NODES)[1:4])
+    pa = pf[1:4] if clean_age0 else run_cohort(1.0, jnp.eye(V_NODES)[1:4])
     return pf, pa
 
 
@@ -389,7 +394,7 @@ def init_helpdesk_latent_ode(seed: int = 0):
     )
 
 
-def predict_helpdesk_latent_ode(theta: jax.Array, horizons: jax.Array):
+def predict_helpdesk_latent_ode(theta: jax.Array, horizons: jax.Array, *, clean_age0: bool = False):
     z_dim, w_dim = 6, 16
     i0 = 6 * z_dim
     enc = theta[:i0].reshape(6, z_dim)
@@ -402,8 +407,8 @@ def predict_helpdesk_latent_ode(theta: jax.Array, horizons: jax.Array):
     w2 = theta[i3 : i3 + w_dim * (E_EDGES + z_dim)].reshape(w_dim, E_EDGES + z_dim)
     b2 = theta[i3 + w_dim * (E_EDGES + z_dim) :]
 
-    n_steps = 90
-    dt = 0.5
+    n_steps = 180
+    dt = 0.25
     h_idx = jnp.asarray(np.round(np.asarray(horizons) / dt).astype(int) - 1)
 
     def run_cohort(is_aged_flag, init_p):
@@ -411,34 +416,24 @@ def predict_helpdesk_latent_ode(theta: jax.Array, horizons: jax.Array):
         z0 = jnp.tanh(jnp.concatenate([init_p, age_col], axis=-1) @ enc + eb)
         y0 = jnp.concatenate([init_p, z0], axis=-1)
 
-        def rhs(y):
+        def step(y, _):
             p, z = y[:, :V_NODES], y[:, V_NODES:]
             raw = jnp.tanh(y @ w1 + b1) @ w2 + b2
             rates = 1e-4 + 4.0 * jax.nn.sigmoid(raw[:, :E_EDGES])
-            dp = jnp.zeros_like(p)
-            for e_i, (u, v) in enumerate(EDGES):
-                fl = rates[:, e_i] * p[:, u]
-                dp = dp.at[:, v].add(fl)
-                dp = dp.at[:, u].add(-fl)
-            dz = jnp.tanh(raw[:, E_EDGES:]) - 0.1 * z
-            return jnp.concatenate([dp, dz], axis=-1)
-
-        def step(y, _):
-            k1 = rhs(y)
-            k2 = rhs(y + 0.5 * dt * k1)
-            k3 = rhs(y + 0.5 * dt * k2)
-            k4 = rhs(y + dt * k3)
-            yn = y + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
-            p_c = jnp.maximum(yn[:, :V_NODES], 1e-15)
-            p_c = p_c / jnp.sum(p_c, axis=-1, keepdims=True)
-            yn = jnp.concatenate([p_c, yn[:, V_NODES:]], axis=-1)
-            return yn, p_c
+            p_c = _exp_euler_helpdesk_step(p, rates, dt)
+            # Midpoint latent update with damping
+            dz1 = jnp.tanh(raw[:, E_EDGES:]) - 0.1 * z
+            y_mid = jnp.concatenate([0.5 * (p + p_c), z + 0.5 * dt * dz1], axis=-1)
+            raw_mid = jnp.tanh(y_mid @ w1 + b1) @ w2 + b2
+            dz2 = jnp.tanh(raw_mid[:, E_EDGES:]) - 0.1 * (z + 0.5 * dt * dz1)
+            z_n = z + dt * dz2
+            return jnp.concatenate([p_c, z_n], axis=-1), p_c
 
         _, traj = jax.lax.scan(step, y0, None, length=n_steps)
         return jnp.swapaxes(traj[h_idx], 0, 1)
 
     pf = run_cohort(0.0, jnp.eye(V_NODES)[:4])
-    pa = run_cohort(1.0, jnp.eye(V_NODES)[1:4])
+    pa = pf[1:4] if clean_age0 else run_cohort(1.0, jnp.eye(V_NODES)[1:4])
     return pf, pa
 
 
@@ -446,16 +441,20 @@ def predict_helpdesk_latent_ode(theta: jax.Array, horizons: jax.Array):
 # Model 6: Monotone Cumulative-Hazard Neural Competing-Risks / Neural TPP
 # (Omi et al., NeurIPS 2019; Lee et al., AAAI 2018 DeepHit single-jump model)
 # ---------------------------------------------------------------------------
+# All 16 non-self competing destinations (u -> v, u in 0..3, v != u) so coarsened multi-hop
+# observations never hit hardcoded 0.0 / 1e-12 dead-gradient clips!
+NCR_PAIRS = tuple((u, v) for u in range(4) for v in range(V_NODES) if u != v)
+
+
 def init_neural_competing_risks(seed: int = 0):
     rng = np.random.default_rng(seed)
-    h_dim = 12
-    # For each edge e in 0..E-1: monotone positive-weight MLP mapping tau -> Lambda_e(tau)
-    # w1_pos: (E, h_dim), b1: (E, h_dim), w2_pos: (E, h_dim) -> 3 * E * h_dim = 324 params
+    h_dim = 8
+    n_pairs = len(NCR_PAIRS)  # 16 directed non-self pairs -> 3 * 16 * 8 = 384 params
     return np.concatenate(
         [
-            rng.normal(-1.0, 0.3, size=E_EDGES * h_dim),
-            rng.normal(-0.5, 0.3, size=E_EDGES * h_dim),
-            rng.normal(-1.5, 0.3, size=E_EDGES * h_dim),
+            rng.normal(-1.0, 0.3, size=n_pairs * h_dim),
+            rng.normal(-0.5, 0.3, size=n_pairs * h_dim),
+            rng.normal(-1.5, 0.3, size=n_pairs * h_dim),
         ]
     )
 
@@ -466,16 +465,13 @@ def _cum_hazard_edge(theta_e, tau):
     w1 = jax.nn.softplus(theta_e[:h_dim])
     b1 = theta_e[h_dim : 2 * h_dim]
     w2 = jax.nn.softplus(theta_e[2 * h_dim :])
-    # tau in days, log-scaled smoothly
-    val = jnp.sum(w2 * (jax.nn.softplus(w1 * tau + b1) - jax.nn.softplus(b1)))
-    return val
+    return jnp.sum(w2 * (jax.nn.softplus(w1 * tau + b1) - jax.nn.softplus(b1)))
 
 
 def predict_neural_competing_risks_single_step(theta: jax.Array, delta_t: float) -> jax.Array:
-    """Exact single-jump competing-risks transition matrix P_1step(v | u, delta_t) via Gauss-Legendre."""
-    theta_edges = theta.reshape(E_EDGES, -1)
-    # 16-point Gauss-Legendre quadrature on [0, delta_t]
-    gl_x, gl_w = np.polynomial.legendre.leggauss(16)
+    """Exact single-jump competing-risks transition matrix P_1step(v | u, delta_t) via 32-pt Gauss-Legendre."""
+    theta_edges = theta.reshape(len(NCR_PAIRS), -1)
+    gl_x, gl_w = np.polynomial.legendre.leggauss(32)
     ts_q = jnp.asarray(0.5 * delta_t * (gl_x + 1.0), dtype=jnp.float64)
     ws_q = jnp.asarray(0.5 * delta_t * gl_w, dtype=jnp.float64)
 
@@ -484,7 +480,6 @@ def predict_neural_competing_risks_single_step(theta: jax.Array, delta_t: float)
         haz = jax.grad(lambda s: _cum_hazard_edge(th_e, s))(t_val)
         return lam, haz
 
-    # Evaluate across all edges and quadrature nodes: (E, 16)
     lams_q, hazs_q = jax.vmap(
         lambda th_e: jax.vmap(lambda t_val: edge_lam_and_h(th_e, t_val))(ts_q)
     )(theta_edges)
@@ -493,7 +488,7 @@ def predict_neural_competing_risks_single_step(theta: jax.Array, delta_t: float)
     )
 
     out_edges = [[] for _ in range(V_NODES)]
-    for e_idx, (u, v) in enumerate(EDGES):
+    for e_idx, (u, v) in enumerate(NCR_PAIRS):
         out_edges[u].append((e_idx, v))
 
     p_mat = jnp.zeros((V_NODES, V_NODES), dtype=jnp.float64)
@@ -501,14 +496,13 @@ def predict_neural_competing_risks_single_step(theta: jax.Array, delta_t: float)
     for u in range(4):
         e_ids = [x[0] for x in out_edges[u]]
         dsts = [x[1] for x in out_edges[u]]
-        tot_lam_q = jnp.sum(lams_q[jnp.asarray(e_ids)], axis=0)  # (16,)
+        tot_lam_q = jnp.sum(lams_q[jnp.asarray(e_ids)], axis=0)
         surv_q = jnp.exp(-jnp.minimum(tot_lam_q, 60.0))
         surv_end = jnp.exp(-jnp.minimum(jnp.sum(lams_end[jnp.asarray(e_ids)]), 60.0))
         p_mat = p_mat.at[u, u].set(surv_end)
         for e_i, dst in zip(e_ids, dsts):
             cif = jnp.sum(ws_q * hazs_q[e_i] * surv_q)
             p_mat = p_mat.at[u, dst].add(cif)
-        # Normalize row defensively for quadrature rounding
         row_sum = jnp.sum(p_mat[u])
         p_mat = p_mat.at[u].set(p_mat[u] / jnp.maximum(row_sum, 1e-12))
     return p_mat
@@ -566,17 +560,19 @@ def run_coarsening_panel_experiment(trajs_train, trajs_test):
         f_grid_jax = jnp.asarray(f_grid_tr, dtype=jnp.float64)
         n_grid_obs = float(np.maximum(f_grid_tr.sum(), 1.0))
 
-        # 1. Single-Jump Neural Competing-Risks (Omi et al. / DeepHit style) on panel pairs (s(k*dt), s((k+1)*dt))
+        # 1. Single-Jump Neural Competing-Risks trained on the EXACT SAME coarsened snapshot grid {m * dt}
+        # (matched multi-horizon supervision, zero dead 0.0 clips!)
         panel_tr = extract_panel_pairs(trajs_train, dt)
-        p_tr_jax = jnp.asarray(panel_tr[:4], dtype=jnp.float64)
-        n_obs = float(np.maximum(panel_tr[:4].sum(), 1.0))
         init_ncr = init_neural_competing_risks(seed=17)
 
         @jax.jit
         def ncr_vg(w):
             def loss_fn(ww):
-                p_mat = predict_neural_competing_risks_single_step(ww, dt)[:4]
-                nll = -jnp.sum(p_tr_jax * jnp.log(jnp.clip(p_mat, 1e-12, 1.0))) / n_obs
+                mats = jnp.stack(
+                    [predict_neural_competing_risks_single_step(ww, float(h))[:4] for h in grid_obs],
+                    axis=1,
+                )
+                nll = -jnp.sum(f_grid_jax * jnp.log(jnp.clip(mats, 1e-12, 1.0))) / n_grid_obs
                 return nll + 1e-4 * jnp.mean(ww**2)
 
             return jax.value_and_grad(loss_fn)(w)
@@ -787,6 +783,9 @@ def main():
         for mname, init_fn, pred_fn, is_joint in models_spec:
             w_hat = fit_model(init_fn(100 + fi), pred_fn, f_tr, a_tr, joint=is_joint, maxiter=150)
             pf, pa = pred_fn(jnp.asarray(w_hat), h_jax)
+            # Clean age=0 zero-shot evaluation for black-box neural ODEs trained fresh_only
+            if (not is_joint) and ("neural_cme" in mname or "latent_ode" in mname):
+                pa = pf[1:4]
             f_kl = empirical_kl(np.asarray(pf), f_te)
             a_kl = empirical_kl(np.asarray(pa), a_te)
             fold_results[mname]["fresh_kl"].append(f_kl)

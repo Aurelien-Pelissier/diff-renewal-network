@@ -672,6 +672,11 @@ def run_sleep_5node_network_benchmark() -> dict:
         return multinomial_nll(pf, fc) + multinomial_nll(pa, ac) + 1e-5 * jnp.sum(theta**2)
 
     @jax.jit
+    def loss_sleep_ctmc_fresh(theta, fc):
+        pf, _ = predict_sleep_ctmc(theta)
+        return multinomial_nll(pf, fc) + 1e-5 * jnp.sum(theta**2)
+
+    @jax.jit
     def loss_sleep_lode(theta, fc, ac):
         pf, pa = predict_sleep_lode(theta)
         return multinomial_nll(pf, fc) + multinomial_nll(pa, ac) + 1e-4 * jnp.sum(theta**2)
@@ -684,11 +689,12 @@ def run_sleep_5node_network_benchmark() -> dict:
     vg_drn = jax.jit(jax.value_and_grad(loss_sleep_drn))
     vg_drn_fo = jax.jit(jax.value_and_grad(loss_sleep_drn_fresh))
     vg_ctmc = jax.jit(jax.value_and_grad(loss_sleep_ctmc))
+    vg_ctmc_fo = jax.jit(jax.value_and_grad(loss_sleep_ctmc_fresh))
     vg_lode = jax.jit(jax.value_and_grad(loss_sleep_lode))
     vg_lode_fo = jax.jit(jax.value_and_grad(loss_sleep_lode_fresh))
 
     folds = [subjects[i::5] for i in range(5)]
-    drn_scores, drn_fo_scores, ctmc_scores, lode_scores, lode_fo_scores = [], [], [], [], []
+    drn_scores, drn_fo_scores, ctmc_scores, ctmc_fo_scores, lode_scores, lode_fo_scores = [], [], [], [], [], []
     fit_times = []
     lode_dim = 210 + 15 * (n_edges + 6)
     drn_dim = (1 + k_stages) * n_edges
@@ -697,13 +703,17 @@ def run_sleep_5node_network_benchmark() -> dict:
         tr_subjs = [s for s in subjects if s not in set(te_subjs)]
         f_tr, a_tr, _ = build_sleep_snapshots(subj_seqs, tr_subjs, obs_epochs)
         f_te, a_te, _ = build_sleep_snapshots(subj_seqs, te_subjs, obs_epochs)
+        f_tr_j, a_tr_j = jnp.asarray(f_tr), jnp.asarray(a_tr)
+
+        def _wrap_vg(fn, *extra):
+            def _obj(z):
+                v, g = fn(jnp.asarray(z), *extra)
+                return float(v), np.asarray(g, float)
+            return _obj
 
         th0 = np.zeros(drn_dim)
         res_fo = minimize(
-            lambda z: (
-                float(vg_drn_fo(jnp.asarray(z), jnp.asarray(f_tr))[0]),
-                np.asarray(vg_drn_fo(jnp.asarray(z), jnp.asarray(f_tr))[1], float),
-            ),
+            _wrap_vg(vg_drn_fo, f_tr_j),
             th0,
             jac=True,
             method="L-BFGS-B",
@@ -711,10 +721,7 @@ def run_sleep_5node_network_benchmark() -> dict:
         )
         t0 = perf_counter()
         res_d = minimize(
-            lambda z: (
-                float(vg_drn(jnp.asarray(z), jnp.asarray(f_tr), jnp.asarray(a_tr))[0]),
-                np.asarray(vg_drn(jnp.asarray(z), jnp.asarray(f_tr), jnp.asarray(a_tr))[1], float),
-            ),
+            _wrap_vg(vg_drn, f_tr_j, a_tr_j),
             res_fo.x,
             jac=True,
             method="L-BFGS-B",
@@ -723,10 +730,14 @@ def run_sleep_5node_network_benchmark() -> dict:
         fit_times.append(perf_counter() - t0)
 
         res_c = minimize(
-            lambda z: (
-                float(vg_ctmc(jnp.asarray(z), jnp.asarray(f_tr), jnp.asarray(a_tr))[0]),
-                np.asarray(vg_ctmc(jnp.asarray(z), jnp.asarray(f_tr), jnp.asarray(a_tr))[1], float),
-            ),
+            _wrap_vg(vg_ctmc, f_tr_j, a_tr_j),
+            np.zeros(n_edges),
+            jac=True,
+            method="L-BFGS-B",
+            options={"maxiter": 160},
+        )
+        res_c_fo = minimize(
+            _wrap_vg(vg_ctmc_fo, f_tr_j),
             np.zeros(n_edges),
             jac=True,
             method="L-BFGS-B",
@@ -737,10 +748,7 @@ def run_sleep_5node_network_benchmark() -> dict:
         for s_l in (13, 37):
             w0_l = np.random.default_rng(200 * f_idx + s_l).normal(0.0, 0.20, size=lode_dim)
             r_l = minimize(
-                lambda z: (
-                    float(vg_lode(jnp.asarray(z), jnp.asarray(f_tr), jnp.asarray(a_tr))[0]),
-                    np.asarray(vg_lode(jnp.asarray(z), jnp.asarray(f_tr), jnp.asarray(a_tr))[1], float),
-                ),
+                _wrap_vg(vg_lode, f_tr_j, a_tr_j),
                 w0_l,
                 jac=True,
                 method="L-BFGS-B",
@@ -749,10 +757,7 @@ def run_sleep_5node_network_benchmark() -> dict:
             if best_l is None or r_l.fun < best_l.fun:
                 best_l = r_l
             r_lfo = minimize(
-                lambda z: (
-                    float(vg_lode_fo(jnp.asarray(z), jnp.asarray(f_tr))[0]),
-                    np.asarray(vg_lode_fo(jnp.asarray(z), jnp.asarray(f_tr))[1], float),
-                ),
+                _wrap_vg(vg_lode_fo, f_tr_j),
                 w0_l,
                 jac=True,
                 method="L-BFGS-B",
@@ -782,8 +787,11 @@ def run_sleep_5node_network_benchmark() -> dict:
         drn_fo_scores.append(score_pair(*predict_sleep_drn(jnp.asarray(res_fo.x))))
         drn_scores.append(score_pair(*predict_sleep_drn(jnp.asarray(res_d.x))))
         ctmc_scores.append(score_pair(*predict_sleep_ctmc(jnp.asarray(res_c.x))))
+        ctmc_fo_scores.append(score_pair(*predict_sleep_ctmc(jnp.asarray(res_c_fo.x))))
         lode_scores.append(score_pair(*predict_sleep_lode(jnp.asarray(best_l.x))))
-        lode_fo_scores.append(score_pair(*predict_sleep_lode(jnp.asarray(best_lfo.x))))
+        # Clean age=0 evaluation for fresh_only Latent ODE
+        pf_lfo, _ = predict_sleep_lode(jnp.asarray(best_lfo.x))
+        lode_fo_scores.append(score_pair(pf_lfo, pf_lfo))
         print(
             f"Sleep 5-node fold {f_idx} | Zero-shot aged KL: DRN={drn_fo_scores[-1]['aged_kl']:.5f} vs LODE={lode_fo_scores[-1]['aged_kl']:.5f} | Joint KL: DRN={drn_scores[-1]['fresh_kl']:.5f}/{drn_scores[-1]['aged_kl']:.5f} vs LODE={lode_scores[-1]['fresh_kl']:.5f}/{lode_scores[-1]['aged_kl']:.5f} vs CTMC={ctmc_scores[-1]['fresh_kl']:.5f}/{ctmc_scores[-1]['aged_kl']:.5f}",
             flush=True,

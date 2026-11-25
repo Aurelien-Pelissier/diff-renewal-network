@@ -191,8 +191,10 @@ def main():
 
         return rollout(0.0), rollout(aged_ten_min)
 
-    # 3. Universal 1D Pos-Sens (K_r=8 -> 40 states, 5 means + 5 shapes + 16 routing logits = 26 params)
-    psi_univ, univ_cert = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=250)
+    # 3. Universal 1D Pos-Sens (K_r=8 -> 40 states, full-cone [1.4, 7.8])
+    psi_univ, univ_cert = calibrate_universal_pos_clock(
+        stages_red=8, stages_full=16, maxiter=250, k_min=1.4, k_max=7.8
+    )
     out_edges = [[] for _ in range(5)]
     for e_idx, (u, v) in enumerate(edges):
         out_edges[u].append(e_idx)
@@ -270,6 +272,8 @@ def main():
                     if r.fun < best_v:
                         best_v, best_w = float(r.fun), r.x.copy()
                 pf, pa = pred_fn(jnp.asarray(best_w))
+                if mode == "fresh_only" and mname in ("ltc_ode", "s4d_ode"):
+                    pa = pf
                 fk = excess_kl(np.asarray(pf), f_te)
                 ak = excess_kl(np.asarray(pa), a_te)
                 res_all[f"{mname}_{mode}"]["fresh_kl"].append(fk)

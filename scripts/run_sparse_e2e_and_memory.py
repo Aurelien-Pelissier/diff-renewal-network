@@ -93,7 +93,8 @@ print(f'RESULT {{base_mb:.2f}} {{peak_mb:.2f}} {{peak_mb - base_mb:.2f}} {{grad_
             return {
                 "nodes": v_nodes,
                 "compiled_states": compiled,
-                "static_operator_mb": round(compiled * 4 * 8 / (1024**2), 3),
+                # float64 (2 + d) arrays + int32 d dst_entry_idx array
+                "static_operator_mb": round(compiled * (4 * 8 + 2 * 4) / (1024**2), 3),
                 "baseline_jax_rss_mb": float(b),
                 "peak_total_rss_mb": float(pk),
                 "peak_autodiff_rss_delta_mb": float(delta),
@@ -172,7 +173,7 @@ def run_e2e_v64_optimization() -> dict:
 
     # Warm JIT compile then time full end-to-end optimization
     x0_sp = np.concatenate([np.full(v_nodes * deg, np.log(1.7)), np.zeros(v_nodes * deg)])
-    _ = vg_sparse(jnp.asarray(x0_sp))
+    vg_sparse(jnp.asarray(x0_sp))[1].block_until_ready()
     t0 = time.perf_counter()
     res_sp = minimize(
         lambda x: tuple(map(lambda z: float(z) if np.ndim(z) == 0 else np.asarray(z, float), vg_sparse(jnp.asarray(x)))),

@@ -357,34 +357,54 @@ def run_helpdesk_mamba_and_thp() -> dict:
     # Continuous-Time Neural Hawkes / THP baseline on IT Helpdesk coarsening (Fold 0):
     def eval_neural_hawkes_coarsening():
         out_thp = {}
+        # Use dedicated START_TOKEN = 4 (absorbing Closed never precedes a jump!) so initial
+        # visits & post-transition visits have strictly in-distribution (cur, prev) pairs!
+        start_tok = 4
         for dt_c in (0.5, 2.0, 7.0, 14.0):
             def extract_coarsened_events(traj_list):
                 rows = []
                 for _, times, states in traj_list:
-                    t_end = max(times[-1], 42.0)
-                    grid_t = np.arange(0.0, min(t_end + dt_c, 45.0), dt_c)
-                    # Sample state on grid
+                    # If ticket reached absorbing Closed (4) at times[-1], it stays in 4 for all t >= times[-1],
+                    # so include the grid point capturing the transition into 4 (loop breaks at st == 4).
+                    # Only right-censor genuinely unclosed tickets at their actual last observed timestamp!
+                    if int(states[-1]) == 4:
+                        t_end = min(float(np.ceil(float(times[-1]) / dt_c) * dt_c), 45.0)
+                    else:
+                        t_end = min(float(times[-1]), 45.0)
+                    if t_end < dt_c:
+                        continue
+                    grid_t = np.arange(0.0, t_end + 1e-9, dt_c)
+                    if len(grid_t) < 2:
+                        continue
                     g_states = [states[int(np.searchsorted(times, t, side="right")) - 1] for t in grid_t]
                     last_t = 0.0
-                    last_u = g_states[0]
-                    prev_u = g_states[0]
+                    last_u = int(g_states[0])
+                    prev_u = start_tok
                     for t_cur, st in zip(grid_t[1:], g_states[1:]):
+                        st = int(st)
                         if st != last_u:
-                            rows.append((last_u, st, t_cur - last_t, prev_u))
+                            if last_u < 4:
+                                rows.append((last_u, st, float(t_cur - last_t), prev_u))
                             prev_u = last_u
                             last_u = st
-                            last_t = t_cur
+                            last_t = float(t_cur)
                             if st == 4:
                                 break
-                    if last_u != 4 and grid_t[-1] > last_t:
-                        # right-censored stay
-                        rows.append((last_u, -1, grid_t[-1] - last_t, prev_u))
+                    if last_u < 4 and grid_t[-1] > last_t + 1e-9:
+                        rows.append((last_u, -1, float(grid_t[-1] - last_t), prev_u))
                 return rows
 
             tr_ev = extract_coarsened_events(tr0)
-            # Fit Neural Hawkes / THP intensity parameters via exact point-process log-likelihood
-            # lambda_{k}(t | cur=u, prev=p, tau=t-t_last) = softplus(base[u,k] + alpha[p,k] * exp(-beta[u,k] * tau))
-            # (exact closed-form integral via 8-pt Gauss-Legendre quadrature on [0, dt_wait]!)
+            # Empirical incoming context distribution P(prev_u | cur=u0) for strictly in-distribution evaluation!
+            prev_counts = np.zeros((4, 5), dtype=np.float64)
+            for u_r, _, _, p_r in tr_ev:
+                prev_counts[u_r, p_r] += 1.0
+            prev_probs = np.zeros((4, 5), dtype=np.float64)
+            for u0 in range(4):
+                if prev_counts[u0].sum() > 0:
+                    prev_probs[u0] = prev_counts[u0] / prev_counts[u0].sum()
+                else:
+                    prev_probs[u0, start_tok] = 1.0
             u_arr = jnp.asarray([r[0] for r in tr_ev], dtype=jnp.int32)
             v_arr = jnp.asarray([r[1] for r in tr_ev], dtype=jnp.int32)
             tau_arr = jnp.asarray([max(r[2], 1e-3) for r in tr_ev], dtype=jnp.float64)
@@ -392,49 +412,43 @@ def run_helpdesk_mamba_and_thp() -> dict:
             is_ev = (v_arr >= 0).astype(jnp.float64)
             v_safe = jnp.maximum(v_arr, 0)
 
-            gl_x, gl_w = np.polynomial.legendre.leggauss(8)
+            gl_x, gl_w = np.polynomial.legendre.leggauss(12)
             gl_u = jnp.asarray(0.5 * (gl_x + 1.0))
             gl_wt = jnp.asarray(0.5 * gl_w)
 
-            # THP/Neural-Hawkes with learned 8D attention/memory embedding (5*8 + 5*8 + 8*5 + 4*5 + 4*5 + 4*5 = 180p)
-            # Plus edge-level excitation matrix (5*5*2 + 5*5 = 75 -> 255 params)
+            # THP/Neural-Hawkes with learned 8D attention/memory embedding (177 params total)
             def init_thp(seed: int):
                 r = np.random.default_rng(seed)
                 return np.r_[
                     np.full((4, 5), -2.5).ravel(),  # base mu[u, v]
-                    r.normal(0.0, 0.15, (5, 5)).ravel(),  # self/cross-excitation alpha[prev, v]
+                    r.normal(0.0, 0.15, (5, 5)).ravel(),  # self/cross-excitation alpha[prev, v] (4=START_TOKEN)
                     np.zeros((4, 5)).ravel(),  # log decay beta[u, v]
                     r.normal(0.0, 0.15, (4, 8)).ravel(),  # query emb
-                    r.normal(0.0, 0.15, (5, 8)).ravel(),  # key emb
+                    r.normal(0.0, 0.15, (5, 8)).ravel(),  # key emb (4=START_TOKEN)
                     r.normal(0.0, 0.15, (8, 5)).ravel(),  # attn readout
                 ]
 
             def intensities(th, u_i, p_i, t_eval):
-                # u_i, p_i: (...), t_eval: (...) -> (..., 5) positive intensities (zero for self-jump u==v)
                 mu = th[:20].reshape(4, 5)
                 al = th[20:45].reshape(5, 5)
                 be = jnp.exp(jnp.clip(th[45:65].reshape(4, 5), -4.0, 3.0))
                 wq = th[65:97].reshape(4, 8)
                 wk = th[97:137].reshape(5, 8)
                 wo = th[137:177].reshape(8, 5)
-                # Temporal attention score between current u and previous p with decay
                 att = jax.nn.sigmoid(jnp.sum(wq[u_i] * wk[p_i], axis=-1, keepdims=True))
                 h_t = att * wk[p_i] * jnp.exp(-0.2 * t_eval[..., None])
                 raw = mu[u_i] + al[p_i] * jnp.exp(-be[u_i] * t_eval[..., None]) + h_t @ wo
                 lam = jax.nn.softplus(raw) + 1e-6
-                # Zero out self-transition u -> u
                 mask = 1.0 - jax.nn.one_hot(u_i, 5)
                 return lam * mask
 
             @jax.jit
             def vg_thp(th):
                 def loss_fn(w):
-                    # Event term: log lambda_{v}(tau)
                     lam_ev = intensities(w, u_arr, p_arr, tau_arr)
                     log_lam = jnp.log(jnp.maximum(lam_ev[jnp.arange(len(tr_ev)), v_safe], 1e-12))
-                    # Survival integral over [0, tau] via 8-pt Gauss-Legendre
-                    t_q = tau_arr[:, None] * gl_u[None, :]  # (N, 8)
-                    lam_q = intensities(w, u_arr[:, None], p_arr[:, None], t_q)  # (N, 8, 5)
+                    t_q = tau_arr[:, None] * gl_u[None, :]
+                    lam_q = intensities(w, u_arr[:, None], p_arr[:, None], t_q)
                     surv_int = tau_arr * jnp.sum(jnp.sum(lam_q, axis=-1) * gl_wt[None, :], axis=-1)
                     nll = -jnp.mean(is_ev * log_lam - surv_int)
                     return nll + 1e-4 * jnp.mean(w**2)
@@ -451,30 +465,45 @@ def run_helpdesk_mamba_and_thp() -> dict:
                 if best is None or res.fun < best[0]:
                     best = (float(res.fun), res.x)
 
-            # Evaluate 1-jump Hawkes / THP panel forecast over grid horizons (same single-jump evaluation as Neural-CR!)
+            # Evaluate 1-jump Hawkes / THP panel forecast over grid horizons using 32-pt Gauss-Legendre
+            # quadrature (accurate for fast early bursts even at h=42d!) averaged over empirical P(prev | u0)
             grid = np.arange(dt_c, 42.0 + 1e-9, dt_c)
             f_te_g, _ = extract_snapshot_tables(te0, horizons=grid)
             w_best = jnp.asarray(best[1])
-            # Predict P(X(h) = v | X(0) = u, fresh) under single-jump competing-risks Hawkes thinning:
-            # Stay prob = exp(-int_0^h sum_v lam_v(t) dt), jump-to-v prob = int_0^h S(t) lam_v(t) dt
+            gl32_x, gl32_w = np.polynomial.legendre.leggauss(32)
+            gl32_u = 0.5 * (gl32_x + 1.0)
+            gl32_wt = 0.5 * gl32_w
+            # Nested 16-pt GL for accurate cumulative hazard int_0^t tot_lam(s) ds at each outer GL node
+            gl16_x, gl16_w = np.polynomial.legendre.leggauss(16)
+            gl16_u = 0.5 * (gl16_x + 1.0)
+            gl16_wt = 0.5 * gl16_w
+
             pred_f = np.zeros((4, len(grid), 5), dtype=np.float64)
             for u0 in range(4):
+                active_prevs = [(p0, prev_probs[u0, p0]) for p0 in range(5) if prev_probs[u0, p0] > 0.0]
                 for hi, h_val in enumerate(grid):
-                    # 32-pt grid on [0, h_val]
-                    ts_q = jnp.linspace(0.0, float(h_val), 33)
-                    dts = ts_q[1] - ts_q[0]
-                    t_mid = 0.5 * (ts_q[:-1] + ts_q[1:])
-                    u_q = jnp.full(len(t_mid), u0, dtype=jnp.int32)
-                    lams = np.asarray(intensities(w_best, u_q, u_q, t_mid))  # (32, 5)
-                    tot_lam = np.sum(lams, axis=-1)
-                    cum_haz = np.cumsum(tot_lam * float(dts))
-                    surv_mid = np.exp(-np.concatenate([[0.0], cum_haz[:-1]]) - 0.5 * tot_lam * float(dts))
-                    p_stay = float(np.exp(-cum_haz[-1]))
-                    p_jump = np.sum(surv_mid[:, None] * lams * float(dts), axis=0)
-                    p_vec = p_jump.copy()
-                    p_vec[u0] += p_stay
-                    p_vec = np.clip(p_vec, 1e-12, 1.0)
-                    pred_f[u0, hi] = p_vec / p_vec.sum()
+                    h_f = float(h_val)
+                    t_outer = h_f * gl32_u  # (32,)
+                    t_inner = t_outer[:, None] * gl16_u[None, :]  # (32, 16)
+                    p_mix = np.zeros(5, dtype=np.float64)
+                    for p0, pw in active_prevs:
+                        u_out = jnp.full(32, u0, dtype=jnp.int32)
+                        p_out = jnp.full(32, p0, dtype=jnp.int32)
+                        lam_out = np.asarray(intensities(w_best, u_out, p_out, jnp.asarray(t_outer)))  # (32, 5)
+                        u_in = jnp.full((32, 16), u0, dtype=jnp.int32)
+                        p_in = jnp.full((32, 16), p0, dtype=jnp.int32)
+                        lam_in = np.asarray(intensities(w_best, u_in, p_in, jnp.asarray(t_inner)))  # (32, 16, 5)
+                        cum_out = t_outer * np.sum(np.sum(lam_in, axis=-1) * gl16_wt[None, :], axis=-1)
+                        surv_out = np.exp(-np.minimum(cum_out, 60.0))
+                        p_jump = h_f * np.sum((gl32_wt * surv_out)[:, None] * lam_out, axis=0)
+                        cum_end = h_f * float(np.sum(np.sum(lam_out, axis=-1) * gl32_wt))
+                        p_stay = float(np.exp(-min(cum_end, 60.0)))
+                        p_vec = p_jump.copy()
+                        p_vec[u0] += p_stay
+                        p_vec = np.clip(p_vec, 1e-12, 1.0)
+                        p_vec /= p_vec.sum()
+                        p_mix += pw * p_vec
+                    pred_f[u0, hi] = p_mix / p_mix.sum()
             out_thp[f"dt_{dt_c}"] = {"thp_forecast_kl": empirical_kl(pred_f, f_te_g), "params": int(len(best[1]))}
         return out_thp
 

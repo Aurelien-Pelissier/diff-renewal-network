@@ -43,13 +43,13 @@ def init_population_baseline(kind: str, seed: int = 17):
         )
     if kind == "s4d_ode":
         # Diagonal Structured State-Space (S4D) with multi-timescale log-spaced decay bank
-        latent = 12  # 435 parameters
+        latent = 12  # 429 active parameters (6 paired skew frequencies)
         log_dt_rates = jnp.linspace(jnp.log(0.15), jnp.log(4.5), latent)
         return (
             jax.random.normal(keys[0], (6, latent)) * 0.35,  # age/prep encoder
             jnp.zeros(latent),
             log_dt_rates,  # trainable diagonal S4D log decay rates
-            jax.random.normal(keys[1], (latent,)) * 0.25,  # oscillatory/skew coupling
+            jax.random.normal(keys[1], (latent // 2,)) * 0.25,  # paired oscillatory/skew coupling
             jax.random.normal(keys[2], (5, latent)) * 0.28,  # input B projection (p, trait, u)
             jnp.zeros(latent),
             jax.random.normal(keys[3], (latent + 5, 12)) * 0.25,  # nonlinear readout mixer
@@ -70,7 +70,7 @@ def init_population_baseline(kind: str, seed: int = 17):
     if kind == "mamba_ode":
         # Input-dependent Selective State-Space Model (Mamba; Gu & Dao 2024):
         # ZOH selective scan with input-dependent step Delta(x), B(x), C(x) & SiLU gate
-        latent = 12  # ~429 parameters (matched to S4D 435 / Latent ODE 387)
+        latent = 12  # 414 parameters (matched to S4D 429 / Latent ODE 387)
         log_a = jnp.linspace(jnp.log(0.2), jnp.log(4.5), latent)
         return (
             jax.random.normal(keys[0], (6, latent)) * 0.35,  # initial encoder
@@ -153,7 +153,8 @@ def predict_population_baseline(kind: str, params, plan, *, period: float = 0.25
         enc, eb, log_rates, omega, w_b, b_b, w_m, b_m, w_o, b_o = params
         z0 = jnp.tanh(encoded @ enc + eb)
         state = jnp.concatenate((prep, z0), axis=-1)
-        decay = jnp.exp(log_rates)
+        # Bound decay rate strictly inside RK4 stability region (dt = period/substeps <= 0.0625 -> max ~33 < 44.5)
+        decay = jnp.exp(jnp.clip(log_rates, -4.0, 3.3))
         # Skew-symmetric block coupling among pairs of diagonal modes
         half = z0.shape[-1] // 2
 
@@ -177,7 +178,7 @@ def predict_population_baseline(kind: str, params, plan, *, period: float = 0.25
     if kind == "neural_cme":
         w1, b1, w2, b2 = params
         dt = period / substeps
-        n_intervals = schedule.shape[0]
+        t_horizon = jnp.maximum(schedule.shape[0] * period, 1e-6)
 
         def interval(carry, step_in):
             p, t_cur = carry
@@ -185,7 +186,7 @@ def predict_population_baseline(kind: str, params, plan, *, period: float = 0.25
 
             def substep(i_sub, p_st):
                 t_now = t_cur + (i_sub + 0.5) * dt
-                t_norm = t_now / 4.5
+                t_norm = t_now / t_horizon
                 t_feats = jnp.stack(
                     [
                         jnp.broadcast_to(t_norm, traits.shape),
@@ -236,8 +237,8 @@ def predict_population_baseline(kind: str, params, plan, *, period: float = 0.25
                 x_in = jnp.concatenate((p, bcast(traits), bcast(u)), axis=-1)
                 delta = jax.nn.softplus(x_in @ w_dt + b_dt) * dt
                 a_bar = jnp.exp(delta * neg_a)
-                # Exact ZOH discretization: (exp(Delta A) - I) / A * B(x)
-                b_bar = ((a_bar - 1.0) / neg_a) * (x_in @ w_b)
+                # Exact ZOH discretization: expm1(Delta * A) / A * B(x)
+                b_bar = (jnp.expm1(delta * neg_a) / neg_a) * (x_in @ w_b)
                 h_next = a_bar * h + b_bar
                 # Input-dependent selective readout C(x) * h * SiLU(z(x))
                 y_sel = (x_in @ w_c) * h_next * jax.nn.silu(x_in @ w_z + b_z)
@@ -268,8 +269,10 @@ def make_baseline_engine(kind: str, train_plan, test_plan, *, seed: int = 17, re
 
     def loss(w, counts):
         p = predict_population_baseline(kind, unpack(w), train_plan)
-        nll = -jnp.sum(counts * jnp.log(jnp.maximum(p, 1e-30))) / jnp.sum(counts)
-        return nll + reg * jnp.sum((w - flat) ** 2)
+        p = jnp.maximum(p, 1e-12)
+        p = p / jnp.sum(p, axis=-1, keepdims=True)
+        nll = -jnp.sum(counts * jnp.log(p)) / jnp.maximum(jnp.sum(counts), 1.0)
+        return nll + reg * jnp.sum(w**2)
 
     return (
         np.asarray(flat),

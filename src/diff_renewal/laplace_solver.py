@@ -38,8 +38,13 @@ def weideman_talbot_contour(
     exact Bromwich inverse Laplace integral to ~1e-8 (n_nodes=16) or ~1e-10 (n_nodes=20).
     """
     h_arr = np.asarray(horizons, dtype=np.float64)
-    m_half = int(n_nodes) // 2
-    step = 2.0 * np.pi / float(n_nodes)
+    if h_arr.ndim != 1 or h_arr.size == 0 or not np.all(np.isfinite(h_arr)) or np.any(h_arr <= 0.0):
+        raise ValueError("horizons must be a nonempty 1D array of finite positive times")
+    n_int = int(n_nodes)
+    if n_int < 2 or n_int % 2 != 0:
+        raise ValueError("n_nodes must be an even integer >= 2 for conjugate-symmetric Talbot quadrature")
+    m_half = n_int // 2
+    step = 2.0 * np.pi / float(n_int)
     theta = (np.arange(m_half, dtype=np.float64) + 0.5) * step
     cot_t = 1.0 / np.tan(0.6407 * theta)
     csc2_t = 1.0 + cot_t**2
@@ -70,8 +75,8 @@ def hyper_erlang_aged_phases_and_log_surv(
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Exact overflow-free aged phase weights (p_fast, p_slow) and log survival log S_v(a).
 
-    Assumes ordered rates lam_f >= lam_s >= 0 on active nodes and lam_f = lam_s = 0 on
-    absorbing nodes (active_mask == 0).
+    Valid for arbitrary nonnegative rates (both ``lam_f >= lam_s`` and ``lam_f < lam_s``)
+    on active nodes and ``lam_f = lam_s = 0`` on absorbing nodes (``active_mask == 0``).
     """
     k_slow = int(b_slow.shape[-1])
     if age <= 0.0:
@@ -84,32 +89,32 @@ def hyper_erlang_aged_phases_and_log_surv(
     diff_idx = js[:, None] - js[None, :]
     valid = diff_idx >= 0
     d_safe = jnp.where(valid, diff_idx, 0.0)
-    xa = jnp.maximum(lam_s * age, 1e-12)
+    xa = jnp.maximum(lam_s * age, 1e-30)
     log_p = (
         d_safe[None, :, :] * jnp.log(xa)[:, None, None]
         - jax.scipy.special.gammaln(d_safe + 1.0)[None, :, :]
+        - (lam_s * age)[:, None, None]
     )
+    log_fast = -lam_f * age
     m_sh = jnp.maximum(
         jnp.max(jnp.where(valid[None, :, :], log_p, -1e9), axis=(1, 2)),
-        0.0,
+        log_fast,
     )
     p_mat = jnp.where(
         valid[None, :, :],
         jnp.exp(jnp.clip(log_p - m_sh[:, None, None], -700.0, 0.0)),
         0.0,
     )
-    # Factor out exp(-lam_s * age + m_sh):
-    # S_v(a) = exp(-lam_s*a + m_sh) * [alpha*exp(-(lam_f-lam_s)*a - m_sh) + (1-alpha)*sum(P_mat @ b_slow)]
+    # Factor out exp(m_sh) so both branches stay strictly <= 1 regardless of rate ordering:
     slow_un = (1.0 - alpha_f)[:, None] * jnp.einsum("vji,vi->vj", p_mat, b_slow)
-    df = jnp.maximum(lam_f - lam_s, 0.0) * age
-    fast_un = alpha_f * jnp.exp(-jnp.clip(df + m_sh, 0.0, 700.0))
+    fast_un = alpha_f * jnp.exp(jnp.clip(log_fast - m_sh, -700.0, 0.0))
     total_un = jnp.maximum(fast_un + jnp.sum(slow_un, axis=-1), 1e-300)
 
     p_f = jnp.where(active_mask > 0.5, fast_un / total_un, 0.0)
     p_s = jnp.where(active_mask[:, None] > 0.5, slow_un / total_un[:, None], 0.0)
     log_surv = jnp.where(
         active_mask > 0.5,
-        -lam_s * age + m_sh + jnp.log(total_un),
+        m_sh + jnp.log(total_un),
         0.0,
     )
     return p_f, p_s, log_surv
@@ -261,7 +266,9 @@ def solve_frailty_renewal_talbot(
     p_fresh = p_fresh / jnp.sum(p_fresh, axis=-1, keepdims=True)
 
     # Exact Bayesian frailty posterior at age a: w_{u, g}(a) proportional to pi_{u, g} * S_{u, g}(a)!
-    log_post = jnp.log(jnp.maximum(pi_ev, 1e-30)) + log_s_g.T  # (B_ev, G)
+    # Strictly mask zero-prior classes to -inf so they can never hijack the posterior at large age.
+    log_pi = jnp.where(pi_ev > 0.0, jnp.log(jnp.maximum(pi_ev, 1e-300)), -jnp.inf)
+    log_post = log_pi + log_s_g.T  # (B_ev, G)
     post_w = jax.nn.softmax(log_post, axis=-1)
     p_aged = jnp.einsum("bg,gbhv->bhv", post_w, p_ag_g)
     p_aged = jnp.maximum(p_aged, 1e-12)

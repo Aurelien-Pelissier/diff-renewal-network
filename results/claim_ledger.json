@@ -54,15 +54,15 @@
       "ecoli_si": 0.01293
     },
     "helpdesk_zeroshot_aged_kl_clean_age0": {
-      "edge_memory_drn": 0.0348,
-      "hyper_pos_sens": 0.0474,
-      "universal_pos_sens": 0.1261,
-      "ltc_ode": 0.2421,
-      "s4d_ode": 0.2567,
-      "latent_ode": 0.2516,
-      "neural_cme": 0.2835,
-      "chrono_edge_memory_drn": 0.1423,
-      "chrono_ltc_ode": 0.5265
+      "edge_memory_drn": 0.0397,
+      "hyper_pos_sens": 0.0468,
+      "universal_pos_sens": 0.105,
+      "ltc_ode": 0.2428,
+      "s4d_ode": 0.2525,
+      "latent_ode": 0.25,
+      "neural_cme": 0.2764,
+      "chrono_edge_memory_drn": 0.1341,
+      "chrono_ltc_ode": 0.5882
     },
     "sleep_3start_clean_age0_zeroshot_aged_kl": {
       "ctmc_strict_fresh_only": 0.11109,
@@ -99,46 +99,46 @@
       "synthetic_ph_kl": 0.05232,
       "synthetic_lognormal_kl": 0.08871,
       "helpdesk_0shot_aged_kl": 0.249,
-      "helpdesk_thp_14d_kl": 2.3044,
+      "helpdesk_thp_14d_kl": 1.3959,
       "sleep_0shot_aged_kl": 0.0878,
       "influenza_day9to14_kl": 0.273
     },
     "mooc_v98_real_sparse_drn": {
       "compiled_states": 490,
-      "sparse_hyper_drn_0shot_aged_kl": 0.2708,
-      "sparse_hyper_drn_joint_aged_kl": 0.1515,
-      "ctmc_0shot_aged_kl": 1.876,
-      "mamba_0shot_aged_kl": 1.9445,
-      "ltc_0shot_aged_kl": 1.7999
+      "sparse_hyper_drn_0shot_aged_kl": 0.3134,
+      "sparse_hyper_drn_joint_aged_kl": 0.1516,
+      "ctmc_0shot_aged_kl": 1.8756,
+      "mamba_0shot_aged_kl": 1.89,
+      "ltc_0shot_aged_kl": 1.799
     },
     "defi_multipool_183k_neural_clock": {
       "total_rows": 183881,
       "regime_a_zeroshot_neural_clock": 0.34526,
       "regime_a_zeroshot_mlp_age": 0.35096,
-      "regime_a_zeroshot_mamba": 0.4287,
+      "regime_a_zeroshot_mamba": 0.39647,
       "regime_b_drift_neural_clock": 0.31901,
       "regime_b_drift_mlp_age": 0.32287,
-      "regime_b_drift_mamba": 0.37521
+      "regime_b_drift_mamba": 0.34227
     },
     "r8_laplace_talbot_frailty_and_defi_mh": {
-      "mooc_talbot_warm_grad_ms": 142.42,
-      "mooc_talbot_n12_expm_kl_diff": 5.476075233545874e-07,
-      "mooc_dense_expm_grad_ms": 5380.54,
-      "mooc_sdirk2_grad_ms": 793.06,
-      "mooc_talbot_0shot_aged_kl": 0.1903,
-      "mooc_talbot_joint_aged_kl": 0.1487,
-      "mooc_talbot_24h_ea_aged_kl": 0.3432,
+      "mooc_talbot_warm_grad_ms": 82.26,
+      "mooc_talbot_n12_expm_kl_diff": 1.774289819261865e-06,
+      "mooc_dense_expm_grad_ms": 789.52,
+      "mooc_sdirk2_grad_ms": 226.65,
+      "mooc_talbot_0shot_aged_kl": 0.2024,
+      "mooc_talbot_joint_aged_kl": 0.1489,
+      "mooc_talbot_24h_ea_aged_kl": 0.3897,
       "mooc_univ_hyper_pos_0shot_aged_kl": 0.269,
-      "mooc_deep_2layer_mamba_params": 136331,
-      "mooc_deep_2layer_mamba_joint_aged_kl": 0.1743,
-      "stackoverflow_pure_frailty_0shot_aged_kl": 0.1119,
-      "stackoverflow_pure_me_g1_0shot_aged_kl": 0.08,
+      "mooc_deep_2layer_mamba_params": 134091,
+      "mooc_deep_2layer_mamba_joint_aged_kl": 0.1515,
+      "stackoverflow_pure_frailty_0shot_aged_kl": 0.1319,
+      "stackoverflow_pure_me_g1_0shot_aged_kl": 0.0815,
       "defi_m4_drift_logloss": 0.31424,
-      "defi_m4_bsc_to_base_logloss": 0.31404,
-      "defi_m4_dt10_logloss": 0.4317,
-      "defi_mlp_dt10_logloss": 0.4346,
-      "real_hemato_bt13_min_prob": -0.00015069837937057087,
-      "real_helpdesk_bt13_min_prob": -0.048550795986389006
+      "defi_m4_bsc_to_base_logloss": 0.31345,
+      "defi_m4_dt10_logloss": 0.4325,
+      "defi_mlp_dt10_logloss": 0.4351,
+      "real_hemato_bt13_min_prob": -0.0002089192992191513,
+      "real_helpdesk_bt13_min_prob": -0.04788547786950892
     }
   }
 }

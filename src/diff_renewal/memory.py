@@ -41,7 +41,10 @@ def fixed_partition_cutoff(
         raise ValueError("rates and weights must be equal-length 1D arrays")
     if (
         not isinstance(retained_indices, tuple)
-        or any(not isinstance(i, int) or i < 0 or i >= rates.size for i in retained_indices)
+        or any(
+            isinstance(i, bool) or not isinstance(i, int) or i < 0 or i >= rates.size
+            for i in retained_indices
+        )
         or len(set(retained_indices)) != len(retained_indices)
     ):
         raise ValueError("retained_indices must be a static tuple of distinct valid indices")
@@ -121,7 +124,7 @@ def solve_memory(
     if ts.ndim != 1 or ts.shape[0] < 2:
         raise ValueError("ts must be a strictly increasing 1D grid of length >= 2")
     zshape = (rates.size,) + y0.shape
-    z0 = jnp.zeros(zshape, dtype=y0.dtype) if z0 is None else jnp.asarray(z0)
+    z0 = jnp.zeros(zshape, dtype=y0.dtype) if z0 is None else jnp.asarray(z0, dtype=y0.dtype)
     if z0.shape != zshape:
         raise ValueError(f"z0 must have shape {zshape}")
 
@@ -129,9 +132,10 @@ def solve_memory(
         y, z = state
         lam, w, local, params = packed
         u = jnp.asarray(source(t, y, params))
-        memory = jnp.tensordot(w, z, axes=1) + local * u
         c = 1.0 if clock is None else clock(t, y, params)
         q = 0.0 if killing is None else killing(t, y, params)
+        # In the fast-mode quasi-steady-state limit (lam_k -> inf), z_k -> u / (c * lam_k)
+        memory = jnp.tensordot(w, z, axes=1) + (local / c) * u
         decay = (c * lam + q).reshape((lam.size,) + (1,) * y.ndim)
         return rhs(t, y, memory, params), u[None, ...] - decay * z
 

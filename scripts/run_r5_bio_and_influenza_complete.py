@@ -195,7 +195,7 @@ def run_hematopoiesis_ltc_s4d(psi_univ):
     specs = [
         ("ltc_ode", vg_ltc, init_ltc, pred_ltc, int(init_ltc(0).size), 12),
         ("s4d_ode", vg_s4d, init_s4d, pred_s4d, int(init_s4d(0).size), 15),
-        ("universal_pos_sens_fullcone", vg_uni, lambda s: np.r_[np.full(6, 1.6 + 0.3*(s%2)), np.zeros(8)], pred_univ, 14, 49),
+        ("universal_pos_sens_fullcone", vg_uni, lambda s: np.r_[np.full(6, 1.4 + 0.25 * (s % 3)), np.zeros(8)], pred_univ, 14, 49),
     ]
     out = {"donor_5fold_cv": {}, "pooled_day7": {}, "donor_heldout_day7": {}}
     _, c_all = aggregate_counts_by_day(df, all_days)

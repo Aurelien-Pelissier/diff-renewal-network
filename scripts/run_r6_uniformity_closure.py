@@ -304,12 +304,20 @@ def run_ecoli_neural_suite() -> dict:
         for mname, _, _, init_fn, _ in specs:
             vg_j, vg_fo, ev_fn = compiled[mname]
             bj, bfo = None, None
+            def _obj_j(z):
+                v, g = vg_j(z, f_tr, a_tr)
+                return float(v), np.asarray(g, float)
+
+            def _obj_fo(z):
+                v, g = vg_fo(z, f_tr)
+                return float(v), np.asarray(g, float)
+
             for st in range(3):
                 w0 = init_fn(600 + 30 * fi + st)
-                rj = minimize(lambda z: (float(vg_j(z, f_tr, a_tr)[0]), np.asarray(vg_j(z, f_tr, a_tr)[1], float)), w0, jac=True, method="L-BFGS-B", options={"maxiter": 160})
+                rj = minimize(_obj_j, w0, jac=True, method="L-BFGS-B", options={"maxiter": 160})
                 if bj is None or rj.fun < bj.fun:
                     bj = rj
-                rfo = minimize(lambda z: (float(vg_fo(z, f_tr)[0]), np.asarray(vg_fo(z, f_tr)[1], float)), w0, jac=True, method="L-BFGS-B", options={"maxiter": 160})
+                rfo = minimize(_obj_fo, w0, jac=True, method="L-BFGS-B", options={"maxiter": 160})
                 if bfo is None or rfo.fun < bfo.fun:
                     bfo = rfo
             pf_j, pa_j = map(np.asarray, ev_fn(jnp.asarray(bj.x)))
@@ -379,9 +387,13 @@ def run_helpdesk_hyper_pos_coarsening() -> list[dict]:
                 return -jnp.sum(f_grid_jax * jnp.log(jnp.clip(pf, 1e-12, 1.0))) / n_obs + 1e-4 * jnp.mean(ww**2)
             return jax.value_and_grad(lf)(w)
 
+        def _obj_hp(x):
+            v, g = vg(jnp.asarray(x))
+            return float(v), np.asarray(g, float)
+
         bw, bl = None, float("inf")
         for st in range(2):
-            res = minimize(lambda x: (float(vg(jnp.asarray(x))[0]), np.asarray(vg(jnp.asarray(x))[1], float)), init_hpos(900 + st), jac=True, method="L-BFGS-B", options={"maxiter": 150})
+            res = minimize(_obj_hp, init_hpos(900 + st), jac=True, method="L-BFGS-B", options={"maxiter": 150})
             if res.fun < bl:
                 bl, bw = float(res.fun), res.x.copy()
         pf, pa = pred_hpos(jnp.asarray(bw), h_eval_jax)

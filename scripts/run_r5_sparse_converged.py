@@ -98,7 +98,7 @@ def run_v64_converged_recovery() -> dict:
         return jax.value_and_grad(loss_fn)(th)
 
     x0 = np.concatenate([np.full(v_nodes * deg, np.log(1.7)), np.zeros(v_nodes * deg)])
-    _ = vg_sparse(jnp.asarray(x0))  # warm JIT
+    vg_sparse(jnp.asarray(x0))[1].block_until_ready()  # warm JIT
     t0 = time.perf_counter()
     res_sp = minimize(
         lambda x: tuple(map(lambda z: float(z) if np.ndim(z) == 0 else np.asarray(z, float), vg_sparse(jnp.asarray(x)))),
@@ -194,7 +194,7 @@ def run_v256_e2e() -> dict:
         return jax.value_and_grad(lf)(th)
 
     x0 = np.concatenate([np.full(v_nodes * deg, np.log(1.75)), np.zeros(v_nodes * deg)])
-    _ = vg_sp(jnp.asarray(x0))
+    vg_sp(jnp.asarray(x0))[1].block_until_ready()
     t0 = time.perf_counter()
     res_sp = minimize(
         lambda x: tuple(map(lambda z: float(z) if np.ndim(z) == 0 else np.asarray(z, float), vg_sp(jnp.asarray(x)))),

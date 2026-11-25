@@ -97,6 +97,7 @@ from .renewal import solve_erlang_chain
 from .semi_markov import (
     build_edge_memory_hyper_generator,
     edge_memory_param_size,
+    init_edge_memory_params,
 )
 from .sparse_network import (
     apply_sparse_generator,
@@ -145,6 +146,7 @@ __all__ = [
     "hyper_erlang_race",
     "hyper_race_state_size",
     "init_clock_network",
+    "init_edge_memory_params",
     "init_population_baseline",
     "laplace_schur_implicit_solve",
     "largest_remainder",

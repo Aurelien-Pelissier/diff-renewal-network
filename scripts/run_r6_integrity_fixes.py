@@ -297,10 +297,16 @@ def run_sleep_integrity() -> dict:
             bj, bf = None, None
             for st in range(n_st):
                 w0 = ifn(800 + 25 * fi + st)
-                rj = minimize(lambda z: (float(vg_j(z, fc_j, ac_j)[0]), np.asarray(vg_j(z, fc_j, ac_j)[1], float)), w0, jac=True, method="L-BFGS-B", options={"maxiter": 180})
+                def _obj_j(z):
+                    v, g = vg_j(z, fc_j, ac_j)
+                    return float(v), np.asarray(g, float)
+                def _obj_f(z):
+                    v, g = vg_f(z, fc_j)
+                    return float(v), np.asarray(g, float)
+                rj = minimize(_obj_j, w0, jac=True, method="L-BFGS-B", options={"maxiter": 180})
                 if bj is None or rj.fun < bj.fun:
                     bj = rj
-                rf = minimize(lambda z: (float(vg_f(z, fc_j)[0]), np.asarray(vg_f(z, fc_j)[1], float)), w0, jac=True, method="L-BFGS-B", options={"maxiter": 180})
+                rf = minimize(_obj_f, w0, jac=True, method="L-BFGS-B", options={"maxiter": 180})
                 if bf is None or rf.fun < bf.fun:
                     bf = rf
             pf_j, pa_j = map(np.asarray, p_jit(jnp.asarray(bj.x)))
@@ -378,9 +384,12 @@ def run_influenza_neural_cme() -> dict:
                 p = jnp.clip(pred_cme(ww)[:n_tr], 1e-12, 1.0)
                 return -jnp.sum(obs_tr * jnp.log(p)) / n_tot + reg_v * jnp.mean(ww**2)
             return jax.value_and_grad(lf)(w)
+        def _obj_inf_cme(z):
+            v, g = vg(z)
+            return float(v), np.asarray(g, float)
         best = None
         for s in range(3):
-            r = minimize(lambda z: (float(vg(z)[0]), np.asarray(vg(z)[1], float)), init_cme(20 + s), jac=True, method="L-BFGS-B", options={"maxiter": 220})
+            r = minimize(_obj_inf_cme, init_cme(20 + s), jac=True, method="L-BFGS-B", options={"maxiter": 220})
             if best is None or r.fun < best.fun:
                 best = r
         return np.asarray(p_jit(jnp.asarray(best.x)))
@@ -403,37 +412,42 @@ def run_influenza_neural_cme() -> dict:
 
 
 def run_hematopoiesis_fullcone_bifurcation() -> dict:
-    """Log exact GMP/MEP bifurcation split directly from the full-cone [1.4, 7.8] Universal Pos-Sens fit."""
+    """Log exact GMP/MEP bifurcation split directly from the full-cone [1.4, 7.8] Universal Pos-Sens fit
+    using the exact Day-0 HSC initial condition matching run_r5_bio_and_influenza_complete.py."""
     df = load_hematopoiesis_facs()
     psi_u, cert = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=250, k_min=1.4, k_max=7.8)
     days_list = sorted(int(d) for d in df["Tag"].unique())
     days_arr, counts_mat = aggregate_counts_by_day(df, days_list)
-    day_means = counts_mat / np.maximum(counts_mat.sum(axis=1, keepdims=True), 1e-12)
-    ts_j = jnp.asarray(days_arr - 1.0, dtype=jnp.float64)
-    p0_j = jnp.asarray(day_means[0], dtype=jnp.float64)
-    emp_j = jnp.asarray(counts_mat[1:], dtype=jnp.float64)
-    n_tot = float(counts_mat[1:].sum())
+    ts_j = jnp.asarray(days_arr, dtype=jnp.float64)
+    emp_j = jnp.asarray(counts_mat, dtype=jnp.float64)
+    n_tot = float(counts_mat.sum())
 
     def pred(th):
         nm = jnp.concatenate([jnp.exp(jnp.clip(th[:6], -2.0, 3.0)), jnp.array([1.0])])
         ns = jnp.concatenate([1.4 + 6.4 * jax.nn.sigmoid(th[6:12]), jnp.array([4.0])])
-        p_mpp_cmp = jax.nn.sigmoid(th[12])
-        p_cmp_gmp = jax.nn.sigmoid(th[13])
-        rw = jnp.array([1.0, 1.0 - p_mpp_cmp, p_mpp_cmp, p_cmp_gmp, 1.0 - p_cmp_gmp, 1.0, 1.0, 1.0])
+        # HEMA_EDGES = [(0,1),(1,2),(1,3),(2,6),(3,4),(3,5),(4,6),(5,6)]:
+        # split 1->2 (MLP) vs 1->3 (CMP), and 3->4 (GMP) vs 3->5 (MEP)
+        s_mpp_mlp = jax.nn.sigmoid(th[12])
+        s_cmp_gmp = jax.nn.sigmoid(th[13])
+        rw = jnp.array([1.0, s_mpp_mlp, 1.0 - s_mpp_mlp, s_cmp_gmp, 1.0 - s_cmp_gmp, 1.0, 1.0, 1.0])
         gen, fr, rd = build_universal_pos_network_generator(nm, ns, rw, HEMA_EDGES, 7, psi_u, stages_red=8)
-        x0 = fr @ p0_j
-        return jax.vmap(lambda t: rd @ (jl.expm(t * gen) @ x0))(ts_j[1:])
+        return jax.vmap(lambda t: rd @ (jl.expm(t * gen) @ fr[:, 0]))(ts_j)
 
     @jax.jit
     def vg(w):
         def lf(ww):
             p = jnp.clip(pred(ww), 1e-12, 1.0)
-            return -jnp.sum(emp_j * jnp.log(p)) / n_tot + 1e-5 * jnp.mean(ww**2)
+            p = p / jnp.sum(p, axis=1, keepdims=True)
+            return -jnp.sum(emp_j * jnp.log(p)) / n_tot + 1e-5 * jnp.sum(ww**2)
         return jax.value_and_grad(lf)(w)
 
-    res = minimize(lambda z: (float(vg(z)[0]), np.asarray(vg(z)[1], float)), np.r_[np.log([2.0]*6), np.zeros(8)], jac=True, method="L-BFGS-B", options={"maxiter": 250})
+    def _obj_hb(z):
+        v, g = vg(z)
+        return float(v), np.asarray(g, float)
+
+    res = minimize(_obj_hb, np.r_[np.full(6, 1.6), np.zeros(8)], jac=True, method="L-BFGS-B", options={"maxiter": 250})
     p_cmp_gmp = float(1.0 / (1.0 + np.exp(-res.x[13])))
-    p_mpp_cmp = float(1.0 / (1.0 + np.exp(-res.x[12])))
+    p_mpp_cmp = float(1.0 - 1.0 / (1.0 + np.exp(-res.x[12])))
     out = {
         "cone": [1.4, 7.8],
         "sup_survival_abs_error": round(cert["sup_survival_abs_error"], 5),

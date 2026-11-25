@@ -132,11 +132,12 @@ def main() -> None:
                 best_fit = None
                 t0 = perf_counter()
                 for w0, _, vg, fc in compiled_engines[kind]:
+                    def _obj_mnb(z):
+                        v, g = vg(jnp.asarray(z), tr_counts)
+                        return float(v), np.asarray(g, dtype=float)
+
                     res = minimize(
-                        lambda z: (
-                            float(vg(jnp.asarray(z), tr_counts)[0]),
-                            np.asarray(vg(jnp.asarray(z), tr_counts)[1], dtype=float),
-                        ),
+                        _obj_mnb,
                         w0,
                         method="L-BFGS-B",
                         jac=True,

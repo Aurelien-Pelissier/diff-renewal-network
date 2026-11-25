@@ -50,7 +50,9 @@ def main():
     src_idx = jnp.array([u for u, _ in EDGES])
     dst_idx = jnp.array([v for _, v in EDGES])
 
-    psi_univ, _ = calibrate_universal_pos_clock(stages_red=8, stages_full=16, maxiter=250)
+    psi_univ, _ = calibrate_universal_pos_clock(
+        stages_red=8, stages_full=16, maxiter=250, k_min=1.4, k_max=7.8
+    )
 
     def predict_drn(theta):
         means = jnp.exp(theta[:n_edges])
@@ -183,11 +185,12 @@ def main():
                 day7_scores[m].append(score_predictions(preds[m], c_te_d7))
             if c_te_d67.sum() > 0:
                 day67_scores[m].append(score_predictions(preds[m], c_te_d67))
-        print(
-            f"Donor-Held-Out Extrap Fold {fi+1}/5 (Days 6-7 unseen donors) | "
-            + " | ".join(f"{m}={day67_scores[m][-1]['kl']:.4f}" for m in models),
-            flush=True,
-        )
+        if c_te_d67.sum() > 0:
+            print(
+                f"Donor-Held-Out Extrap Fold {fi+1}/5 (Days 6-7 unseen donors) | "
+                + " | ".join(f"{m}={day67_scores[m][-1]['kl']:.4f}" for m in models),
+                flush=True,
+            )
 
     def agg(d):
         return {

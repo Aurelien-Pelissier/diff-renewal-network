@@ -155,7 +155,8 @@ def make_talbot_hyper_drn(
     def unpack(th):
         lam_s = jnp.exp(jnp.clip(th[n_nodes : 2 * n_nodes], -7.0, 2.5)) * active_mask
         lam_f = (lam_s + jnp.exp(jnp.clip(th[:n_nodes], -6.0, max_log_fast))) * active_mask
-        c_s = (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
+        # smooth_erlang_logits uses 1-indexed stage counts [1..k_slow]
+        c_s = 1.0 + (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
         w_slow = jax.vmap(lambda c: jax.nn.softmax(smooth_erlang_logits(c, stages=k_slow, width=0.5)))(c_s)
         b_slow = w_slow[:, ::-1]
         alpha_f = jax.nn.sigmoid(th[3 * n_nodes : 4 * n_nodes]) * active_mask
@@ -211,7 +212,7 @@ def make_talbot_frailty_drn(
         if pure_frailty:
             lam_s = jnp.exp(jnp.clip(th[0:n_nodes], -6.0, 3.0)) * active_mask
             lam_f = lam_s
-            c_s = (k_slow - 1.0) * jax.nn.sigmoid(th[n_nodes : 2 * n_nodes])
+            c_s = 1.0 + (k_slow - 1.0) * jax.nn.sigmoid(th[n_nodes : 2 * n_nodes])
             w_slow = jax.vmap(lambda c: jax.nn.softmax(smooth_erlang_logits(c, stages=k_slow, width=0.5)))(c_s)
             b_slow = w_slow[:, ::-1]
             alpha_f = jnp.zeros(n_nodes, dtype=jnp.float64)
@@ -219,7 +220,7 @@ def make_talbot_frailty_drn(
         else:
             lam_s = jnp.exp(jnp.clip(th[n_nodes : 2 * n_nodes], -7.0, 2.5)) * active_mask
             lam_f = (lam_s + jnp.exp(jnp.clip(th[:n_nodes], -6.0, max_log_fast))) * active_mask
-            c_s = (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
+            c_s = 1.0 + (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
             w_slow = jax.vmap(lambda c: jax.nn.softmax(smooth_erlang_logits(c, stages=k_slow, width=0.5)))(c_s)
             b_slow = w_slow[:, ::-1]
             alpha_f = jax.nn.sigmoid(th[3 * n_nodes : 4 * n_nodes]) * active_mask
@@ -415,28 +416,36 @@ def run_deep_adamw_mamba_mooc(
     fr_val, ag_val = fr_val[eval_nodes_np], ag_val[eval_nodes_np]
 
     def init_params(seed: int):
+        # Standard Pre-LayerNorm + Residual 2-layer Mamba with Xavier scaling and b_z=1.0
+        # so Layer 1 and Layer 2 activations & gradients are O(1e-2..1e-1) from step 0!
         r = np.random.default_rng(seed)
+        s_in = 1.0 / np.sqrt(n_nodes)
+        s_h = 1.0 / np.sqrt(H)
         return {
-            "enc_w": jnp.asarray(r.normal(0, 0.08, (n_nodes + 1, H))),
+            "enc_w": jnp.asarray(r.normal(0, s_in, (n_nodes + 1, H))),
             "enc_b": jnp.zeros(H),
-            # Layer 1
+            "in_w": jnp.asarray(r.normal(0, s_in, (n_nodes, H))),
+            "in_b": jnp.zeros(H),
+            # Layer 1 (Pre-LN + Residual selective SSM)
             "log_a1": jnp.asarray(np.linspace(np.log(0.05), np.log(5.0), H)),
-            "w_dt1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
-            "b_dt1": jnp.full(H, -1.0),
-            "w_b1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
-            "w_c1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
-            "w_z1": jnp.asarray(r.normal(0, 0.08, (n_nodes, H))),
-            "b_z1": jnp.zeros(H),
-            # Layer 2
+            "w_dt1": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_dt1": jnp.full(H, -0.5),
+            "w_b1": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_b1": jnp.zeros(H),
+            "w_z1": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_z1": jnp.full(H, 1.0),
+            "w_o1": jnp.asarray(r.normal(0, s_h * 0.5, (H, H))),
+            # Layer 2 (Pre-LN + Residual selective SSM)
             "log_a2": jnp.asarray(np.linspace(np.log(0.05), np.log(5.0), H)),
-            "w_dt2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "b_dt2": jnp.full(H, -1.0),
-            "w_b2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "w_c2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "w_z2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "b_z2": jnp.zeros(H),
-            # Edge flux head: H -> n_edges (86,720 params)
-            "w_o": jnp.asarray(r.normal(0, 0.02, (H, n_edges))),
+            "w_dt2": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_dt2": jnp.full(H, -0.5),
+            "w_b2": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_b2": jnp.zeros(H),
+            "w_z2": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_z2": jnp.full(H, 1.0),
+            "w_o2": jnp.asarray(r.normal(0, s_h * 0.5, (H, H))),
+            # Edge flux head: H -> n_edges (matching Talbot-DRN rate ceiling exp(5.3)=200/h)
+            "w_o": jnp.asarray(r.normal(0, 0.05, (H, n_edges))),
             "b_o": jnp.full(n_edges, -3.0),
         }
 
@@ -444,6 +453,11 @@ def run_deep_adamw_mamba_mooc(
     n_params = sum(int(v.size) for v in p0_sample.values())
     # Weights-only decay mask (never decay biases or log-rates)
     wd_mask = {k: (0.0 if (k.startswith("b_") or k.endswith("_b") or k.startswith("log_")) else 1.0) for k in p0_sample}
+
+    def _ln(x):
+        return (x - jnp.mean(x, axis=-1, keepdims=True)) / jnp.sqrt(
+            jnp.var(x, axis=-1, keepdims=True) + 1e-5
+        )
 
     def rollout(p, age_val: float):
         a_col = jnp.full((eval_init.shape[0], 1), age_val, dtype=jnp.float64)
@@ -454,19 +468,22 @@ def run_deep_adamw_mamba_mooc(
 
         def step(carry, dt_step):
             prob, h1, h2 = carry
-            d1 = jax.nn.softplus(prob @ p["w_dt1"] + p["b_dt1"]) * dt_step
+            u0 = prob @ p["in_w"] + p["in_b"]
+            x1 = _ln(u0)
+            d1 = jax.nn.softplus(x1 @ p["w_dt1"] + p["b_dt1"]) * dt_step
             ab1 = jnp.exp(d1 * na1[None, :])
-            bb1 = ((ab1 - 1.0) / na1[None, :]) * jnp.tanh(prob @ p["w_b1"])
+            bb1 = (jnp.expm1(d1 * na1[None, :]) / na1[None, :]) * jnp.tanh(x1 @ p["w_b1"] + p["b_b1"])
             h1_n = ab1 * h1 + bb1
-            y1 = jnp.tanh(prob @ p["w_c1"]) * h1_n * jax.nn.silu(prob @ p["w_z1"] + p["b_z1"])
+            y1 = u0 + (h1_n * jax.nn.silu(x1 @ p["w_z1"] + p["b_z1"])) @ p["w_o1"]
 
-            d2 = jax.nn.softplus(y1 @ p["w_dt2"] + p["b_dt2"]) * dt_step
+            x2 = _ln(y1)
+            d2 = jax.nn.softplus(x2 @ p["w_dt2"] + p["b_dt2"]) * dt_step
             ab2 = jnp.exp(d2 * na2[None, :])
-            bb2 = ((ab2 - 1.0) / na2[None, :]) * jnp.tanh(y1 @ p["w_b2"])
+            bb2 = (jnp.expm1(d2 * na2[None, :]) / na2[None, :]) * jnp.tanh(x2 @ p["w_b2"] + p["b_b2"])
             h2_n = ab2 * h2 + bb2
-            y2 = y1 + jnp.tanh(y1 @ p["w_c2"]) * h2_n * jax.nn.silu(y1 @ p["w_z2"] + p["b_z2"])
+            y2 = y1 + (h2_n * jax.nn.silu(x2 @ p["w_z2"] + p["b_z2"])) @ p["w_o2"]
 
-            rates = jnp.exp(jnp.clip(p["b_o"] + y2 @ p["w_o"], -8.0, 3.0)) * edge_active
+            rates = jnp.exp(jnp.clip(p["b_o"] + _ln(y2) @ p["w_o"], -8.0, 5.3)) * edge_active
             tot_out = jax.vmap(lambda r: jax.ops.segment_sum(r, src_idx, num_segments=n_nodes))(rates)
             frac_leave = 1.0 - jnp.exp(-jnp.minimum(tot_out * dt_step, 50.0))
             scale = frac_leave / jnp.maximum(tot_out, 1e-30)
@@ -517,17 +534,19 @@ def run_deep_adamw_mamba_mooc(
         nf_s, na_s = float(max(fr_sub.sum(), 1.0)), float(max(ag_sub.sum(), 1.0))
 
         # Select (lr, wd, best_step) strictly on internal 15% user validation split
-        # Expanded interior grid (up to 500 steps, wd down to 1e-5) so joint converges strictly inside grid!
-        best_cfg = (3e-3, 1e-4, 250)
+        # Wide interior grid with matched cosine schedule + early-stopping patience!
+        best_cfg = (3e-3, 1e-4, 240)
         best_val_kl = 1e9
-        max_tune = 480 if joint else 300
-        lr_grid = (3e-3, 1e-2) if joint else (1e-3, 3e-3, 1e-2)
-        wd_grid = (1e-5, 1e-4, 1e-3) if joint else (1e-4, 1e-3)
+        max_tune = 420
+        lr_grid = (1e-3, 3e-3, 1e-2, 3e-2)
+        wd_grid = (1e-5, 1e-4, 1e-3)
         for lr_c in lr_grid:
             for wd_c in wd_grid:
                 p = init_params(STARTS[0])
                 m_st = jax.tree.map(jnp.zeros_like, p)
                 v_st = jax.tree.map(jnp.zeros_like, p)
+                cfg_best = 1e9
+                stale_checks = 0
                 for it in range(max_tune):
                     lr_t = (0.05 * lr_c) + 0.5 * (lr_c - 0.05 * lr_c) * (1.0 + np.cos(np.pi * it / max_tune))
                     p, m_st, v_st, _ = step_adamw(p, m_st, v_st, fr_sub_j, ag_sub_j, nf_s, na_s, it, lr_t, wd_c)
@@ -537,6 +556,13 @@ def run_deep_adamw_mamba_mooc(
                         if v_score < best_val_kl:
                             best_val_kl = v_score
                             best_cfg = (lr_c, wd_c, it + 1)
+                        if v_score < cfg_best - 1e-5:
+                            cfg_best = v_score
+                            stale_checks = 0
+                        else:
+                            stale_checks += 1
+                            if stale_checks >= 3:
+                                break
 
         lr_star, wd_star, steps_star = best_cfg
         fr_full_j, ag_full_j = jnp.asarray(fr_tr), jnp.asarray(ag_tr)
@@ -548,7 +574,7 @@ def run_deep_adamw_mamba_mooc(
             v_st = jax.tree.map(jnp.zeros_like, p)
             last_v = 1e9
             for it in range(steps_star):
-                lr_t = (0.1 * lr_star) + 0.5 * (lr_star - 0.1 * lr_star) * (1.0 + np.cos(np.pi * it / steps_star))
+                lr_t = (0.05 * lr_star) + 0.5 * (lr_star - 0.05 * lr_star) * (1.0 + np.cos(np.pi * it / max_tune))
                 p, m_st, v_st, val = step_adamw(p, m_st, v_st, fr_full_j, ag_full_j, nf_f, na_f, it, lr_t, wd_star)
                 last_v = float(val)
             if best is None or last_v < best[0]:
@@ -583,38 +609,73 @@ def run_1jump_hawkes_coarsening_single_dt(
     grid_eval: np.ndarray,
     dt_c: float,
     absorbing_node: int | None = None,
+    aged_thresh: float = 0.0,
+    entry_anchored: bool = False,
 ) -> dict:
-    """1-Jump Parametric Hawkes baseline on coarsened grid (WITH exact right-censored stays in NLL!).
+    """1-Jump Parametric Hawkes baseline on coarsened grid (WITH exact right-censored stays in NLL
+    and exact Gauss-Legendre survivor-age-conditioned competing-risks evaluation!).
 
     Evaluates on the EXACT SAME test horizon grid `grid_eval = arange(dt_c, t_max, dt_c)` as
-    Talbot-DRN, Univ. Hyper-Pos-Sens, CTMC, and 1L-Mamba!
+    Talbot-DRN, Univ. Hyper-Pos-Sens, CTMC, and 1L-Mamba.
     """
     pair_u, pair_v, pair_dt = [], [], []
     cens_u, cens_dt = [], []
-    for times, states in trajs_tr:
-        if len(times) < 2:
-            continue
-        t_end = float(times[-1])
-        grid = np.arange(0.0, t_end + 1e-9, dt_c)
-        if len(grid) < 2:
-            continue
-        pos = np.clip(np.searchsorted(times, grid, side="right") - 1, 0, len(states) - 1)
-        gs = states[pos]
-        last_t = grid[0]
-        last_s = int(gs[0])
-        for k in range(1, len(grid)):
-            cur_s = int(gs[k])
-            if cur_s != last_s:
-                if absorbing_node is None or last_s != absorbing_node:
-                    pair_u.append(last_s)
-                    pair_v.append(cur_s)
-                    pair_dt.append(float(grid[k] - last_t))
-                last_t = grid[k]
-                last_s = cur_s
-        # Include right-censored trailing stay [last_t, grid[-1]] so survival integral is unbiased!
-        if grid[-1] > last_t + 1e-9 and (absorbing_node is None or last_s != absorbing_node):
-            cens_u.append(last_s)
-            cens_dt.append(float(grid[-1] - last_t))
+    if entry_anchored:
+        # Match entry-anchored coarsening: from each visit entry t0, sample at {t0 + m*dt_c}
+        t_hor = float(grid_eval[-1])
+        for times, states in trajs_tr:
+            if len(times) < 2:
+                continue
+            t_end = float(times[-1])
+            is_abs_end = (absorbing_node is not None) and (int(states[-1]) == absorbing_node)
+            chg = np.concatenate([[0], np.where(states[1:] != states[:-1])[0] + 1])
+            for idx in chg:
+                u = int(states[idx])
+                if absorbing_node is not None and u == absorbing_node:
+                    continue
+                t0 = float(times[idx])
+                max_q = (t0 + t_hor) if is_abs_end else min(t_end, t0 + t_hor)
+                if max_q < t0 + dt_c - 1e-9:
+                    continue
+                q_t = np.arange(t0 + dt_c, max_q + 1e-9, dt_c)
+                if len(q_t) == 0:
+                    continue
+                pos = np.clip(np.searchsorted(times, q_t, side="right") - 1, 0, len(states) - 1)
+                qs = states[pos]
+                diffs = np.where(qs != u)[0]
+                if len(diffs) > 0:
+                    k_first = int(diffs[0])
+                    pair_u.append(u)
+                    pair_v.append(int(qs[k_first]))
+                    pair_dt.append(float(q_t[k_first] - t0))
+                else:
+                    cens_u.append(u)
+                    cens_dt.append(float(q_t[-1] - t0))
+    else:
+        for times, states in trajs_tr:
+            if len(times) < 2:
+                continue
+            t_end = float(times[-1])
+            grid = np.arange(0.0, t_end + 1e-9, dt_c)
+            if len(grid) < 2:
+                continue
+            pos = np.clip(np.searchsorted(times, grid, side="right") - 1, 0, len(states) - 1)
+            gs = states[pos]
+            last_t = grid[0]
+            last_s = int(gs[0])
+            for k in range(1, len(grid)):
+                cur_s = int(gs[k])
+                if cur_s != last_s:
+                    if absorbing_node is None or last_s != absorbing_node:
+                        pair_u.append(last_s)
+                        pair_v.append(cur_s)
+                        pair_dt.append(float(grid[k] - last_t))
+                    last_t = grid[k]
+                    last_s = cur_s
+            # Include right-censored trailing stay [last_t, grid[-1]] so survival integral is unbiased!
+            if grid[-1] > last_t + 1e-9 and (absorbing_node is None or last_s != absorbing_node):
+                cens_u.append(last_s)
+                cens_dt.append(float(grid[-1] - last_t))
 
     pair_u = np.asarray(pair_u, dtype=np.int32)
     pair_v = np.asarray(pair_v, dtype=np.int32)
@@ -684,16 +745,28 @@ def run_1jump_hawkes_coarsening_single_dt(
     mu, al, beta = map(np.asarray, unpack_hk(jnp.asarray(res.x)))
     tot_mu = mu.sum(axis=-1)
     tot_al = al.sum(axis=-1)
+    # Exact 24-pt Gauss-Legendre competing-risks integral conditioned on survival to aged_thresh:
+    # P(jump to v in [a, a+h] | T > a) = int_0^h S_a(t) * (mu_uv + al_uv * exp(-beta_u * (a + t))) dt
+    gl_x, gl_w = np.polynomial.legendre.leggauss(24)
+    gl_u = 0.5 * (gl_x + 1.0)
+    gl_wt = 0.5 * gl_w
     pred = np.zeros((len(eval_nodes), len(grid_eval), n_nodes), dtype=np.float64)
     for bi, u in enumerate(eval_nodes):
+        bu = float(beta[u])
+        al_aged = al[u] * np.exp(-min(bu * aged_thresh, 50.0))
+        tot_al_aged = float(tot_al[u] * np.exp(-min(bu * aged_thresh, 50.0)))
         for hi, h in enumerate(grid_eval):
-            e_dec = np.exp(-min(beta[u] * h, 50.0))
-            int_vec = mu[u] * h + al[u] * (1.0 - e_dec) / beta[u]
-            int_tot = tot_mu[u] * h + tot_al[u] * (1.0 - e_dec) / beta[u]
-            surv = np.exp(-min(int_tot, 50.0))
-            route = int_vec / max(int_tot, 1e-12)
-            p_row = (1.0 - surv) * route
-            p_row[u] = surv
+            h_f = float(h)
+            t_q = h_f * gl_u  # (24,)
+            e_q = np.exp(-np.minimum(bu * t_q, 50.0))  # (24,)
+            cum_q = tot_mu[u] * t_q + tot_al_aged * (-np.expm1(-np.minimum(bu * t_q, 50.0))) / bu
+            surv_q = np.exp(-np.minimum(cum_q, 50.0))  # (24,)
+            lam_q = mu[u][None, :] + al_aged[None, :] * e_q[:, None]  # (24, V)
+            p_jump = h_f * np.sum((gl_wt * surv_q)[:, None] * lam_q, axis=0)
+            cum_end = tot_mu[u] * h_f + tot_al_aged * (-np.expm1(-min(bu * h_f, 50.0))) / bu
+            surv_end = float(np.exp(-min(cum_end, 50.0)))
+            p_row = p_jump.copy()
+            p_row[u] = surv_end
             pred[bi, hi] = np.clip(p_row, 1e-12, 1.0)
             pred[bi, hi] /= pred[bi, hi].sum()
     return {
@@ -733,7 +806,7 @@ def verify_mooc_talbot_accuracy_and_solvers(
     def unpack_params(th):
         lam_s = jnp.exp(jnp.clip(th[n_nodes : 2 * n_nodes], -7.0, 2.5)) * active_mask
         lam_f = (lam_s + jnp.exp(jnp.clip(th[:n_nodes], -6.0, 5.3))) * active_mask
-        c_s = (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
+        c_s = 1.0 + (k_slow - 1.0) * jax.nn.sigmoid(th[2 * n_nodes : 3 * n_nodes])
         w_slow = jax.vmap(lambda c: jax.nn.softmax(smooth_erlang_logits(c, stages=k_slow, width=0.5)))(c_s)
         b_slow = w_slow[:, ::-1]
         alpha_f = jax.nn.sigmoid(th[3 * n_nodes : 4 * n_nodes]) * active_mask
@@ -1022,8 +1095,16 @@ def run_benchmark_for_dataset(name: str, trajs_tr, trajs_te, n_nodes: int, horiz
     ])
     m_fr, x_fr = fit_talbot_model(roll_hyp, th0_hyp, eval_nodes, aged_thresh, fr_tr, ag_tr, fr_te, ag_te, joint=False, maxiter=mi_main, reg=1e-4)
     m_jt, x_jt = fit_talbot_model(roll_hyp, x_fr, eval_nodes, aged_thresh, fr_tr, ag_tr, fr_te, ag_te, joint=True, maxiter=mi_main, reg=1e-4)
-    # Record max learned fast rate to verify stiffness removal!
-    max_lf_learned = float(np.max(np.exp(np.clip(x_fr[n_nodes:2*n_nodes], -7, 2.5)) + np.exp(np.clip(x_fr[:n_nodes], -6, 5.3))))
+    # Record max learned fast rate over active (non-absorbing) nodes to verify stiffness removal!
+    active_np = np.ones(n_nodes, dtype=np.float64)
+    if absorbing_node is not None:
+        active_np[absorbing_node] = 0.0
+    max_lf_learned = float(
+        np.max(
+            (np.exp(np.clip(x_fr[n_nodes : 2 * n_nodes], -7, 2.5)) + np.exp(np.clip(x_fr[:n_nodes], -6, 5.3)))
+            * active_np
+        )
+    )
     m_fr["params"] = n_p_hyp; m_fr["max_learned_lam_f"] = round(max_lf_learned, 2)
     m_jt["params"] = n_p_hyp
     res["talbot_sparse_hyper_drn_fresh_only"] = m_fr
@@ -1183,9 +1264,10 @@ def run_harmonized_coarsening(
             joint=False, maxiter=mi_coars, reg=1e-4,
         )
 
-        # 3. 1-Jump Parametric Hawkes (with right-censored stays in NLL) on grid_eval
+        # 3. 1-Jump Parametric Hawkes (with right-censored stays in NLL & exact survivor-age shift)
         mc_hk = run_1jump_hawkes_coarsening_single_dt(
-            trajs_tr, n_nodes, eval_nodes_np, a_te_ev, grid_eval, dt_c, absorbing_node=absorbing_node
+            trajs_tr, n_nodes, eval_nodes_np, a_te_ev, grid_eval, dt_c,
+            absorbing_node=absorbing_node, aged_thresh=aged_thresh, entry_anchored=False,
         )
 
         # 4. Exact CTMC (expm) on c_fr_ev over grid_eval
@@ -1301,17 +1383,28 @@ def run_entry_anchored_coarsening(
         @jax.jit
         def vg_c(w):
             return jax.value_and_grad(lambda ww: -jnp.sum(fj * jnp.log(jnp.clip(r_ct(ww, eval_nodes), 1e-12, 1.0))) / nfg + 1e-5 * jnp.mean(ww**2))(w)
-        rc = minimize(lambda z: (float(vg_c(jnp.asarray(z))[0]), np.asarray(vg_c(jnp.asarray(z))[1], float)), e_init.copy(), jac=True, method="L-BFGS-B", options={"maxiter": 80})
+        def obj_c(z):
+            v, g = vg_c(jnp.asarray(z, dtype=jnp.float64))
+            return float(v), np.asarray(g, dtype=np.float64)
+        rc = minimize(obj_c, e_init.copy(), jac=True, method="L-BFGS-B", options={"maxiter": 80})
         ctmc_ag = weighted_kl(np.asarray(r_ct(jnp.asarray(rc.x), eval_nodes)), a_te_ev)
 
         in_m, r_m, _ = make_scalable_neural_baseline("mamba", n_nodes, edges, grid_eval, absorbing_node=absorbing_node, latent=12)
         @jax.jit
         def vg_m(w):
             return jax.value_and_grad(lambda ww: -jnp.sum(fj * jnp.log(jnp.clip(r_m(ww, eval_nodes, 0.0), 1e-12, 1.0))) / nfg + 1e-4 * jnp.mean(ww**2))(w)
-        rm = minimize(lambda z: (float(vg_m(jnp.asarray(z))[0]), np.asarray(vg_m(jnp.asarray(z))[1], float)), in_m(17, e_init), jac=True, method="L-BFGS-B", options={"maxiter": 65})
+        def obj_m(z):
+            v, g = vg_m(jnp.asarray(z, dtype=jnp.float64))
+            return float(v), np.asarray(g, dtype=np.float64)
+        rm = minimize(obj_m, in_m(17, e_init), jac=True, method="L-BFGS-B", options={"maxiter": 80})
         mamba_ag = weighted_kl(np.asarray(r_m(jnp.asarray(rm.x), eval_nodes, 0.0)), a_te_ev)
 
-        hk_ag = coars_cal[f"dt_{dt_c}"]["hawkes_1jump_aged_kl"]
+        # Fit 1-Jump Hawkes genuinely on entry-anchored coarsened visits (never copy calendar scores!)
+        mc_hk_ea = run_1jump_hawkes_coarsening_single_dt(
+            trajs_tr, n_nodes, eval_nodes_np, a_te_ev, grid_eval, dt_c,
+            absorbing_node=absorbing_node, aged_thresh=aged_thresh, entry_anchored=True,
+        )
+        hk_ag = mc_hk_ea["hawkes_1jump_aged_kl"]
         ea_out[f"dt_{dt_c}"] = {
             "grid_eval": [float(g) for g in grid_eval],
             "talbot_drn_aged_kl": m_hyp["aged_kl"],
@@ -1319,6 +1412,8 @@ def run_entry_anchored_coarsening(
             "hawkes_1jump_aged_kl": hk_ag,
             "mamba_1l_aged_kl": mamba_ag,
             "ctmc_aged_kl": ctmc_ag,
+            "hawkes_1jump_n_obs": mc_hk_ea["n_obs_transitions"],
+            "hawkes_1jump_n_censored": mc_hk_ea["n_censored_stays"],
         }
     return ea_out
 
@@ -1409,10 +1504,14 @@ def main() -> None:
             98, mo_edges, 4, mo_h, 6.0, mo_ev_j, x_fr_m, mo_ftr, mo_ate, mo_abs
         )
 
-        # 2c. Harmonized 5-model coarsening on MOOC
+        # 2c. Harmonized 5-model coarsening on MOOC (both calendar control & entry-anchored!)
         out["mooc_v98_r8"]["coarsening_r8"] = run_harmonized_coarsening(
             "MOOC_V98", mo_tr, mo_te, 98, mo_edges, mo_ev, 4, mo_h, 6.0, mo_abs,
             [1.0, 6.0, 12.0, 24.0], psi_univ, 12, 65, mo_th0_hyp, mo_th0_uh,
+        )
+        out["mooc_v98_r8"]["coarsening_entry_anchored"] = run_entry_anchored_coarsening(
+            "MOOC_V98", mo_tr, mo_te, 98, mo_edges, mo_ev, 4, mo_h, 6.0, mo_abs,
+            [1.0, 6.0, 12.0, 24.0], psi_univ, 12, 65, mo_th0_hyp, mo_th0_uh, out["mooc_v98_r8"]["coarsening_r8"],
         )
 
         # 2d. Converged Deep 2L-Mamba AdamW on MOOC (unified eval_nodes!)

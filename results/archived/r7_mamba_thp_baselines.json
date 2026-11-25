@@ -82,25 +82,25 @@
       "dt_0.5": {
         "mamba_fresh_kl": 0.016162837895705363,
         "mamba_aged_kl": 0.12192726125924096,
-        "thp_forecast_kl": 0.8925654154284591,
+        "thp_forecast_kl": 0.8119575489254423,
         "params": 177
       },
       "dt_2.0": {
         "mamba_fresh_kl": 0.02253030859153948,
         "mamba_aged_kl": 0.11446673826901209,
-        "thp_forecast_kl": 1.331964701733862,
+        "thp_forecast_kl": 1.3713259081387532,
         "params": 177
       },
       "dt_7.0": {
         "mamba_fresh_kl": 0.012527668080699416,
         "mamba_aged_kl": 0.16630687985436876,
-        "thp_forecast_kl": 1.6462475458249477,
+        "thp_forecast_kl": 1.6096337920181756,
         "params": 177
       },
       "dt_14.0": {
         "mamba_fresh_kl": 0.33212171056208845,
         "mamba_aged_kl": 0.4775488644002614,
-        "thp_forecast_kl": 2.304391616877044,
+        "thp_forecast_kl": 1.3958591903062998,
         "params": 177
       }
     }

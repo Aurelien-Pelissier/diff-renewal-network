@@ -183,11 +183,15 @@ def fit_tab_val_tuned(kind, X_tr, age_tr, la_tr, y_tr, X_val, age_val, la_val, y
 
             return jax.value_and_grad(loss)(z)
 
+        def obj_tab(z):
+            v, g = vg(jnp.asarray(z))
+            return float(v), np.asarray(g, dtype=float)
+
         best = None
         for sd in seeds:
             z0 = np.asarray(ravel_pytree(init_tab(kind, d_in, sd))[0], dtype=float)
             res = minimize(
-                lambda z: (float(vg(jnp.asarray(z))[0]), np.asarray(vg(jnp.asarray(z))[1], dtype=float)),
+                obj_tab,
                 z0, method="L-BFGS-B", jac=True, options={"maxiter": 200, "ftol": 1e-10},
             )
             if best is None or res.fun < best[0]:
@@ -266,29 +270,42 @@ def run_deep_2layer_mamba_defi(
     X_full, dt_full, y_full, m_full = sX[full_seq], sdt[full_seq], sy[full_seq], sm_full[full_seq]
 
     def init_m(seed: int):
+        # Standard Pre-LayerNorm + Residual 2-layer Mamba with Xavier scaling and b_z=1.0
+        # so Layer 1 and Layer 2 activations & gradients are O(1e-2..1e-1) from step 0!
         r = np.random.default_rng(seed)
+        s_in = 1.0 / np.sqrt(d_in)
+        s_h = 1.0 / np.sqrt(H)
         return {
+            "in_w": jnp.asarray(r.normal(0, s_in, (d_in, H))),
+            "in_b": jnp.zeros(H),
             "log_a1": jnp.asarray(np.linspace(np.log(0.1), np.log(3.0), H)),
-            "w_dt1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
-            "b_dt1": jnp.full(H, -1.0),
-            "w_b1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
-            "w_c1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
-            "w_z1": jnp.asarray(r.normal(0, 0.08, (d_in, H))),
-            "b_z1": jnp.zeros(H),
+            "w_dt1": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_dt1": jnp.full(H, -0.5),
+            "w_b1": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_b1": jnp.zeros(H),
+            "w_z1": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_z1": jnp.full(H, 1.0),
+            "w_o1": jnp.asarray(r.normal(0, s_h * 0.5, (H, H))),
             "log_a2": jnp.asarray(np.linspace(np.log(0.1), np.log(3.0), H)),
-            "w_dt2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "b_dt2": jnp.full(H, -1.0),
-            "w_b2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "w_c2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "w_z2": jnp.asarray(r.normal(0, 0.08, (H, H))),
-            "b_z2": jnp.zeros(H),
-            "w_o": jnp.asarray(r.normal(0, 0.05, (H + d_in, 1))),
+            "w_dt2": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_dt2": jnp.full(H, -0.5),
+            "w_b2": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_b2": jnp.zeros(H),
+            "w_z2": jnp.asarray(r.normal(0, s_h, (H, H))),
+            "b_z2": jnp.full(H, 1.0),
+            "w_o2": jnp.asarray(r.normal(0, s_h * 0.5, (H, H))),
+            "w_o": jnp.asarray(r.normal(0, 1.0 / np.sqrt(H + d_in), (H + d_in, 1))),
             "b_o": jnp.array([-1.6]),
         }
 
     p_ref = init_m(17)
     n_params = sum(int(v.size) for v in p_ref.values())
-    wd_mask = {k: (0.0 if (k.startswith("b_") or k.startswith("log_")) else 1.0) for k in p_ref}
+    wd_mask = {k: (0.0 if (k.startswith("b_") or k.endswith("_b") or k.startswith("log_")) else 1.0) for k in p_ref}
+
+    def _ln(x):
+        return (x - jnp.mean(x, axis=-1, keepdims=True)) / jnp.sqrt(
+            jnp.var(x, axis=-1, keepdims=True) + 1e-5
+        )
 
     def fwd_batch(p, X_b, dt_b):
         na1 = -jnp.exp(jnp.clip(p["log_a1"], -3.0, 2.5))
@@ -299,19 +316,22 @@ def run_deep_2layer_mamba_defi(
         def step(carry, inp):
             h1, h2 = carry
             xt, dtt = inp
-            d1 = jax.nn.softplus(jnp.tanh(xt @ p["w_dt1"]) * 2.0 + p["b_dt1"]) * dtt[:, None]
+            u0 = xt @ p["in_w"] + p["in_b"]
+            x1 = _ln(u0)
+            d1 = jax.nn.softplus(x1 @ p["w_dt1"] + p["b_dt1"]) * dtt[:, None]
             ab1 = jnp.exp(d1 * na1[None, :])
-            bb1 = ((ab1 - 1.0) / na1[None, :]) * jnp.tanh(xt @ p["w_b1"])
+            bb1 = (jnp.expm1(d1 * na1[None, :]) / na1[None, :]) * jnp.tanh(x1 @ p["w_b1"] + p["b_b1"])
             h1_n = ab1 * h1 + bb1
-            y1 = jnp.tanh(xt @ p["w_c1"]) * h1_n * jax.nn.silu(jnp.tanh(xt @ p["w_z1"]) + p["b_z1"])
+            y1 = u0 + (h1_n * jax.nn.silu(x1 @ p["w_z1"] + p["b_z1"])) @ p["w_o1"]
 
-            d2 = jax.nn.softplus(jnp.tanh(y1 @ p["w_dt2"]) * 2.0 + p["b_dt2"]) * dtt[:, None]
+            x2 = _ln(y1)
+            d2 = jax.nn.softplus(x2 @ p["w_dt2"] + p["b_dt2"]) * dtt[:, None]
             ab2 = jnp.exp(d2 * na2[None, :])
-            bb2 = ((ab2 - 1.0) / na2[None, :]) * jnp.tanh(y1 @ p["w_b2"])
+            bb2 = (jnp.expm1(d2 * na2[None, :]) / na2[None, :]) * jnp.tanh(x2 @ p["w_b2"] + p["b_b2"])
             h2_n = ab2 * h2 + bb2
-            y2 = y1 + jnp.tanh(y1 @ p["w_c2"]) * h2_n * jax.nn.silu(jnp.tanh(y1 @ p["w_z2"]) + p["b_z2"])
+            y2 = y1 + (h2_n * jax.nn.silu(x2 @ p["w_z2"] + p["b_z2"])) @ p["w_o2"]
 
-            logit = (jnp.concatenate([y2, xt], axis=-1) @ p["w_o"] + p["b_o"]).squeeze(-1)
+            logit = (jnp.concatenate([_ln(y2), xt], axis=-1) @ p["w_o"] + p["b_o"]).squeeze(-1)
             return (h1_n, h2_n), jax.nn.sigmoid(logit)
 
         B = X_b.shape[0]
@@ -381,7 +401,7 @@ def run_deep_2layer_mamba_defi(
         rng = np.random.default_rng(sd)
         for it in range(steps_star):
             idx = rng.integers(0, len(X_full), size=mb_full)
-            lr_t = (0.1 * lr_star) + 0.5 * (lr_star - 0.1 * lr_star) * (1.0 + np.cos(np.pi * it / steps_star))
+            lr_t = (0.1 * lr_star) + 0.5 * (lr_star - 0.1 * lr_star) * (1.0 + np.cos(np.pi * it / max_tune))
             p, ms, vs, _ = adamw_step(
                 p, ms, vs,
                 jnp.asarray(X_full[idx]), jnp.asarray(dt_full[idx]), jnp.asarray(y_full[idx]), jnp.asarray(m_full[idx]),
@@ -458,9 +478,13 @@ def main() -> None:
     is_test = ~is_dev
 
     X_raw = df[FEAT_COLS].to_numpy(dtype=np.float64)
-    mu_x = X_raw[is_dev].mean(axis=0)
-    sd_x = np.maximum(X_raw[is_dev].std(axis=0), 1e-6)
-    X_std = np.clip((X_raw - mu_x) / sd_x, -8.0, 8.0)
+
+    def _std_x(mask: np.ndarray) -> np.ndarray:
+        mu = X_raw[mask].mean(axis=0)
+        sd = np.maximum(X_raw[mask].std(axis=0), 1e-6)
+        return np.clip((X_raw - mu) / sd, -8.0, 8.0)
+
+    X_std = _std_x(is_dev)
 
     age_all = df["age_clean"].to_numpy(dtype=np.float64)
     la_raw = np.log1p(age_all)
@@ -660,7 +684,8 @@ def main() -> None:
         ("regime_b_temporal_drift", is_dev, is_jan, is_feb),
     ]:
         print(f"\n=== DeFi Part A: {reg_name} ===", flush=True)
-        # Re-standardize age strictly on training mask for fair MLP/Mamba zero-shot
+        # Re-standardize BOTH covariates X and log1p(age) strictly on this regime's training mask!
+        X_r = _std_x(train_mask_dev)
         la_mu_r = float(la_raw[train_mask_dev].mean())
         la_sd_r = float(max(la_raw[train_mask_dev].std(), 1e-6))
         la_r = (la_raw - la_mu_r) / la_sd_r
@@ -670,12 +695,12 @@ def main() -> None:
         for kind in ("neural_clock_m4", "mlp_age", "weibull_mlp", "markov_clock"):
             params, n_p, best_r, sec = fit_tab_val_tuned(
                 kind,
-                X_std[train_jan], age_all[train_jan], la_r[train_jan], y_sale[train_jan],
-                X_std[train_feb], age_all[train_feb], la_r[train_feb], y_sale[train_feb],
-                X_std[train_mask_dev], age_all[train_mask_dev], la_r[train_mask_dev], y_sale[train_mask_dev],
+                X_r[train_jan], age_all[train_jan], la_r[train_jan], y_sale[train_jan],
+                X_r[train_feb], age_all[train_feb], la_r[train_feb], y_sale[train_feb],
+                X_r[train_mask_dev], age_all[train_mask_dev], la_r[train_mask_dev], y_sale[train_mask_dev],
                 dt=HORIZON_MIN,
             )
-            p_te = np.asarray(predict_tab(kind, params, jnp.asarray(X_std[is_test]), jnp.asarray(age_all[is_test]), jnp.asarray(la_r[is_test]), HORIZON_MIN))
+            p_te = np.asarray(predict_tab(kind, params, jnp.asarray(X_r[is_test]), jnp.asarray(age_all[is_test]), jnp.asarray(la_r[is_test]), HORIZON_MIN))
             preds_te[kind] = p_te
             a_te = age_all[is_test]
             y_te = y_sale[is_test]
@@ -693,8 +718,8 @@ def main() -> None:
                 flush=True,
             )
 
-        # Properly tuned high-capacity 2-layer AdamW Mamba (6,643 params, Feb-val LR/WD/early-stop + grad-clip)
-        p_m2_all, n_p_m2, sec_m2, meta_m2 = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, train_jan, train_feb, train_mask_dev)
+        # Properly tuned Pre-LN Residual 2-layer AdamW Mamba (Feb-val LR/WD/early-stop + grad-clip)
+        p_m2_all, n_p_m2, sec_m2, meta_m2 = run_deep_2layer_mamba_defi(df, X_r, la_r, y_sale, train_jan, train_feb, train_mask_dev)
         p_m2_te = p_m2_all[is_test]
         preds_te["deep_2layer_mamba_adamw"] = p_m2_te
         a_te, y_te = age_all[is_test], y_sale[is_test]
@@ -734,6 +759,7 @@ def main() -> None:
         ("regime_c_bsc_to_base_young", is_bsc & is_dev & (age_all <= 15.0), is_base & is_test),
     ]:
         print(f"\n=== DeFi Part A Cross-Chain: {cname} ===", flush=True)
+        X_r = _std_x(src_m)
         la_mu_r = float(la_raw[src_m].mean())
         la_sd_r = float(max(la_raw[src_m].std(), 1e-6))
         la_r = (la_raw - la_mu_r) / la_sd_r
@@ -743,12 +769,12 @@ def main() -> None:
         for kind in ("neural_clock_m4", "mlp_age", "weibull_mlp", "markov_clock"):
             params, n_p, best_r, sec = fit_tab_val_tuned(
                 kind,
-                X_std[s_jan], age_all[s_jan], la_r[s_jan], y_sale[s_jan],
-                X_std[s_feb], age_all[s_feb], la_r[s_feb], y_sale[s_feb],
-                X_std[src_m], age_all[src_m], la_r[src_m], y_sale[src_m],
+                X_r[s_jan], age_all[s_jan], la_r[s_jan], y_sale[s_jan],
+                X_r[s_feb], age_all[s_feb], la_r[s_feb], y_sale[s_feb],
+                X_r[src_m], age_all[src_m], la_r[src_m], y_sale[src_m],
                 dt=HORIZON_MIN,
             )
-            p_te = np.asarray(predict_tab(kind, params, jnp.asarray(X_std[tgt_m]), jnp.asarray(age_all[tgt_m]), jnp.asarray(la_r[tgt_m]), HORIZON_MIN))
+            p_te = np.asarray(predict_tab(kind, params, jnp.asarray(X_r[tgt_m]), jnp.asarray(age_all[tgt_m]), jnp.asarray(la_r[tgt_m]), HORIZON_MIN))
             a_t, y_t = age_all[tgt_m], y_sale[tgt_m]
             c_res[kind] = {
                 "params": n_p, "reg": best_r,
@@ -757,7 +783,7 @@ def main() -> None:
             }
             print(f"  {kind:16s}: all={c_res[kind]['all']['logloss']:.5f} gt60={c_res[kind]['gt60']['logloss']:.4f}", flush=True)
         # Also evaluate Feb-val-tuned Deep 2L-Mamba on BOTH cross-chain directions for full apples-to-apples parity!
-        p_m2_c, n_p_m2c, sec_m2c, meta_m2c = run_deep_2layer_mamba_defi(df, X_std, la_r, y_sale, s_jan, s_feb, src_m)
+        p_m2_c, n_p_m2c, sec_m2c, meta_m2c = run_deep_2layer_mamba_defi(df, X_r, la_r, y_sale, s_jan, s_feb, src_m)
         p_m2_ct = p_m2_c[tgt_m]
         a_t, y_t = age_all[tgt_m], y_sale[tgt_m]
         c_res["deep_2layer_mamba_adamw"] = {
@@ -783,6 +809,7 @@ def main() -> None:
         tr_all = is_dev & v10 & age_gate
         tr_jan = is_jan & v10 & age_gate
         tr_feb = is_feb & v10 & age_gate
+        X_r = _std_x(tr_all)
         la_mu_r = float(la_raw[tr_all].mean())
         la_sd_r = float(max(la_raw[tr_all].std(), 1e-6))
         la_r = (la_raw - la_mu_r) / la_sd_r
@@ -791,22 +818,22 @@ def main() -> None:
         for kind in ("neural_clock_m4", "mlp_age", "weibull_mlp", "markov_clock"):
             params, n_p, best_r, sec = fit_tab_val_tuned(
                 kind,
-                X_std[tr_jan], age_all[tr_jan], la_r[tr_jan], y10[tr_jan],
-                X_std[tr_feb], age_all[tr_feb], la_r[tr_feb], y10[tr_feb],
-                X_std[tr_all], age_all[tr_all], la_r[tr_all], y10[tr_all],
+                X_r[tr_jan], age_all[tr_jan], la_r[tr_jan], y10[tr_jan],
+                X_r[tr_feb], age_all[tr_feb], la_r[tr_feb], y10[tr_feb],
+                X_r[tr_all], age_all[tr_all], la_r[tr_all], y10[tr_all],
                 dt=10.0,
             )
             fitted[kind] = (params, n_p, best_r)
 
         # Also train properly tuned Deep 2L-Mamba strictly on dt=10m
-        p_m2_10, n_p_m2, _, _ = run_deep_2layer_mamba_defi(df, X_std, la_r, y10, tr_jan, tr_feb, tr_all)
+        p_m2_10, n_p_m2, _, _ = run_deep_2layer_mamba_defi(df, X_r, la_r, y10, tr_jan, tr_feb, tr_all)
 
         split_out = {}
         for k in k_steps:
             dt_m = 10 * k
             te_m = is_test & v_mh[dt_m]
             yk = y_mh[dt_m][te_m]
-            Xk = jnp.asarray(X_std[te_m])
+            Xk = jnp.asarray(X_r[te_m])
             ak = jnp.asarray(age_all[te_m])
             lak = jnp.asarray(la_r[te_m])
             dk = days_all[te_m]

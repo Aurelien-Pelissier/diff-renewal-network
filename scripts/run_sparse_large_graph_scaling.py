@@ -117,7 +117,8 @@ def main():
         compiled_states = v_nodes * (1 + out_deg * (stages - 1))
         tensor_states = v_nodes * (stages**out_deg)
         dense_mat_mb = (compiled_states**2) * 8.0 / (1024.0**2)
-        sparse_arr_mb = compiled_states * (2 + out_deg) * 8.0 / (1024.0**2)
+        # Include float64 (2 + out_deg) arrays AND int32 out_deg dst_entry_idx array
+        sparse_arr_mb = compiled_states * ((2 + out_deg) * 8.0 + out_deg * 4.0) / (1024.0**2)
         mass_err = float(jnp.max(jnp.abs(ys_out.sum(axis=-1) - 1.0)))
         min_prob = float(jnp.min(ys_out))
         assert mass_err < 1e-6 and min_prob >= -1e-9

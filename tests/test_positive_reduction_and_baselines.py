@@ -108,7 +108,13 @@ def test_modern_population_baselines_mass_and_gradients():
         sample=np.array([1, 3, 5, 7]),
     )
     counts = jnp.ones((2, 4, 3, 3)) * 10.0
-    expected_params = {"latent_ode": 387, "ltc_ode": 378, "s4d_ode": 435, "neural_cme": 342}
+    expected_params = {
+        "latent_ode": 387,
+        "ltc_ode": 378,
+        "s4d_ode": 429,
+        "neural_cme": 342,
+        "mamba_ode": 414,
+    }
 
     for kind, n_exp in expected_params.items():
         params = init_population_baseline(kind, seed=17)
